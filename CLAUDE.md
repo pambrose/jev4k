@@ -193,6 +193,10 @@ There are two DSL layers over one core model. Both produce a validated `Question
       `test koverVerify koverXmlReport koverLog`, and uploads `build/reports/kover/report.xml` to Codecov with the
       `unittests` flag. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
       a drop of more than 1% and reports patch coverage without gating on it.
+    - A second `test` job in the same workflow runs the suite on JDK 17, 21 and 25. Tests otherwise run on the
+      toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints the test task's `javaLauncher`;
+      `-XX:+EnableDynamicAgentLoading` is added only from 21 up, because an unrecognized `-XX` option stops JDK 17
+      from starting. `make test-jdk JDK=17` reproduces one row, `make all-tests` the whole set.
     - The `kover {}` block sets line and branch floors (`minLineCoveragePct`, `minBranchCoveragePct`) a few points below
       the measured totals. `koverVerify` is deliberately not wired into `check`, because it would fail every
       `build -x test` at 0%. Run it with `make coverage-verify`. Raise the floors when coverage has moved up and stayed
@@ -206,6 +210,8 @@ The `Makefile` wraps the common Gradle invocations; `make` (or `make help`) list
 ```bash
 make build                                            # clean build, skipping tests
 make tests                                            # kotlinter + detekt + all tests, forcing re-execution
+make test-jdk JDK=17                                  # run the tests on one JDK, as CI's matrix does
+make all-tests                                        # tests + the JDK matrix + coverage floors + live tests
 make lint                                             # kotlinter (lintKotlin) + detekt
 make kdocs                                            # Dokka HTML site in build/dokka/html
 make coverage-open                                    # Kover HTML coverage report, opened in a browser

@@ -1,13 +1,15 @@
 # --8<-- [start:make-targets]
-make build      # compile, without running tests
-make tests      # kotlinter + detekt + unit tests
-make lint       # kotlinter + detekt only
-make format     # auto-format Kotlin sources with ktlint
-make kdocs      # API docs in build/dokka/html
-make coverage   # Kover HTML + XML coverage reports
-make example    # run the example against the live API (needs TYPESAFE_API_KEY)
-make live-tests # smoke tests against the live API (needs TYPESAFE_API_KEY)
-make versions   # report newer dependency versions
+make build           # compile, without running tests
+make tests           # kotlinter + detekt + unit tests
+make test-jdk JDK=17 # run the tests on one JDK, as CI's matrix does
+make all-tests       # tests + the JDK matrix + coverage floors + live tests
+make lint            # kotlinter + detekt only
+make format          # auto-format Kotlin sources with ktlint
+make kdocs           # API docs in build/dokka/html
+make coverage        # Kover HTML + XML coverage reports
+make example         # run the example against the live API (needs TYPESAFE_API_KEY)
+make live-tests      # smoke tests against the live API (needs TYPESAFE_API_KEY)
+make versions        # report newer dependency versions
 # --8<-- [end:make-targets]
 
 # --8<-- [start:single-test]

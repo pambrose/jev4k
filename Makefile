@@ -3,10 +3,13 @@
         coverage coverage-html coverage-xml coverage-log \
         coverage-verify coverage-open coverage-clean versions api-docs example live-tests \
         publish-local publish-local-snapshot publish-snapshot publish-maven-central \
-        upgrade-wrapper _check-gpg-env _require-version _require-gradle-version
+        upgrade-wrapper test-jdk all-tests _check-gpg-env _require-version _require-gradle-version _require-jdk
 
 VERSION := $(shell sed -n 's/^version=\(.*\)/\1/p' gradle.properties)
 GRADLE_VERSION := $(shell sed -n 's/^gradle-wrapper = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+# The bytecode floor from the catalog, used as the default JDK for `make test-jdk`. The line carries a trailing
+# comment, so the capture stops at the closing quote.
+JDK ?= $(shell sed -n 's/^jvm-target = "\([^"]*\)".*/\1/p' gradle/libs.versions.toml)
 
 GRADLE := ./gradlew
 GRADLE_DIST_URL := https://services.gradle.org/distributions
@@ -41,6 +44,29 @@ build:  ## Clean build without tests
 
 tests:  ## Run all tests (forces re-execution)
 	$(GRADLE) --rerun-tasks check
+
+# Reproduce one row of CI's JDK matrix. The tests normally run on the build toolchain, so this is the only way
+# to exercise the bytecode floor locally. JDK defaults to that floor, the row most likely to catch something.
+test-jdk: _require-jdk  ## Run the tests on a specific JDK, e.g. make test-jdk JDK=21
+	$(GRADLE) --rerun-tasks test -PtestJavaVersion=$(JDK)
+
+# Every test target in one run, in the order that fails cheapest first. The JDK list mirrors the matrix in
+# .github/workflows/ci.yml, including the toolchain row that `tests` has already covered, so a green run here
+# means the same thing a green CI run does. The live tests spend tokens and need a key, so they run only when
+# one is available and are reported as skipped when it isn't, rather than failing the whole target.
+TEST_JDKS ?= 17 21 25
+
+all-tests:  ## Run every test target: tests, the CI JDK matrix, coverage floors, and live tests if configured
+	$(MAKE) tests
+	@for jdk in $(TEST_JDKS); do \
+		$(MAKE) test-jdk JDK=$$jdk || exit 1; \
+	done
+	$(MAKE) coverage-verify
+	@if [ -n "$$TYPESAFE_API_KEY" ] || grep -qs '^TYPESAFE_API_KEY=..*' .env; then \
+		$(MAKE) live-tests; \
+	else \
+		echo "SKIP: live-tests (no TYPESAFE_API_KEY in the environment or .env)"; \
+	fi
 
 # --refresh-dependencies only applies to what the invocation resolves, so it needs a task. With none, Gradle
 # runs `help` and re-resolves nothing but the build-script classpath. `dependencies` touches every
@@ -154,6 +180,11 @@ _check-gpg-env:
 
 _require-version:
 	@[ -n "$(VERSION)" ] || { echo "ERROR: Could not determine project version from gradle.properties" >&2; exit 1; }
+
+_require-jdk:
+	@case "$(JDK)" in \
+		''|*[!0-9]*) echo "ERROR: JDK must be a major version number, e.g. make test-jdk JDK=17" >&2; exit 1 ;; \
+	esac
 
 _require-gradle-version:
 	@[ -n "$(GRADLE_VERSION)" ] || { echo "ERROR: Could not determine gradle version from gradle/libs.versions.toml" >&2; exit 1; }
