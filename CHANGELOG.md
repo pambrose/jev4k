@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-## [0.1.0] — unreleased
+## [0.1.0] - 2026-09-20
 
 First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'s **Jev** *System One* model.
 

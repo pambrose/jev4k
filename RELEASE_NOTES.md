@@ -3,7 +3,7 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
-## v0.1.0 — unreleased
+## v0.1.0 — 2026-09-20
 
 The first release of jev4k, a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'s **Jev** model.
 
