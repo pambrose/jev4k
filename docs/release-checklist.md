@@ -30,12 +30,11 @@ Verified 2026-09-19.
 3. [x] **Get a green `docs.yml` run.** The first one failed at `actions/configure-pages` because Pages wasn't
    enabled yet. Re-running it once Pages was configured deployed the site, and pushes to `master` have
    published it since. Nothing in the workflow needed changing.
-4. [ ] **Rewrite the "Building from source" section of
-   `website/jev4k/docs/getting-started/installation.md`.** It currently says "No release has reached Maven
-   Central yet, so there are no coordinates to depend on" and sends readers to a composite build. The moment
-   0.1.0 is published that contradicts `RELEASE_NOTES.md`, which hands out
-   `implementation("com.pambrose:jev4k:0.1.0")`. Lead with the coordinates and keep the composite build as the
-   alternative for working against an unreleased checkout.
+4. [ ] **Delete the "0.1.0 hasn't been published yet" warning** from the "Adding the dependency" section of
+   `website/jev4k/docs/getting-started/installation.md`. The page leads with the coordinates now, so that
+   admonition is the one thing on it that stops being true the moment the artifact reaches Central. Nothing
+   else on the page needs touching: building from source and the composite build stay useful for working
+   against an unreleased checkout.
 5. [ ] **Check the badges render** after the first successful CI run, docs deploy and Central upload. The
    GitHub release, Maven Central and Codecov badges in `README.md:3-7` all show "not found" until their
    backing thing exists.
