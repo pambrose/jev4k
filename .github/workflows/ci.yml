@@ -55,3 +55,48 @@ jobs:
                     flags: unittests
                     name: jev4k
                     fail_ci_if_error: false
+
+    # The library ships Java 17 bytecode, so the suite has to run on 17, not just compile against its API.
+    # -Xjdk-release stops a newer JDK method from linking in; it says nothing about how the classes behave on an
+    # older runtime. 25 is included so the matrix covers every JDK this project claims, even though the build
+    # job already tests there.
+    test:
+        name: Tests on JDK ${{ matrix.java }}
+        runs-on: ubuntu-latest
+        strategy:
+            # One JDK failing shouldn't hide the result on the others.
+            fail-fast: false
+            matrix:
+                java: [ 17, 21, 25 ]
+        steps:
+            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            # Two JDKs: the matrix one runs the tests, and 25 is the toolchain that compiles them. The last
+            # entry becomes JAVA_HOME, so Gradle itself always runs on 25. On the 25 row both entries are 25,
+            # which installs once.
+            -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+                with:
+                    distribution: temurin
+                    java-version: |
+                        ${{ matrix.java }}
+                        25
+            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+            # Gradle doesn't scan the runner's tool cache, so point it at what setup-java installed. The names
+            # are setup-java's JAVA_HOME_<major>_<arch> variables, hence X64 for ubuntu-latest. If a lookup ever
+            # misses, the foojay resolver in settings.gradle.kts downloads the JDK instead, so this is a
+            # shortcut rather than a requirement.
+            -   name: Run tests on JDK ${{ matrix.java }}
+                run: >
+                    ./gradlew test -PtestJavaVersion=${{ matrix.java }}
+                    "-Porg.gradle.java.installations.fromEnv=JAVA_HOME_${{ matrix.java }}_X64,JAVA_HOME_25_X64"
+
+            -   name: Upload test reports on failure
+                if: failure()
+                uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+                with:
+                    name: test-reports-jdk-${{ matrix.java }}
+                    path: |
+                        build/reports/tests/
+                        build/test-results/
+                    retention-days: 7

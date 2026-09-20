@@ -19,6 +19,9 @@ To run a single test class:
 ```
 
 - **Checks.** `make tests` runs kotlinter (ktlint), detekt, and the Kotest suite.
+- **JDK coverage.** The tests run on the build toolchain by default. CI also runs them on JDK 17, 21 and 25,
+  since jev4k ships Java 17 bytecode and compiling against the 17 API doesn't prove it behaves there.
+  `make test-jdk JDK=17` reproduces one of those rows, and `make all-tests` runs every test target there is.
 - **Coverage.** `make coverage-open` builds the Kover report and opens it; `make coverage-verify` checks the
   line and branch floors. CI uploads the same report to
   [Codecov](https://codecov.io/gh/pambrose/jev4k).

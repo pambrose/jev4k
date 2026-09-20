@@ -53,6 +53,11 @@ dependencies {
 val jvmTargetVersion = libs.versions.jvm.target.get()
 val jvmToolchainVersion = libs.versions.jvm.toolchain.get().toInt()
 
+// Tests run on the build toolchain unless `-PtestJavaVersion=<n>` names another JDK. CI uses it to run the suite
+// on the 17 floor and on 21 as well as on 25: `-Xjdk-release=17` limits the API the sources compile against, but
+// only running the tests on 17 shows that the bytecode behaves there.
+val testJavaVersion = providers.gradleProperty("testJavaVersion").map { it.toInt() }
+
 kotlin {
     jvmToolchain(jvmToolchainVersion)
     compilerOptions {
@@ -209,8 +214,21 @@ kover {
 
 tasks.test {
     useJUnitPlatform()
-    // MockK attaches its agent at runtime; JDK 21+ warns unless dynamic loading is allowed.
-    jvmArgs("-XX:+EnableDynamicAgentLoading")
+
+    // Run on the JDK named by -PtestJavaVersion, if there is one. Gradle provisions or locates it through the
+    // toolchain service, so compilation still happens on jvmToolchainVersion either way.
+    if (testJavaVersion.isPresent) {
+        javaLauncher =
+            javaToolchains.launcherFor {
+                languageVersion = JavaLanguageVersion.of(testJavaVersion.get())
+            }
+    }
+
+    // MockK attaches its agent at runtime; JDK 21+ warns unless dynamic loading is allowed. The option arrived
+    // with JDK 21, and an unrecognized -XX option stops an older JVM from starting at all, so 17 doesn't get it.
+    if (testJavaVersion.getOrElse(jvmToolchainVersion) >= 21) {
+        jvmArgs("-XX:+EnableDynamicAgentLoading")
+    }
     testLogging {
         events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
         exceptionFormat = TestExceptionFormat.FULL

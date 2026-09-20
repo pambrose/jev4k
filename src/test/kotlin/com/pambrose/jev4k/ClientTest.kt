@@ -436,7 +436,7 @@ class ClientTest : StringSpec() {
             e.message shouldContain "HTTP 502 from POST https://api.typesafe.ai/v1/systemone"
             // The body is kept whole, and only the copy in the message is trimmed, since that is what is logged.
             e.body!!.length shouldBe long.length + 2
-            e.message!!.length shouldBeLessThan e.body!!.length
+            e.message!!.length shouldBeLessThan e.body.length
         }
 
         "a rate-limit error has a null retryAfter when the server sent no usable hint" {
