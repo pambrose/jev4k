@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
+## [Unreleased]
+
+Nothing yet.
+
 ## [0.1.0] - 2026-09-20
 
 First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'s **Jev** *System One* model.
@@ -112,4 +116,5 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
+[Unreleased]: https://github.com/pambrose/jev4k/compare/0.1.0...HEAD
 [0.1.0]: https://github.com/pambrose/jev4k/releases/tag/0.1.0
