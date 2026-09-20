@@ -80,17 +80,38 @@ compiler is held to the Java 17 API, so nothing newer can slip in.
 A `JevClient` is immutable once built and safe to share across coroutines. `jev.blocking` wraps the
 suspend calls in `runBlocking`, so call it from ordinary threads, never from inside a coroutine.
 
+## Adding the dependency
+
+jev4k is published to Maven Central as `com.pambrose:jev4k`.
+
+=== "Gradle (Kotlin DSL)"
+
+    ```kotlin
+    --8<-- "GettingStarted.txt:dependency-gradle"
+    ```
+
+=== "Maven"
+
+    ```xml
+    --8<-- "GettingStarted.txt:dependency-maven"
+    ```
+
+That single dependency brings the Ktor client, kotlinx.serialization and kotlinx.coroutines with it; see
+[what it puts on your classpath](#what-it-puts-on-your-classpath) for the full set, and
+[your own engine](#your-own-engine) if you'd rather not ship CIO.
+
 ## Building from source
 
-No release has reached Maven Central yet, so there are no coordinates to depend on. Build jev4k from a checkout:
+Contributors, and anyone who wants a build before the next release reaches Central, can build jev4k from a
+checkout:
 
 ```bash
 --8<-- "GettingStarted.txt:build"
 ```
 
-## Using it from another project
+## Using an unreleased build from another project
 
-The simplest way to depend on an unpublished build is a Gradle
+The simplest way to depend on a checkout rather than a published artifact is a Gradle
 [composite build](https://docs.gradle.org/current/userguide/composite_builds.html). Include the jev4k checkout
 in your project's settings:
 

@@ -3,6 +3,21 @@
 export TYPESAFE_API_KEY=ts-...
 # --8<-- [end:api-key]
 
+// --8<-- [start:dependency-gradle]
+// build.gradle.kts
+dependencies {
+    implementation("com.pambrose:jev4k:0.1.0")
+}
+// --8<-- [end:dependency-gradle]
+
+<!-- --8<-- [start:dependency-maven] -->
+<dependency>
+    <groupId>com.pambrose</groupId>
+    <artifactId>jev4k</artifactId>
+    <version>0.1.0</version>
+</dependency>
+<!-- --8<-- [end:dependency-maven] -->
+
 # --8<-- [start:build]
 # From a checkout of the jev4k repository (builds with JDK 25; Gradle downloads it if missing)
 ./gradlew build
