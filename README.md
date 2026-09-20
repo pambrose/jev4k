@@ -3,7 +3,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/pambrose/jev4k)](https://github.com/pambrose/jev4k/releases)
 [![Maven Central](https://img.shields.io/maven-central/v/com.pambrose/jev4k)](https://central.sonatype.com/artifact/com.pambrose/jev4k)
 [![CI](https://github.com/pambrose/jev4k/actions/workflows/ci.yml/badge.svg)](https://github.com/pambrose/jev4k/actions/workflows/ci.yml)
-[![Documentation](https://github.com/pambrose/jev4k/actions/workflows/docs.yml/badge.svg)](https://pambrose.github.io/jev4k/)
+[![Documentation](https://github.com/pambrose/jev4k/actions/workflows/docs.yml/badge.svg)](https://jev4k.com/)
 [![codecov](https://codecov.io/gh/pambrose/jev4k/branch/master/graph/badge.svg)](https://codecov.io/gh/pambrose/jev4k)
 [![Kotlin version](https://img.shields.io/badge/kotlin-2.4.20-red?logo=kotlin)](http://kotlinlang.org)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
@@ -54,16 +54,16 @@ JevClient().use { jev ->
 
 ## Documentation
 
-📖 **The jev4k website is at <https://pambrose.github.io/jev4k/>**. It has many more examples than this page.
+📖 **The jev4k website is at <https://jev4k.com/>**. It has many more examples than this page.
 
-|                                                                              |                                                     |
-|------------------------------------------------------------------------------|-----------------------------------------------------|
-| [Documentation site](https://pambrose.github.io/jev4k/)                      | Concepts, every question type, patterns, and guides |
-| [Quick Start](https://pambrose.github.io/jev4k/getting-started/quick-start/) | An API key and a first query in a few lines         |
-| [API reference (KDocs)](https://pambrose.github.io/jev4k/kdocs/)             | Dokka-generated docs for every public type          |
-| [llms.txt](https://pambrose.github.io/jev4k/llms.txt)                        | An index of the site for coding agents              |
-| [Changelog](CHANGELOG.md)                                                    | What changed in each release                        |
-| [Release notes](RELEASE_NOTES.md)                                            | Narrative notes for each release                    |
+|                                                               |                                                     |
+|---------------------------------------------------------------|-----------------------------------------------------|
+| [Documentation site](https://jev4k.com/)                      | Concepts, every question type, patterns, and guides |
+| [Quick Start](https://jev4k.com/getting-started/quick-start/) | An API key and a first query in a few lines         |
+| [API reference (KDocs)](https://jev4k.com/kdocs/)             | Dokka-generated docs for every public type          |
+| [llms.txt](https://jev4k.com/llms.txt)                        | An index of the site for coding agents              |
+| [Changelog](CHANGELOG.md)                                     | What changed in each release                        |
+| [Release notes](RELEASE_NOTES.md)                             | Narrative notes for each release                    |
 
 ## Quick start
 

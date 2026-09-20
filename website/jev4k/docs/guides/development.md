@@ -36,7 +36,7 @@ To run a single test class:
 
 The site publishes an [`llms.txt`](../llms.txt) at its root, following the
 [llmstxt.org](https://llmstxt.org) convention: a short description of the library followed by an annotated link
-to every page. Point a coding agent at `https://pambrose.github.io/jev4k/llms.txt` and it can find the rest.
+to every page. Point a coding agent at `https://jev4k.com/llms.txt` and it can find the rest.
 
 ## Project layout
 
@@ -59,14 +59,26 @@ The site is built with [Zensical](https://zensical.org) from `website/jev4k`:
 
 ### Publishing
 
-The site is published to GitHub Pages at <https://pambrose.github.io/jev4k/> by
-`.github/workflows/docs.yml`. The workflow runs on every push to `master`, or on demand from the Actions tab. It
-builds the site from the locked `website/uv.lock`, builds the KDocs with Dokka, copies them under `/kdocs`, and
-deploys the result: the same steps as `make site-build`.
+The site is published to GitHub Pages at <https://jev4k.com/> by `.github/workflows/docs.yml`. The workflow runs on
+every push to `master`, or on demand from the Actions tab. It builds the site from the locked `website/uv.lock`, builds
+the KDocs with Dokka, copies them under `/kdocs`, and deploys the result: the same steps as `make site-build`.
 
 The repository needs one setting before the first deploy: under **Settings → Pages → Build and deployment**, set
 **Source** to **GitHub Actions**. After a failed deploy, re-run just the failed deploy job; the build job's artifact
 is reused.
+
+### The custom domain
+
+The site answers on `jev4k.com` rather than `pambrose.github.io/jev4k`, so its URLs carry no path prefix. Two things
+keep that working:
+
+- `docs/CNAME` holds the bare domain. Zensical copies it verbatim into `site/`, and GitHub Pages reads the domain from
+  the deployed artifact — a site published by Actions can otherwise lose the domain set under **Settings → Pages**.
+- DNS points the apex at GitHub's Pages servers: four `A` records (`185.199.108.153` through `185.199.111.153`), four
+  `AAAA` records (`2606:50c0:8000::153` through `2606:50c0:8003::153`), and `www` as a `CNAME` to `pambrose.github.io`.
+
+Links that leave the site — `llms.txt`, the README, the release checklist — are absolute, so they name `jev4k.com`
+directly and have to be updated together if the domain ever changes.
 
 ### Code examples
 

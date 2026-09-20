@@ -107,9 +107,9 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 
 #### Documentation
 
-- A documentation site at <https://pambrose.github.io/jev4k/>, published from `website/jev4k` on every push to
-  `master`. Every example on it is compiled with the test sources.
-- Dokka KDocs for the public API at <https://pambrose.github.io/jev4k/kdocs/>.
-- `llms.txt` at <https://pambrose.github.io/jev4k/llms.txt>, indexing the site for coding agents.
+- A documentation site at <https://jev4k.com/>, published from `website/jev4k` on every push to `master`. Every
+  example on it is compiled with the test sources.
+- Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
+- `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
 [0.1.0]: https://github.com/pambrose/jev4k/releases/tag/0.1.0

@@ -1,0 +1,37 @@
+# Line endings. Every text file is stored with LF in the repository; git
+# detects which files are text. Nothing in the index currently holds CRLF, so
+# this normalizes future contributions rather than rewriting history.
+*                                 text=auto eol=lf
+
+# The Gradle wrapper ships a POSIX script and a Windows batch file. cmd.exe
+# mis-parses gradlew.bat unless it is checked out with CRLF, so that one file
+# is pinned the other way.
+gradlew                           text eol=lf
+*.sh                              text eol=lf
+*.bat                             text eol=crlf
+
+# Binary. Never diffed, never line-ending converted.
+*.jar                             binary
+*.png                             binary
+*.jpg                             binary
+*.gif                             binary
+*.ico                             binary
+*.woff                            binary
+*.woff2                           binary
+
+# Hunk headers. Git's built-in drivers name the enclosing function, class, or
+# heading in the `@@` line of a diff.
+*.kt                              text diff=kotlin
+*.kts                             text diff=kotlin
+*.java                            text diff=java
+*.md                              text diff=markdown
+*.css                             text diff=css
+*.html                            text diff=html
+
+# Generated and vendored files. These are collapsed in pull-request diffs and
+# left out of the repository's language statistics: the Gradle wrapper is
+# Gradle's own output, and website/uv.lock is resolved by uv.
+gradlew                           linguist-vendored
+gradlew.bat                       linguist-vendored
+gradle/wrapper/gradle-wrapper.jar binary linguist-vendored
+website/uv.lock                   text linguist-generated

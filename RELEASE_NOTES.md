@@ -80,8 +80,7 @@ engine by default, which can be excluded in favor of another Ktor engine, and no
 
 ### Documentation
 
-The documentation site is at <https://pambrose.github.io/jev4k/>, with KDocs at
-<https://pambrose.github.io/jev4k/kdocs/> and an agent-readable index at
-<https://pambrose.github.io/jev4k/llms.txt>.
+The documentation site is at <https://jev4k.com/>, with KDocs at <https://jev4k.com/kdocs/> and an agent-readable
+index at <https://jev4k.com/llms.txt>.
 
 **Full Changelog**: https://github.com/pambrose/jev4k/commits/0.1.0

@@ -14,9 +14,10 @@ Verified 2026-09-19.
 |-----------------------------------------|------------------------------------------------------------------|
 | `pambrose/jev4k` on GitHub              | ✅ exists, public, default branch `master`                       |
 | Pages source                            | ✅ GitHub Actions (`build_type: workflow`)                       |
+| Custom domain `jev4k.com`               | ❌ DNS and Settings → Pages not configured yet                   |
 | `CODECOV_TOKEN` repository secret       | ✅ set                                                           |
 | `master` on the remote                  | ✅ pushed, with `ci.yml` green on it                            |
-| Published site                          | ✅ live at <https://pambrose.github.io/jev4k/>, KDocs included  |
+| Published site                          | ✅ live, KDocs included                                          |
 | Git tags                                | ❌ none                                                          |
 | `com.pambrose:jev4k` on Maven Central   | ❌ not published (`maven-metadata.xml` returns 404)              |
 | `gradle.properties` version             | `0.1.0`                                                          |
@@ -112,7 +113,7 @@ Then:
 ### 7. After
 
 - [ ] The `[<version>]` link at the bottom of `CHANGELOG.md` now resolves.
-- [ ] <https://pambrose.github.io/jev4k/> and <https://pambrose.github.io/jev4k/kdocs/> show the new version.
+- [ ] <https://jev4k.com/> and <https://jev4k.com/kdocs/> show the new version.
 - [ ] The GitHub release and Maven Central badges in the README show the new number. Both are cached by
   shields.io for a few minutes.
 - [ ] A dependency on the new coordinates resolves from a scratch project.
