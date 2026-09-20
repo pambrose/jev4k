@@ -36,8 +36,7 @@ The full API reference is generated from the source with Dokka and published alo
 | [`ScoreAnswer`](kdocs/jev4k/com.pambrose.jev4k/-score-answer/index.html)   | A position on the levels, with `normalized` and the per-level probabilities |
 | [`JevException`](kdocs/jev4k/com.pambrose.jev4k/-jev-exception/index.html) | The root of the error hierarchy every call can throw                        |
 
-The published KDocs live at
-[pambrose.github.io/jev4k/kdocs](https://pambrose.github.io/jev4k/kdocs/), next to this site.
+The published KDocs live at [jev4k.com/kdocs](https://jev4k.com/kdocs/), next to this site.
 
 !!! note "Serving the docs locally"
 

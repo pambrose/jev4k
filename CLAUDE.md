@@ -69,15 +69,20 @@ There are two DSL layers over one core model. Both produce a validated `Question
   `slate` palette) is the default. `docs/stylesheets/extra.css` widens the page grid from 61rem to 90rem so 120-column
   examples fit without horizontal scrolling. Emoji and icons come from Zensical's own extension, so `mkdocs-material`
   isn't needed.
-- **Publishing.** `.github/workflows/docs.yml` publishes the site to GitHub Pages at <https://pambrose.github.io/jev4k/>
-  on every push to `master`, or on manual dispatch. It runs the same steps as `make site-build` (Zensical build, Dokka,
-  KDocs copied to `/kdocs`) in a build job, and a separate deploy job can be re-run on its own. `zensical.toml` sets
-  `site_url`, `repo_url` and `edit_uri`, and Dokka's `sourceLink`/`homepageLink` point at `github.com/pambrose/jev4k` on
-  `master`. The repository's Pages source must be set to "GitHub Actions".
+- **Publishing.** `.github/workflows/docs.yml` publishes the site to GitHub Pages on every push to `master`, or on
+  manual dispatch. It runs the same steps as `make site-build` (Zensical build, Dokka, KDocs copied to `/kdocs`) in a
+  build job, and a separate deploy job can be re-run on its own. `zensical.toml` sets `site_url`, `repo_url` and
+  `edit_uri`, and Dokka's `sourceLink`/`homepageLink` point at `github.com/pambrose/jev4k` on `master`. The
+  repository's Pages source must be set to "GitHub Actions".
+- **Custom domain.** The site is served at <https://jev4k.com/>, not `pambrose.github.io/jev4k/`, so page URLs carry no
+  path prefix. `docs/CNAME` holds the bare domain and Zensical copies it to `site/CNAME`; GitHub Pages reads the domain
+  from that file, and without it an Actions-published site can lose the custom domain set under Settings → Pages on a
+  later deploy. DNS: four apex `A` records to GitHub's `185.199.10[8-11].153`, four `AAAA` to `2606:50c0:800[0-3]::153`,
+  and `www` as a `CNAME` to `pambrose.github.io`.
 - **`llms.txt`.** `docs/llms.txt` follows the [llmstxt.org](https://llmstxt.org) convention: an H1, a blockquote
   summary, a few paragraphs of orientation, then annotated links to every page. Zensical copies it verbatim, so it is
-  served at <https://pambrose.github.io/jev4k/llms.txt>. Its links are absolute, so they resolve when an agent fetches
-  the file on its own; update it when a page is added, renamed, or removed.
+  served at <https://jev4k.com/llms.txt>. Its links are absolute, so they resolve when an agent fetches the file on its
+  own; update it when a page is added, renamed, or removed.
 - **Commands.** `make site` serves the site with live reload. `make site-build` builds it into `website/jev4k/site` and
   copies the Dokka KDocs to `site/kdocs`; the `KDocs` nav entry, `api.md`, is an ordinary page that links there.
   `make check-site` and `make upgrade-site` manage the Python dependencies.
