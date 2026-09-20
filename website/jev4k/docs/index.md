@@ -57,53 +57,53 @@ graph TD
 
 <div class="grid cards" markdown>
 
-- :lucide-play: **Quick Start**
+-   :lucide-play: **Quick Start**
 
-  ---
+    ---
 
-  Set an API key and run your first query in a few lines.
+    Set an API key and run your first query in a few lines.
 
-  [:octicons-arrow-right-24: Get started](getting-started/quick-start.md)
+    [:octicons-arrow-right-24: Get started](getting-started/quick-start.md)
 
-- :lucide-book-open: **Concepts**
+-   :lucide-book-open: **Concepts**
 
-  ---
+    ---
 
-  State, questions, answers, and what calibrated confidence means.
+    State, questions, answers, and what calibrated confidence means.
 
-  [:octicons-arrow-right-24: Learn the model](concepts.md)
+    [:octicons-arrow-right-24: Learn the model](concepts.md)
 
-- :lucide-layers: **Patterns**
+-   :lucide-layers: **Patterns**
 
-  ---
+    ---
 
-  Routing, composite scoring, verification, extraction, ranking, and guardrails.
+    Routing, composite scoring, verification, extraction, ranking, and guardrails.
 
-  [:octicons-arrow-right-24: Browse patterns](patterns/index.md)
+    [:octicons-arrow-right-24: Browse patterns](patterns/index.md)
 
-- :lucide-lightbulb: **Writing Good Questions**
+-   :lucide-lightbulb: **Writing Good Questions**
 
-  ---
+    ---
 
-  The habits that make Jev's answers accurate and useful.
+    The habits that make Jev's answers accurate and useful.
 
-  [:octicons-arrow-right-24: Read the guide](guides/best-practices.md)
+    [:octicons-arrow-right-24: Read the guide](guides/best-practices.md)
 
-- :lucide-graduation-cap: **The Jev Docs**
+-   :lucide-graduation-cap: **The Jev Docs**
 
-  ---
+    ---
 
-  TypeSafe's own documentation: concepts, primitives, and cookbooks.
+    TypeSafe's own documentation: concepts, primitives, and cookbooks.
 
-  [:octicons-arrow-right-24: docs.typesafe.ai](https://docs.typesafe.ai)
+    [:octicons-arrow-right-24: docs.typesafe.ai](https://docs.typesafe.ai)
 
-- :lucide-file-code: **API Reference**
+-   :lucide-file-code: **API Reference**
 
-  ---
+    ---
 
-  Every public type and function, generated from the source by Dokka.
+    Every public type and function, generated from the source by Dokka.
 
-  [:octicons-arrow-right-24: Browse the KDocs](api.md)
+    [:octicons-arrow-right-24: Browse the KDocs](api.md)
 
 </div>
 
