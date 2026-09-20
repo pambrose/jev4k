@@ -1,27 +1,28 @@
 # Release checklist
 
-How to cut a jev4k release. The first release has extra steps, listed separately, because nothing has been
-pushed or published yet.
+How to cut a jev4k release. The first release has extra steps, listed separately, because the repository is
+still being set up and nothing has reached Maven Central yet.
 
 This file is for maintainers and isn't part of any published site: Zensical builds `website/jev4k/docs`, and
 Dokka includes only `docs/packages.md` (`build.gradle.kts:88`).
 
 ## Current state
 
-Verified 2026-09-19.
+Verified 2026-09-20.
 
-| Item                                    | State                                                            |
-|-----------------------------------------|------------------------------------------------------------------|
-| `pambrose/jev4k` on GitHub              | ✅ exists, public, default branch `master`                       |
-| Pages source                            | ✅ GitHub Actions (`build_type: workflow`)                       |
-| Custom domain `jev4k.com`               | ❌ DNS and Settings → Pages not configured yet                   |
-| `CODECOV_TOKEN` repository secret       | ✅ set                                                           |
-| `master` on the remote                  | ✅ pushed, with `ci.yml` green on it                            |
-| Published site                          | ✅ live, KDocs included                                          |
-| Git tags                                | ❌ none                                                          |
-| `com.pambrose:jev4k` on Maven Central   | ❌ not published (`maven-metadata.xml` returns 404)              |
-| `gradle.properties` version             | `0.1.0`                                                          |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`     | both mark 0.1.0 as `— unreleased`                                |
+| Item                                  | State                                                       |
+|---------------------------------------|-------------------------------------------------------------|
+| `pambrose/jev4k` on GitHub            | ✅ exists, public, default branch `master`                  |
+| Pages source                          | ✅ GitHub Actions (`build_type: workflow`)                  |
+| Custom domain `jev4k.com`             | ✅ serving, certificate approved for the apex and `www`     |
+| Enforce HTTPS                         | ✅ on; `http://` 301s to `https://`                         |
+| `CODECOV_TOKEN` repository secret     | ✅ set                                                      |
+| `master` on the remote                | ✅ pushed, with `ci.yml` green on it                        |
+| Published site                        | ✅ live at <https://jev4k.com/>, KDocs included             |
+| Git tags                              | ❌ none                                                     |
+| `com.pambrose:jev4k` on Maven Central | ❌ not published (`maven-metadata.xml` returns 404)         |
+| `gradle.properties` version           | `0.1.0`                                                     |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | both date 0.1.0 2026-09-20, ahead of the upload and the tag |
 
 ## Before the first release, once
 
@@ -31,7 +32,12 @@ Verified 2026-09-19.
 3. [x] **Get a green `docs.yml` run.** The first one failed at `actions/configure-pages` because Pages wasn't
    enabled yet. Re-running it once Pages was configured deployed the site, and pushes to `master` have
    published it since. Nothing in the workflow needed changing.
-4. [ ] **Check the badges render** after the first successful CI run, docs deploy and Central upload. The
+4. [x] **Point `jev4k.com` at Pages.** The apex carries the four `185.199.*.153` A records and the four
+   `2606:50c0:800*::153` AAAA records, `www` is a CNAME to `pambrose.github.io`, and GitHub has issued a
+   certificate for both names. `pambrose.github.io/jev4k` redirects to the new domain.
+5. [x] **Turn on Enforce HTTPS** (Settings → Pages). GitHub leaves the switch off until a certificate is
+   provisioned and doesn't flip it afterwards, so it needed setting by hand once the certificate landed.
+6. [ ] **Check the badges render** after the first successful CI run, docs deploy and Central upload. The
    GitHub release, Maven Central and Codecov badges in `README.md:3-7` all show "not found" until their
    backing thing exists.
 
