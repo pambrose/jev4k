@@ -15,8 +15,8 @@ Verified 2026-09-19.
 | `pambrose/jev4k` on GitHub              | ✅ exists, public, default branch `master`                       |
 | Pages source                            | ✅ GitHub Actions (`build_type: workflow`)                       |
 | `CODECOV_TOKEN` repository secret       | ✅ set                                                           |
-| Local commits                           | ✅ the initial commit is pushed, and `ci.yml` passed on it       |
-| `docs.yml` on that commit               | ❌ failed: `configure-pages` ran before Pages was enabled        |
+| `master` on the remote                  | ✅ pushed, with `ci.yml` green on it                            |
+| Published site                          | ✅ live at <https://pambrose.github.io/jev4k/>, KDocs included  |
 | Git tags                                | ❌ none                                                          |
 | `com.pambrose:jev4k` on Maven Central   | ❌ not published (`maven-metadata.xml` returns 404)              |
 | `gradle.properties` version             | `0.1.0`                                                          |
@@ -27,9 +27,9 @@ Verified 2026-09-19.
 1. [x] **Push `master`** so the workflows run for the first time.
 2. [x] **Add the `CODECOV_TOKEN` secret** (repository → Settings → Secrets and variables → Actions). Without
    it the `ci.yml` upload step fails on every run.
-3. [ ] **Get a green `docs.yml` run.** The first one failed at `actions/configure-pages` because Pages wasn't
-   enabled yet. Pages is configured now, so re-running that workflow, or any later push to `master`, publishes
-   the site. Nothing in the workflow needs changing.
+3. [x] **Get a green `docs.yml` run.** The first one failed at `actions/configure-pages` because Pages wasn't
+   enabled yet. Re-running it once Pages was configured deployed the site, and pushes to `master` have
+   published it since. Nothing in the workflow needed changing.
 4. [ ] **Rewrite the "Building from source" section of
    `website/jev4k/docs/getting-started/installation.md`.** It currently says "No release has reached Maven
    Central yet, so there are no coordinates to depend on" and sends readers to a composite build. The moment
