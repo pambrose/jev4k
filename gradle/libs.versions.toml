@@ -1,0 +1,39 @@
+[versions]
+coroutines = "1.11.0"
+detekt = "2.0.0-alpha.6"
+dokka = "2.2.0"
+gradle-plugins = "1.1.5"
+gradle-wrapper = "9.7.1"
+jvm-toolchain = "25"  # the JDK this project builds with
+jvm-target = "17"     # bytecode floor: the oldest JDK a consumer can run
+kotest = "6.2.5"
+kover = "0.9.9"
+kotlin = "2.4.20"
+maven-publish = "0.37.0"
+ktor = "3.6.0"
+mockk = "1.14.11"
+serialization = "1.11.0"
+versions = "0.64.0"
+
+[libraries]
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+[plugins]
+ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "versions" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
+pambrose-envvar = { id = "com.pambrose.envvar", version.ref = "gradle-plugins" }
+pambrose-kotlinter = { id = "com.pambrose.kotlinter", version.ref = "gradle-plugins" }

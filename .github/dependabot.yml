@@ -1,0 +1,16 @@
+# Every action in .github/workflows is pinned to a commit SHA, which no human is going to update by hand.
+# Dependabot rewrites the SHA and the trailing version comment together, so the pins keep receiving fixes.
+#
+# Gradle dependencies are deliberately not listed here: the version catalog is reviewed with `make versions`
+# (the ben-manes plugin), which reports updates without opening pull requests.
+version: 2
+updates:
+    -   package-ecosystem: github-actions
+        directory: /
+        schedule:
+            interval: weekly
+        # One pull request for all of them, rather than one per action.
+        groups:
+            actions:
+                patterns:
+                    - "*"

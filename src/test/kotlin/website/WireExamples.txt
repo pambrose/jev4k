@@ -1,0 +1,50 @@
+// --8<-- [start:request]
+{
+  "state": "Help! My payouts have been failing for 3 days.",
+  "model": "jev-latest",
+  "questions": {
+    "is_urgent": {
+      "type": "noul",
+      "instructions": "Does this convey urgency?",
+      "criteria": { "true": "Explicitly time-sensitive", "false": "No urgency expressed" }
+    },
+    "department": {
+      "type": "choice",
+      "instructions": "Which team should handle this?",
+      "criteria": {
+        "billing": "Payments, invoicing, refunds",
+        "technical": "Bugs, outages, integrations",
+        "sales": "Pricing, upgrades, new accounts"
+      }
+    },
+    "frustration": {
+      "type": "score",
+      "instructions": "How frustrated is the customer?",
+      "criteria": ["Calm", "Frustrated", "Very angry"]
+    }
+  }
+}
+// --8<-- [end:request]
+
+// --8<-- [start:response]
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "is_urgent": { "type": "noul", "noul": 0.92 },
+    "department": {
+      "type": "choice",
+      "choice": "technical",
+      "probabilities": { "billing": 0.08, "technical": 0.85, "sales": 0.07 },
+      "confidence": 0.82
+    },
+    "frustration": {
+      "type": "score",
+      "score": 1.6,
+      "legend": { "0": "Calm", "1": "Frustrated", "2": "Very angry" },
+      "probabilities": { "0": 0.05, "1": 0.3, "2": 0.65 },
+      "confidence": 0.78
+    }
+  },
+  "usage": { "input_tokens": 312, "output_tokens": 48 }
+}
+// --8<-- [end:response]

@@ -1,0 +1,22 @@
+# --8<-- [start:make-targets]
+make build      # compile, without running tests
+make tests      # kotlinter + detekt + unit tests
+make lint       # kotlinter + detekt only
+make format     # auto-format Kotlin sources with ktlint
+make kdocs      # API docs in build/dokka/html
+make coverage   # Kover HTML + XML coverage reports
+make example    # run the example against the live API (needs TYPESAFE_API_KEY)
+make live-tests # smoke tests against the live API (needs TYPESAFE_API_KEY)
+make versions   # report newer dependency versions
+# --8<-- [end:make-targets]
+
+# --8<-- [start:single-test]
+./gradlew test --tests "com.pambrose.jev4k.DslTest"
+# --8<-- [end:single-test]
+
+# --8<-- [start:site]
+make site         # serve these docs at http://localhost:8000, rebuilding on change
+make site-build   # build the static site into website/jev4k/site, with KDocs under /kdocs
+make check-site   # report newer versions of the site's Python dependencies
+make upgrade-site # upgrade them
+# --8<-- [end:site]

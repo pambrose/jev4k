@@ -1,0 +1,187 @@
+# ============================================================================
+# jev4k Documentation - Zensical Configuration
+# ============================================================================
+#
+# Code examples are not written into these pages. They live in
+# src/test/kotlin/website (compiled with the test sources, so they can't drift
+# from the API) and are pulled in with pymdownx.snippets:
+#
+#     ```kotlin
+#     --8<-- "NoulExamples.kt:basic"
+#     ```
+#
+# `NoulExamples.kt:basic` is the region between `// --8<-- [start:basic]` and
+# `// --8<-- [end:basic]` in that file.
+
+[project]
+
+site_name = "jev4k"
+site_description = "A Kotlin DSL and client for TypeSafe's Jev System One model"
+site_author = "Paul Ambrose"
+
+# Published to GitHub Pages by .github/workflows/docs.yml on every push to master.
+site_url = "https://pambrose.github.io/jev4k/"
+
+repo_url = "https://github.com/pambrose/jev4k"
+repo_name = "pambrose/jev4k"
+# The pages live below the repository root, so the edit/view links need the full path.
+edit_uri = "edit/master/website/jev4k/docs/"
+
+copyright = """
+Copyright &copy; 2026 Paul Ambrose &middot;
+<a href="https://github.com/pambrose/jev4k/blob/master/LICENSE">Apache License 2.0</a>
+"""
+
+# Widens the page so 120-column code examples fit on desktop screens.
+extra_css = ["stylesheets/extra.css"]
+
+nav = [
+    { "Overview" = [
+        { "Home" = "index.md" },
+        { "Concepts" = "concepts.md" },
+    ] },
+    { "Getting Started" = [
+        { "Installation" = "getting-started/installation.md" },
+        { "Quick Start" = "getting-started/quick-start.md" },
+    ] },
+    { "Questions" = [
+        { "Choosing a Type" = "questions/index.md" },
+        { "Noul" = "questions/noul.md" },
+        { "Choice" = "questions/choice.md" },
+        { "Score" = "questions/score.md" },
+        { "Structured Criteria" = "questions/structured.md" },
+    ] },
+    { "Building Queries" = [
+        { "Inline DSL" = "queries/inline.md" },
+        { "Typed Queries" = "queries/typed.md" },
+        { "Enum Choices" = "queries/enums.md" },
+        { "State" = "queries/state.md" },
+    ] },
+    { "Results" = [
+        { "Reading Results" = "results/reading.md" },
+        { "Confidence & Thresholds" = "results/confidence.md" },
+    ] },
+    { "Client" = [
+        { "Configuration" = "client/configuration.md" },
+        { "Making Calls" = "client/calls.md" },
+        { "Retries & Errors" = "client/errors.md" },
+    ] },
+    { "Patterns" = [
+        { "Overview" = "patterns/index.md" },
+        { "Speculative Fan-Out" = "patterns/fan-out.md" },
+        { "Routing" = "patterns/routing.md" },
+        { "Composite Scoring" = "patterns/composite-scoring.md" },
+        { "Verification" = "patterns/verification.md" },
+        { "Extraction" = "patterns/extraction.md" },
+        { "Search & Ranking" = "patterns/search.md" },
+        { "Guardrails & Moderation" = "patterns/guardrails.md" },
+        { "Classification" = "patterns/classification.md" },
+    ] },
+    { "Guides" = [
+        { "Writing Good Questions" = "guides/best-practices.md" },
+        { "Development" = "guides/development.md" },
+    ] },
+    { "KDocs" = "api.md" },
+]
+
+# ----------------------------------------------------------------------------
+# Theme configuration
+# ----------------------------------------------------------------------------
+[project.theme]
+
+language = "en"
+
+features = [
+    "content.action.edit",
+    "content.action.view",
+    "content.code.annotate",
+    "content.code.copy",
+    "content.code.select",
+    "content.footnote.tooltips",
+    "content.tabs.link",
+    "content.tooltips",
+    "navigation.footer",
+    "navigation.indexes",
+    "navigation.instant",
+    "navigation.instant.prefetch",
+    "navigation.instant.progress",
+    "navigation.path",
+    "navigation.sections",
+    "navigation.top",
+    "navigation.tracking",
+    "search.highlight",
+    "toc.follow",
+]
+
+# Dark mode first = default
+[[project.theme.palette]]
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+# ----------------------------------------------------------------------------
+# Social links
+# ----------------------------------------------------------------------------
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/pambrose/jev4k"
+
+# ----------------------------------------------------------------------------
+# Markdown extensions
+# ----------------------------------------------------------------------------
+
+# attr_list - add HTML attributes to Markdown elements
+[project.markdown_extensions.attr_list]
+
+# md_in_html - render Markdown inside HTML blocks (needed for grid cards)
+[project.markdown_extensions.md_in_html]
+
+# admonition - callout blocks (!!!)
+[project.markdown_extensions.admonition]
+
+# tables
+[project.markdown_extensions.tables]
+
+# toc - permalinks on headings
+[project.markdown_extensions.toc]
+permalink = true
+
+# pymdownx.details - collapsible admonitions (???)
+[project.markdown_extensions.pymdownx.details]
+
+# pymdownx.emoji - inline icons (:lucide-*:, :material-*:, :octicons-*:, :fontawesome-*:)
+[project.markdown_extensions.pymdownx.emoji]
+emoji_index = "zensical.extensions.emoji.twemoji"
+emoji_generator = "zensical.extensions.emoji.to_svg"
+
+# pymdownx.inlinehilite - highlighted inline code
+[project.markdown_extensions.pymdownx.inlinehilite]
+
+# pymdownx.snippets - import the code examples from src/test/kotlin/website.
+# check_paths fails the build when a referenced file is missing, and
+# dedent_subsections strips the indentation of regions taken from inside a function.
+[project.markdown_extensions.pymdownx.snippets]
+base_path = ["../../src/test/kotlin/website", "../../src/test/java/website", "../.."]
+check_paths = true
+dedent_subsections = true
+
+# pymdownx.superfences - fenced code blocks (and snippets inside them) with Mermaid support
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+    { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+
+# pymdownx.tabbed - content tabs
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+
+# pymdownx.highlight - syntax highlighting
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true

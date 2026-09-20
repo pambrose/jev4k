@@ -1,0 +1,7 @@
+/*
+ * Widen the page grid (the theme default is 61rem) so code examples, which are
+ * formatted to 120 columns, fit without horizontal scrolling on desktop screens.
+ */
+.md-grid {
+    max-width: 90rem;
+}

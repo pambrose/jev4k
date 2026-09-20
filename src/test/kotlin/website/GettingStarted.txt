@@ -1,0 +1,46 @@
+# --8<-- [start:api-key]
+# Create a key at https://console.typesafe.ai/settings/keys, then:
+export TYPESAFE_API_KEY=ts-...
+# --8<-- [end:api-key]
+
+# --8<-- [start:build]
+# From a checkout of the jev4k repository (builds with JDK 25; Gradle downloads it if missing)
+./gradlew build
+# --8<-- [end:build]
+
+// --8<-- [start:composite-settings]
+// settings.gradle.kts of your project: build jev4k from a sibling checkout
+includeBuild("../jev4k")
+// --8<-- [end:composite-settings]
+
+// --8<-- [start:composite-dependency]
+// build.gradle.kts of your project
+plugins {
+    kotlin("jvm") version "2.4.20"
+    kotlin("plugin.serialization") version "2.4.20" // only needed for @Serializable state
+}
+
+dependencies {
+    implementation("com.pambrose:jev4k:0.1.0") // the version in jev4k's gradle.properties
+}
+
+kotlin {
+    jvmToolchain(17) // jev4k targets Java 17, so anything 17 or newer works
+}
+// --8<-- [end:composite-dependency]
+
+# --8<-- [start:run-example]
+export TYPESAFE_API_KEY=ts-...
+make example      # runs src/test/kotlin/com/pambrose/jev4k/examples/TriageExample.kt
+# --8<-- [end:run-example]
+
+// --8<-- [start:exclude-cio]
+dependencies {
+    implementation("com.pambrose:jev4k:0.1.0") {
+        // Only if you pass your own engine: drops ktor-client-cio and ktor-network-tls. ktor-network
+        // itself stays, because ktor-client-core depends on it through ktor-http-cio.
+        exclude(group = "io.ktor", module = "ktor-client-cio-jvm")
+    }
+    implementation("io.ktor:ktor-client-okhttp:3.6.0")
+}
+// --8<-- [end:exclude-cio]

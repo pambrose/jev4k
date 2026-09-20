@@ -1,0 +1,33 @@
+# Codecov configuration: https://docs.codecov.com/docs/codecov-yaml
+# CI (.github/workflows/ci.yml) uploads the Kover XML report, build/reports/kover/report.xml.
+codecov:
+    require_ci_to_pass: true
+    notify:
+        wait_for_ci: true
+
+coverage:
+    precision: 2
+    status:
+        # Fail the project status if total coverage drops more than 1% below the base commit.
+        project:
+            default:
+                target: auto
+                threshold: 1%
+                informational: false
+        # Report, but don't gate on, coverage of the lines a change touches.
+        patch:
+            default:
+                target: 80%
+                threshold: 5%
+                informational: true
+
+comment:
+    layout: "diff, flags, files, footer"
+    behavior: default
+    require_changes: true
+
+flags:
+    unittests:
+        paths:
+            - src/main/
+        carryforward: true

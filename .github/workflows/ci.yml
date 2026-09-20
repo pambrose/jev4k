@@ -1,0 +1,57 @@
+name: CI
+
+on:
+    push:
+        branches: [ master ]
+    # A push to a PR branch fires only this event, so nothing runs twice.
+    pull_request:
+    workflow_dispatch:
+
+# Supersede a PR's earlier run when it is pushed to again; every master commit is still built.
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+    contents: read
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            # JDK 25 is the toolchain in the catalog.
+            -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+                with:
+                    distribution: temurin
+                    java-version: 25
+            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+            # build runs check without the tests, and check already includes lintKotlin and detekt.
+            -   name: Compile, lint, and detekt (no tests)
+                run: ./gradlew clean build -x test
+
+            # --continue lets the Kover report tasks run even if some tests fail, so coverage is still uploaded.
+            # LiveSmokeTest stays disabled: it needs JEV4K_LIVE=1 and TYPESAFE_API_KEY, neither of which is set here.
+            -   name: Run tests and generate coverage report
+                run: ./gradlew --continue test koverVerify koverXmlReport koverLog
+
+            -   name: Upload test reports on failure
+                if: failure()
+                uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+                with:
+                    name: test-reports
+                    path: |
+                        build/reports/tests/
+                        build/test-results/
+                    retention-days: 7
+
+            -   name: Upload coverage to Codecov
+                if: always()
+                uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+                with:
+                    token: ${{ secrets.CODECOV_TOKEN }}
+                    files: build/reports/kover/report.xml
+                    flags: unittests
+                    name: jev4k
+                    fail_ci_if_error: false

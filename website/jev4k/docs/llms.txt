@@ -1,0 +1,72 @@
+# jev4k
+
+> A Kotlin DSL and client for TypeSafe's Jev model. Jev is a *System One* model: it returns fast, calibrated
+> judgments rather than generated text. You give it a state (a message, a document, a record) and a set of typed
+> questions, and it answers each one with a typed value and the probabilities behind it.
+
+jev4k declares those questions in Kotlin, sends them in one HTTP request, and reads the answers back as typed
+values, down to enum-valued choices that work with an exhaustive `when`. It is built on the Ktor client (CIO) and
+kotlinx.serialization, has a suspend-first API with a blocking mirror, and targets Java 17.
+
+There are three kinds of question. A **Noul** asks whether something is true and answers with a probability. A
+**Choice** picks one of a set of options and reports a probability per option plus a confidence. A **Score**
+places the state on ordered levels and can fall between them. Questions can be written inline with string ids or
+declared once as a typed `JevQuery` object whose property names become the ids.
+
+## Start here
+
+- [Home](https://pambrose.github.io/jev4k/): what the library does, with a first example and a diagram of the request flow
+- [Concepts](https://pambrose.github.io/jev4k/concepts/): state, questions, answers, calibrated confidence, and the wire format behind them
+- [Installation](https://pambrose.github.io/jev4k/getting-started/installation/): requirements, embedding notes, dependencies, and calling jev4k from Java
+- [Quick Start](https://pambrose.github.io/jev4k/getting-started/quick-start/): an API key and a first query in a few lines
+
+## Questions
+
+- [Choosing a type](https://pambrose.github.io/jev4k/questions/): which of Noul, Choice, or Score fits a given judgment
+- [Noul](https://pambrose.github.io/jev4k/questions/noul/): yes/no probability, thresholds, bands, and counting in code
+- [Choice](https://pambrose.github.io/jev4k/questions/choice/): one option from a set, with a distribution and confidence
+- [Score](https://pambrose.github.io/jev4k/questions/score/): a position on ordered levels, normalized scores, and per-level probabilities
+- [Structured criteria](https://pambrose.github.io/jev4k/questions/structured/): contrastive rubrics, examples, and JSON field specs
+
+## Building queries
+
+- [Inline DSL](https://pambrose.github.io/jev4k/queries/inline/): `jev.query(state) { ... }` with string ids
+- [Typed queries](https://pambrose.github.io/jev4k/queries/typed/): reusable `JevQuery` objects whose property names become question ids
+- [Enum choices](https://pambrose.github.io/jev4k/queries/enums/): `choice<E>()` answering with an enum constant, via the `JevOption` interface
+- [State](https://pambrose.github.io/jev4k/queries/state/): passing a String, a JsonElement, or any `@Serializable` value
+
+## Reading results
+
+- [Reading results](https://pambrose.github.io/jev4k/results/reading/): typed handles, by-id accessors, and listing answers by kind
+- [Confidence and thresholds](https://pambrose.github.io/jev4k/results/confidence/): what confidence means, and how to gate on it
+
+## Client
+
+- [Configuration](https://pambrose.github.io/jev4k/client/configuration/): API key, base URL, model, timeout, and supplying a custom Ktor engine
+- [Making calls](https://pambrose.github.io/jev4k/client/calls/): the suspend API, the blocking mirror, and concurrency
+- [Retries and errors](https://pambrose.github.io/jev4k/client/errors/): the exception hierarchy, retry rules, and server retry hints
+
+## Patterns
+
+- [Overview](https://pambrose.github.io/jev4k/patterns/): how the patterns relate and when to reach for each
+- [Speculative fan-out](https://pambrose.github.io/jev4k/patterns/fan-out/): ask every branch's question in one request, then use the answers that apply
+- [Routing](https://pambrose.github.io/jev4k/patterns/routing/): pick a handler and a model tier from a message
+- [Composite scoring](https://pambrose.github.io/jev4k/patterns/composite-scoring/): score dimensions once, then reweight in code
+- [Verification](https://pambrose.github.io/jev4k/patterns/verification/): check claims against their evidence and escalate the uncertain ones
+- [Extraction](https://pambrose.github.io/jev4k/patterns/extraction/): select values from candidates found in code, rather than generating them
+- [Search and ranking](https://pambrose.github.io/jev4k/patterns/search/): rerank retrieved passages by graded relevance
+- [Guardrails and moderation](https://pambrose.github.io/jev4k/patterns/guardrails/): policy thresholds over reusable judgments
+- [Classification](https://pambrose.github.io/jev4k/patterns/classification/): flat and hierarchical labelling
+
+## Reference
+
+- [KDocs index](https://pambrose.github.io/jev4k/api/): a guided map of the API reference, grouped into entry points, question building, and reading answers
+- [API reference (KDocs)](https://pambrose.github.io/jev4k/kdocs/): the full Dokka-generated API, every public type and function
+- [Writing good questions](https://pambrose.github.io/jev4k/guides/best-practices/): the habits that make Jev's answers accurate and useful
+- [Development](https://pambrose.github.io/jev4k/guides/development/): building, testing, and how the documentation examples are compiled
+- [Source repository](https://github.com/pambrose/jev4k): Apache 2.0, with the README covering the same API in one page
+
+## Optional
+
+- [TypeSafe documentation](https://docs.typesafe.ai): the model's own docs, the authority on Jev's behaviour, primitives, and limits
+- [TypeSafe llms.txt](https://docs.typesafe.ai/llms.txt): the same in this format, for the API and model rather than this client

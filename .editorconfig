@@ -1,0 +1,40 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+insert_final_newline = true
+max_line_length = 120
+trim_trailing_whitespace = true
+
+# Override for Makefile
+[{Makefile, makefile}]
+indent_style = tab
+indent_size = 4
+
+# Windows scripts must keep CRLF: cmd.exe mis-parses LF-only batch files.
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# Official Kotlin style (4-space), matching kotlin.code.style=official in gradle.properties.
+# The disabled ktlint rules match the author's other projects.
+[*.{kt,kts}]
+indent_size = 4
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_multiline-if-else = disabled
+ktlint_standard_string-template-indent = disabled
+ktlint_standard_indent = disabled
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_no-trailing-spaces = disabled
+ktlint_standard_import-ordering = disabled
+
+# The documentation examples line their trailing comments up in a column, which reads better on the docs site
+# than ragged comments do. ktlint's no-multi-spaces rule forbids that, so it is off for these files only; the
+# library sources in src/main keep it.
+[src/test/kotlin/website/*.kt]
+ktlint_standard_no-multi-spaces = disabled
+
+[build/generated/**/*]
+ktlint = disabled
