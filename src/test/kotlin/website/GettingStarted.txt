@@ -36,7 +36,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.pambrose:jev4k:0.1.0") // the version in jev4k's gradle.properties
+    implementation("com.pambrose:jev4k:0.1.1") // the version in the checkout's gradle.properties
 }
 
 kotlin {

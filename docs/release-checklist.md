@@ -19,10 +19,10 @@ Verified 2026-09-20.
 | `CODECOV_TOKEN` repository secret     | ✅ set                                                      |
 | `master` on the remote                | ✅ pushed, with `ci.yml` green on it                        |
 | Published site                        | ✅ live at <https://jev4k.com/>, KDocs included             |
-| Git tags                              | ❌ none                                                     |
-| `com.pambrose:jev4k` on Maven Central | ❌ not published (`maven-metadata.xml` returns 404)         |
-| `gradle.properties` version           | `0.1.0`                                                     |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | both date 0.1.0 2026-09-20, ahead of the upload and the tag |
+| Git tags                              | ✅ `0.1.0` at `b7c2b5e`, with a `v0.1.0` GitHub release      |
+| `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                   |
+| `gradle.properties` version           | `0.1.1`, the next release number                            |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.1.0 dated 2026-09-20; changelog has an Unreleased section |
 
 ## Before the first release, once
 
@@ -37,9 +37,9 @@ Verified 2026-09-20.
    certificate for both names. `pambrose.github.io/jev4k` redirects to the new domain.
 5. [x] **Turn on Enforce HTTPS** (Settings → Pages). GitHub leaves the switch off until a certificate is
    provisioned and doesn't flip it afterwards, so it needed setting by hand once the certificate landed.
-6. [ ] **Check the badges render** after the first successful CI run, docs deploy and Central upload. The
-   GitHub release, Maven Central and Codecov badges in `README.md:3-7` all show "not found" until their
-   backing thing exists.
+6. [x] **Check the badges render.** All eight in `README.md:3-10` resolve now that CI, the docs deploy, the
+   Central upload and the release all exist: `release: v0.1.0`, `maven-central: v0.1.0` and the Codecov
+   percentage were the three waiting on something.
 
 ## Every release
 
