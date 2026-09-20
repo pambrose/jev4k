@@ -82,11 +82,7 @@ suspend calls in `runBlocking`, so call it from ordinary threads, never from ins
 
 ## Adding the dependency
 
-!!! warning "0.1.0 hasn't been published yet"
-
-    Nothing has reached Maven Central so far, so these coordinates don't resolve. Until the first release
-    lands, [build from source](#building-from-source) and depend on the checkout. This note goes away when the
-    artifact is on Central.
+jev4k is published to Maven Central as `com.pambrose:jev4k`.
 
 === "Gradle (Kotlin DSL)"
 
