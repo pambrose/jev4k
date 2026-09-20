@@ -83,6 +83,12 @@ There are two DSL layers over one core model. Both produce a validated `Question
   summary, a few paragraphs of orientation, then annotated links to every page. Zensical copies it verbatim, so it is
   served at <https://jev4k.com/llms.txt>. Its links are absolute, so they resolve when an agent fetches the file on its
   own; update it when a page is added, renamed, or removed.
+- **Grid cards need a four-space list body.** The card grids on `index.md` are a `<div class="grid cards" markdown>`
+  wrapping a list, and each item must be written as `-` plus three spaces, with its `---`, description and link
+  indented four spaces. At two spaces the `---` closes the list instead of becoming the card's divider, so every card
+  breaks into a one-item list, a stray rule and two loose paragraphs, each landing in its own grid cell. The page
+  still builds cleanly, so only the rendered HTML (or a look at the page) catches it: one `<ul>` holding every `<li>`
+  is right, one `<ul>` per card is not.
 - **Commands.** `make site` serves the site with live reload. `make site-build` builds it into `website/jev4k/site` and
   copies the Dokka KDocs to `site/kdocs`; the `KDocs` nav entry, `api.md`, is an ordinary page that links there.
   `make check-site` and `make upgrade-site` manage the Python dependencies.
