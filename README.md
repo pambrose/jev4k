@@ -356,6 +356,18 @@ val jev = JevClient {
 Each setting resolves as: the explicit value, then the environment variable, then the default. Blank environment
 variables are ignored, and `JevConfig.toString()` never prints the key.
 
+### Running with Ollaya
+
+jev4k works with [Ollaya](https://ollaya.dev), which serves the same API from your own machine. Ollaya runs Laya, a
+different model from Jev, so answers can differ from TypeSafe's. No code changes are needed; point the client at it
+with three environment variables:
+
+```bash
+TYPESAFE_API_KEY=demo
+TYPESAFE_BASE_URL=http://localhost:11435
+TYPESAFE_DEFAULT_MODEL=laya
+```
+
 ### Retries and timeouts
 
 `RetryPolicy`'s defaults match TypeSafe's official Python and JS SDKs:
