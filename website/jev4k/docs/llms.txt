@@ -42,7 +42,7 @@ declared once as a typed `JevQuery` object whose property names become the ids.
 
 ## Client
 
-- [Configuration](https://jev4k.com/client/configuration/): API key, base URL, model, timeout, and supplying a custom Ktor engine
+- [Configuration](https://jev4k.com/client/configuration/): API key, base URL, model, timeout, supplying a custom Ktor engine, and running against a local Ollaya server (which runs Laya, a different model)
 - [Making calls](https://jev4k.com/client/calls/): the suspend API, the blocking mirror, and concurrency
 - [Retries and errors](https://jev4k.com/client/errors/): the exception hierarchy, retry rules, and server retry hints
 

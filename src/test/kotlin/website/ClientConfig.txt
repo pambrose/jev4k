@@ -1,0 +1,5 @@
+# --8<-- [start:ollaya]
+TYPESAFE_API_KEY=demo
+TYPESAFE_BASE_URL=http://localhost:11435
+TYPESAFE_DEFAULT_MODEL=laya
+# --8<-- [end:ollaya]

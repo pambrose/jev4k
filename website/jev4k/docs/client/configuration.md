@@ -36,6 +36,16 @@ Blank environment variables are ignored.
 A missing API key throws a `JevConfigException` that names `TYPESAFE_API_KEY`. `JevConfig.toString()` redacts
 the key, so it's safe to log.
 
+## Running with Ollaya
+
+jev4k works with [Ollaya](https://ollaya.dev), which serves the same API from your own machine. Ollaya runs
+Laya, a different model from Jev, so answers can differ from TypeSafe's. No code changes are needed; point the
+client at it with three environment variables:
+
+```bash
+--8<-- "ClientConfig.txt:ollaya"
+```
+
 ## Retry policies
 
 ```kotlin
