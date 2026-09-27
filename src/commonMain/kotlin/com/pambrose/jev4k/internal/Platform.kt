@@ -1,7 +1,7 @@
 package com.pambrose.jev4k.internal
 
-import io.ktor.client.HttpClient
-import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.HttpClientEngineConfig
+import io.ktor.client.engine.HttpClientEngineFactory
 
 // What differs between platforms. Each has an actual per source set: jvmMain, nativeMain (split into appleMain,
 // linuxMain and mingwMain for the engine), and webMain for js and wasmJs.
@@ -10,17 +10,10 @@ import io.ktor.client.HttpClientConfig
 internal expect fun platformGetenv(name: String): String?
 
 /**
- * A client on the platform's default engine: CIO on the JVM, Darwin on Apple platforms, Curl on Linux, WinHttp on
- * Windows, and the fetch-based Js engine on Node.js. [timeoutMillis] is for engines with their own request
- * timeout, which would otherwise cut a longer [io.ktor.client.plugins.HttpTimeout] short.
+ * The platform's default engine: CIO on the JVM, Darwin on Apple platforms, Curl on Linux, WinHttp on Windows, and
+ * the fetch-based Js engine on Node.js. None needs a timeout of its own: HttpTimeout sets one on every request.
  */
-internal expect fun defaultHttpClient(
-    timeoutMillis: Long,
-    configure: HttpClientConfig<*>.() -> Unit,
-): HttpClient
-
-/** The default engine's name, as [com.pambrose.jev4k.JevConfig.toString] reports it. */
-internal expect val DEFAULT_ENGINE_NAME: String
+internal expect val defaultEngine: HttpClientEngineFactory<HttpClientEngineConfig>
 
 /**
  * True when [cause] is the default engine's own way of saying that no connection was made. The JVM, Darwin and

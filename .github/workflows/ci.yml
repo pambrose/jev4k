@@ -17,7 +17,7 @@ permissions:
 
 jobs:
     # Linux runs the jvm, js, wasmJs and linuxX64 tests. It can't run the Apple or Windows test executables, so the
-    # native-apple and native-windows jobs below cover those.
+    # native job below covers those.
     build:
         runs-on: ubuntu-latest
         timeout-minutes: 60
@@ -30,14 +30,19 @@ jobs:
                     java-version: 25
             -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
             # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
-            # downloads. The catalog pins the Kotlin version, so its hash is a good cache key.
+            # downloads. The toolchain depends only on the Kotlin version, so that is the whole key: an exact hit, or
+            # a fresh download saved under the new version. No restore-keys, which would carry every older toolchain
+            # forward into each new entry.
+            -   id: kotlin
+                shell: bash
+                run: |
+                    version=$(sed -n 's/^kotlin = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+                    test -n "$version"
+                    echo "version=$version" >> "$GITHUB_OUTPUT"
             -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
                 with:
                     path: ~/.konan
-                    key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
-                    # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what
-                    # is missing.
-                    restore-keys: konan-${{ runner.os }}-
+                    key: konan-${{ runner.os }}-${{ steps.kotlin.outputs.version }}
 
             # build runs check, which compiles every target this host supports and runs lintKotlin, detekt, the ABI
             # check against api/, and the jvm, js, wasmJs and linuxX64 tests. --continue lets the Kover report tasks
@@ -112,70 +117,56 @@ jobs:
                         build/test-results/
                     retention-days: 7
 
-    # The Apple targets' tests need a macOS host. The watchOS and tvOS simulator test tasks are disabled in the build
-    # (Xcode doesn't install those simulator runtimes by default), and Gradle skips iosX64Test on the arm64 runner.
-    native-apple:
-        runs-on: macos-latest
+    # The native tests Linux can't run: the macOS and iOS simulator tests on macOS (Gradle skips iosX64Test on the
+    # arm64 runner), and the mingwX64 tests on Windows.
+    native:
+        name: Native tests on ${{ matrix.name }}
+        runs-on: ${{ matrix.os }}
         timeout-minutes: 60
-        steps:
-            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-            -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-                with:
-                    distribution: temurin
-                    java-version: 25
-            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-            # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
-            # downloads. The catalog pins the Kotlin version, so its hash is a good cache key.
-            -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-                with:
-                    path: ~/.konan
-                    key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
-                    # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what
-                    # is missing.
-                    restore-keys: konan-${{ runner.os }}-
-
-            -   name: Run the macOS and iOS simulator tests
-                run: ./gradlew macosArm64Test iosSimulatorArm64Test
-
-            -   name: Upload test reports on failure
-                if: failure()
-                uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-                with:
-                    name: test-reports-apple
-                    path: |
-                        build/reports/tests/
-                        build/test-results/
-                    retention-days: 7
-
-    native-windows:
-        runs-on: windows-latest
-        timeout-minutes: 60
-        steps:
-            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-            -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-                with:
-                    distribution: temurin
-                    java-version: 25
-            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-            # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
-            # downloads. The catalog pins the Kotlin version, so its hash is a good cache key.
-            -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-                with:
-                    path: ~/.konan
-                    key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
-                    # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what
-                    # is missing.
-                    restore-keys: konan-${{ runner.os }}-
-
-            -   name: Run the mingwX64 tests
+        strategy:
+            # One OS failing shouldn't hide the result on the other.
+            fail-fast: false
+            matrix:
+                include:
+                    -   name: apple
+                        os: macos-latest
+                        tasks: macosArm64Test iosSimulatorArm64Test
+                    -   name: windows
+                        os: windows-latest
+                        tasks: mingwX64Test
+        defaults:
+            run:
                 shell: bash
-                run: ./gradlew mingwX64Test
+        steps:
+            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+                with:
+                    distribution: temurin
+                    java-version: 25
+            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
+            # downloads. The toolchain depends only on the Kotlin version, so that is the whole key: an exact hit, or
+            # a fresh download saved under the new version. No restore-keys, which would carry every older toolchain
+            # forward into each new entry.
+            -   id: kotlin
+                shell: bash
+                run: |
+                    version=$(sed -n 's/^kotlin = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+                    test -n "$version"
+                    echo "version=$version" >> "$GITHUB_OUTPUT"
+            -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+                with:
+                    path: ~/.konan
+                    key: konan-${{ runner.os }}-${{ steps.kotlin.outputs.version }}
+
+            -   name: Run the native tests
+                run: ./gradlew ${{ matrix.tasks }}
 
             -   name: Upload test reports on failure
                 if: failure()
                 uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
                 with:
-                    name: test-reports-windows
+                    name: test-reports-${{ matrix.name }}
                     path: |
                         build/reports/tests/
                         build/test-results/

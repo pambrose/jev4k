@@ -67,9 +67,11 @@ There are two DSL layers over one core model. Both produce a validated `Question
   ignored. The env vars are `TYPESAFE_API_KEY` (required), `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal
   hooks (`env`, `retryDelay`, `random`) make tests deterministic; `env` defaults to `platformGetenv`.
 - **Platforms** (`internal/Platform.kt` and its actuals). Everything that differs between platforms is an `internal`
-  expect: `platformGetenv`, `defaultHttpClient` + `DEFAULT_ENGINE_NAME`, `isPlatformConnectionError`, and
-  `Enum<*>.enumTypeName()` (which keeps `enumChoiceRef`'s `@PublishedApi` signature unchanged). Actual files carry a
-  platform suffix (`Platform.jvm.kt`, `Engine.linux.kt`) so JVM facade names never clash.
+  expect: `platformGetenv`, `defaultEngine` (the engine factory; `JevConfig.toString` reports its class name),
+  `isPlatformConnectionError`, and `Enum<*>.enumTypeName()` (which keeps `enumChoiceRef`'s `@PublishedApi` signature
+  unchanged). Actual files carry a platform suffix (`Platform.jvm.kt`, `Engine.linux.kt`) so JVM facade names never
+  clash. No engine gets a timeout of its own: `HttpTimeout` sets one on every request, and CIO, for one, ignores its
+  `requestTimeout` whenever a request carries that capability.
     - Default engines: CIO on the JVM (`jvmMain`), Darwin (`appleMain`), Curl (`linuxMain`), WinHttp (`mingwMain`),
       and the Js engine bundled in `ktor-client-core` (`webMain`, shared by js and wasmJs). CIO can't be used
       natively: Ktor's native TLS fails with "TLS sessions are not supported on Native platform".
@@ -280,9 +282,11 @@ There are two DSL layers over one core model. Both produce a validated `Question
       wasmJs and linuxX64 tests), then uploads `build/reports/kover/report.xml` to Codecov with the `unittests`
       flag. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
       a drop of more than 1% and reports patch coverage without gating on it.
-    - `native-apple` (macos-latest: `macosArm64Test iosSimulatorArm64Test`) and `native-windows` (windows-latest:
-      `mingwX64Test`) run the tests Linux can't. Every job that compiles native code caches `~/.konan`, `docs.yml`
-      included, since Dokka resolves the native source sets.
+    - A `native` matrix job runs the tests Linux can't: `macosArm64Test iosSimulatorArm64Test` on macos-latest and
+      `mingwX64Test` on windows-latest. Every job that compiles native code caches `~/.konan`, keyed on the Kotlin
+      version alone (read from the catalog) with no `restore-keys`, so an old toolchain is never carried forward.
+      `docs.yml` only restores that cache, because Dokka, which resolves the native source sets, finishes first and
+      would otherwise save a toolchain without the compiler's dependencies under the build job's key.
     - A `test` job in the same workflow runs `jvmTest` on JDK 17, 21 and 25. Tests otherwise run on the
       toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints `jvmTest`'s `javaLauncher`;
       `-XX:+EnableDynamicAgentLoading` is added only from 21 up, because an unrecognized `-XX` option stops JDK 17
@@ -349,9 +353,11 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
     - KGP runs a simulator test in the first available device of its platform. Xcode creates iOS devices by
       default but installs no tvOS or watchOS runtime, so `build.gradle.kts` reads `xcrun simctl list devices
       available --json` and disables `tvosSimulatorArm64Test`/`watchosSimulatorArm64Test` (and their link tasks)
-      when that platform has no device. The configuration cache re-runs the listing, so adding a device (a runtime
-      from Xcode → Settings → Components, then `xcrun simctl create` if it made none) enables the tests on the next
-      build. Their `LiveProbeTest` stays skipped for the same `SIMCTL_CHILD_` reason as iOS.
+      when that platform has no device. The listing goes through a `ValueSource` that returns only the set of
+      platforms with a device: the configuration cache re-checks that set on every build, so adding a device (a
+      runtime from Xcode → Settings → Components, then `xcrun simctl create` if it made none) enables the tests on
+      the next build, while the listing's sizes and timestamps, which change on every simulator run, don't discard
+      the cache. Their `LiveProbeTest` stays skipped for the same `SIMCTL_CHILD_` reason as iOS.
     - Kotest's `autoClose` takes Kotest's own `AutoCloseable`, which is only `java.lang.AutoCloseable` on the JVM;
       common tests wrap a `kotlin.AutoCloseable` with `closeAfterSpec(...)` from `TestSupport.kt`.
     - Construct exceptions with common APIs: `kotlinx.io.IOException`, Ktor's `SocketTimeoutException(message)`
@@ -359,9 +365,10 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
       `initCause`. A bare `IllegalStateException` counts as a connection failure on Linux and Windows, so don't use
       one as a generic "some other error".
 - HTTP is tested with Ktor's `MockEngine` through `testJev(...)` in `TestSupport.kt`. It injects the engine and records
-  retry delays instead of sleeping, and `NoJitter` makes backoff predictable. `SilentServer` (JVM) is a local socket
-  that never responds, for testing real-CIO timeouts. `PlatformEngineTest` drives each platform's real default
-  engine against a dead loopback port.
+  retry delays instead of sleeping, and `NoJitter` makes backoff predictable. A client on a real engine gets the same
+  settings from `testDefaults(delays)`; `triageJev()`, `PAYOUT_TICKET` and `liveOptIn()` are shared there too.
+  `SilentServer` (JVM) is a local socket that never responds, for testing real-CIO timeouts. `PlatformEngineTest`
+  drives each platform's real default engine against a dead loopback port.
 - MockK is used where a dependency is mocked: `ConsumerTest` mocks `JevApi` to show how application code is tested
   without HTTP.
 - `LiveSmokeTest` (JVM) makes real API calls and runs only when `TYPESAFE_API_KEY` is set and `JEV4K_LIVE=1`

@@ -41,12 +41,18 @@ jobs:
                     java-version: 25
             -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
             # Dokka documents every source set, the native ones included, so it needs the Kotlin/Native toolchain;
-            # setup-gradle doesn't cache it. The catalog pins the Kotlin version, so its hash is a good cache key.
-            -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+            # setup-gradle doesn't cache it. This only restores ci.yml's cache, under the same key: Dokka finishes
+            # first and never downloads the compiler's dependencies, so a save here would claim the key with a
+            # toolchain too incomplete for the build job, which would then never save its own.
+            -   id: kotlin
+                run: |
+                    version=$(sed -n 's/^kotlin = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+                    test -n "$version"
+                    echo "version=$version" >> "$GITHUB_OUTPUT"
+            -   uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
                 with:
                     path: ~/.konan
-                    key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
-                    restore-keys: konan-${{ runner.os }}-
+                    key: konan-${{ runner.os }}-${{ steps.kotlin.outputs.version }}
             -   run: ./gradlew dokkaGeneratePublicationHtml
 
             # Copy KDocs into the Zensical site output; the site's "KDocs" page links to /kdocs/.

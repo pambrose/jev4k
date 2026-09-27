@@ -1,6 +1,6 @@
 package com.pambrose.jev4k
 
-import com.pambrose.jev4k.internal.DEFAULT_ENGINE_NAME
+import com.pambrose.jev4k.internal.defaultEngine
 import com.pambrose.jev4k.internal.platformGetenv
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.delay
@@ -110,7 +110,7 @@ class JevConfigBuilder {
 
         val problems = buildList {
             // The factory truncates with inWholeMilliseconds, so anything under a millisecond reaches Ktor as 0,
-            // which means "no timeout" to CIO and is rejected outright by HttpTimeout.
+            // which HttpTimeout rejects outright.
             if (timeout.inWholeMilliseconds < 1) add("timeout must be at least 1 millisecond (was $timeout)")
             // Ktor reads a scheme-less value as a relative path, which turns into a puzzling connection error
             // much later instead of a configuration error here.
@@ -149,5 +149,5 @@ class JevConfig internal constructor(
 ) {
     override fun toString(): String =
         "JevConfig(apiKey=***, baseUrl=$baseUrl, defaultModel=$defaultModel, timeout=$timeout, retry=$retry, " +
-            "engine=${engine?.let { it::class.simpleName } ?: DEFAULT_ENGINE_NAME}, headers=${headers.keys})"
+            "engine=${(engine ?: defaultEngine)::class.simpleName}, headers=${headers.keys})"
 }

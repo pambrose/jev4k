@@ -9,19 +9,24 @@ import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.SourcesJar
 import groovy.json.JsonSlurper
 import io.kotest.framework.gradle.KotestGradleExtension
+import java.io.ByteArrayOutputStream
+import javax.inject.Inject
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.tasks.testing.AbstractTestTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.gradle.process.ExecOperations
 import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTargetWithSimulatorTests
+import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin
 import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension
+import org.jetbrains.kotlin.gradle.targets.web.yarn.BaseYarnRootExtension
 import org.jetbrains.kotlin.konan.target.Family
 import org.jetbrains.kotlin.konan.target.HostManager
 import org.jmailen.gradle.kotlinter.tasks.ConfigurableKtLintTask
@@ -92,24 +97,38 @@ val generateBuildInfo =
 
 // IntelliJ runs prepareKotlinIdeaImport on every Gradle sync, so a fresh clone resolves JEV4K_VERSION in the IDE
 // without a build first.
-tasks.matching { it.name == "prepareKotlinIdeaImport" }.configureEach {
+tasks.named { it == "prepareKotlinIdeaImport" }.configureEach {
     dependsOn(generateBuildInfo)
 }
 
-// The simulator runtimes with at least one available device, such as com.apple.CoreSimulator.SimRuntime.tvOS-27-0,
-// from the same simctl listing KGP reads to pick a device. Only a Mac with Xcode has simctl; anywhere else, or if
-// the listing fails, the set is empty. The configuration cache re-runs the listing to check it is still current.
-val simulatorRuntimesWithDevices: Set<String> by lazy {
-    if (!HostManager.hostIsMac) return@lazy emptySet()
-    runCatching {
-        val listing =
-            providers.exec { commandLine("xcrun", "simctl", "list", "devices", "available", "--json") }
-                .standardOutput.asText.get()
-        @Suppress("UNCHECKED_CAST")
-        val devices = (JsonSlurper().parseText(listing) as Map<String, Any?>)["devices"] as Map<String, List<*>>
-        devices.filterValues { it.isNotEmpty() }.keys
-    }.getOrDefault(emptySet())
+// The simulator platforms (ios, tvos, watchos) with at least one available device, from the same simctl listing KGP
+// reads to pick a device. It is a ValueSource so the configuration cache keeps only this set: the raw listing's sizes
+// and timestamps change whenever a simulator runs, which would discard the cache after every simulator test. Only a
+// Mac with Xcode has simctl; anywhere else, or if the listing fails, the set is empty.
+abstract class SimulatorPlatformsWithDevices : ValueSource<Set<String>, ValueSourceParameters.None> {
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    override fun obtain(): Set<String> {
+        if (!HostManager.hostIsMac) return emptySet()
+        return runCatching {
+            val listing = ByteArrayOutputStream()
+            execOperations.exec {
+                commandLine("xcrun", "simctl", "list", "devices", "available", "--json")
+                standardOutput = listing
+            }
+            @Suppress("UNCHECKED_CAST")
+            val devices = (JsonSlurper().parseText(listing.toString()) as Map<String, Any?>)["devices"]
+                as Map<String, List<*>>
+            // Runtime ids look like com.apple.CoreSimulator.SimRuntime.tvOS-27-0.
+            devices.filterValues { it.isNotEmpty() }.keys
+                .map { it.substringAfterLast('.').substringBefore('-').lowercase() }
+                .toSortedSet()
+        }.getOrDefault(emptySet())
+    }
 }
+
+val simulatorPlatformsWithDevices: Set<String> = providers.of(SimulatorPlatformsWithDevices::class) {}.get()
 
 kotlin {
     jvmToolchain(jvmToolchainVersion)
@@ -200,12 +219,10 @@ kotlin {
     targets.withType<KotlinNativeTargetWithSimulatorTests>()
         .matching { it.konanTarget.family == Family.WATCHOS || it.konanTarget.family == Family.TVOS }
         .configureEach {
-            val platform = if (konanTarget.family == Family.TVOS) "tvOS" else "watchOS"
-            if (simulatorRuntimesWithDevices.none { it.substringAfterLast('.').startsWith("$platform-") }) {
+            if (konanTarget.family.name.lowercase() !in simulatorPlatformsWithDevices) {
                 tasks.named("${name}Test") { enabled = false }
                 // Disabling the test task alone still links its test binary under check and allTests.
-                val linkTask = "linkDebugTest${name.replaceFirstChar { it.uppercase() }}"
-                tasks.matching { it.name == linkTask }.configureEach { enabled = false }
+                binaries.withType<TestExecutable>().configureEach { linkTaskProvider.configure { enabled = false } }
             }
         }
 }
@@ -252,13 +269,10 @@ val yarnResolutions =
         "js-yaml" to "4.3.2",
     )
 
-plugins.withType<YarnPlugin> {
-    the<YarnRootExtension>().apply { yarnResolutions.forEach { (pkg, version) -> resolution(pkg, version) } }
-}
+fun BaseYarnRootExtension.pinResolutions() = yarnResolutions.forEach { (pkg, version) -> resolution(pkg, version) }
 
-plugins.withType<WasmYarnPlugin> {
-    the<WasmYarnRootExtension>().apply { yarnResolutions.forEach { (pkg, version) -> resolution(pkg, version) } }
-}
+plugins.withType<YarnPlugin> { the<YarnRootExtension>().pinResolutions() }
+plugins.withType<WasmYarnPlugin> { the<WasmYarnRootExtension>().pinResolutions() }
 
 // The kotest plugin generates spec launchers through KSP, and BuildInfo.kt is generated too; neither follows the
 // ktlint style, and only hand-written sources should be linted.
@@ -376,7 +390,7 @@ detekt {
     // move: all main and test code, without type resolution.
     source.setFrom(
         layout.projectDirectory.dir("src").asFile
-            .listFiles { file -> file.isDirectory }
+            .listFiles()
             .orEmpty()
             .map { it.resolve("kotlin") }
             .filter { it.isDirectory }

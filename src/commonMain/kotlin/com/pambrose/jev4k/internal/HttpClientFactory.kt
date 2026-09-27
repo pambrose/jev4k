@@ -23,7 +23,7 @@ internal object HttpClientFactory {
         return if (engine != null) {
             HttpClient(engine) { configure(config) }
         } else {
-            defaultHttpClient(config.timeout.inWholeMilliseconds) { configure(config) }
+            HttpClient(defaultEngine) { configure(config) }
         }
     }
 

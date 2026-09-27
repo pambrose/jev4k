@@ -1,7 +1,7 @@
 package com.pambrose.jev4k.internal
 
-import io.ktor.client.HttpClient
-import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.HttpClientEngineConfig
+import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.js.Js
 import kotlin.js.ExperimentalWasmJsInterop
 
@@ -15,12 +15,7 @@ private fun nodeEnv(name: String): String? =
 
 internal actual fun platformGetenv(name: String): String? = nodeEnv(name)
 
-internal actual fun defaultHttpClient(
-    timeoutMillis: Long,
-    configure: HttpClientConfig<*>.() -> Unit,
-): HttpClient = HttpClient(Js) { configure() }
-
-internal actual val DEFAULT_ENGINE_NAME: String = "Js"
+internal actual val defaultEngine: HttpClientEngineFactory<HttpClientEngineConfig> = Js
 
 // The Js engine turns a rejected fetch (refused connection, failed DNS lookup, TLS failure) into Error("Fail to
 // fetch"), which is neither an Exception nor an IOException.

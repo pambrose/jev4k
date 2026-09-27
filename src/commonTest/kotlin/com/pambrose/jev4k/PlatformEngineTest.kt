@@ -17,12 +17,9 @@ class PlatformEngineTest : StringSpec() {
         "a refused connection is retried, then surfaces as JevConnectionException" {
             val delays = mutableListOf<Long>()
             JevClient {
-                apiKey = "test-key"
+                testDefaults(delays)
                 baseUrl = "http://127.0.0.1:47"
                 retry = RetryPolicy(maxRetries = 1)
-                env = { null }
-                retryDelay = { delays += it }
-                random = NoJitter
             }.use { client ->
                 val e = shouldThrowExactly<JevConnectionException> { client.models() }
                 e.message shouldContain "Could not reach GET http://127.0.0.1:47/v1/models"

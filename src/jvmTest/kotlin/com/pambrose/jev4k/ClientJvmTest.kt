@@ -13,12 +13,10 @@ import kotlin.time.Duration.Companion.seconds
  * connection.
  */
 class ClientJvmTest : StringSpec() {
-    private val payoutTicket = "Help! My payouts have been failing for 3 days."
-
     init {
         "the blocking wrapper mirrors the suspend API" {
-            val jev = testJev { respondJson(TRIAGE_RESPONSE) }
-            jev.client.blocking.ask(Triage, state = payoutTicket)[Triage.department].choice shouldBe Dept.TECHNICAL
+            val jev = triageJev()
+            jev.client.blocking.ask(Triage, state = PAYOUT_TICKET)[Triage.department].choice shouldBe Dept.TECHNICAL
             jev.client.blocking.query(state = Order("A-104")) { include(Triage) }[Triage.urgent].noul shouldBe 0.92
         }
 
@@ -32,7 +30,7 @@ class ClientJvmTest : StringSpec() {
                 calls++
                 throw IllegalStateException("bug")
             }
-            shouldThrowExactly<IllegalStateException> { jev.client.ask(Triage, state = payoutTicket) }
+            shouldThrowExactly<IllegalStateException> { jev.client.ask(Triage, state = PAYOUT_TICKET) }
             calls shouldBe 1
             jev.delays shouldBe emptyList()
         }
@@ -44,14 +42,11 @@ class ClientJvmTest : StringSpec() {
             SilentServer().use { server ->
                 val delays = mutableListOf<Long>()
                 JevClient {
-                    apiKey = "test-key"
+                    testDefaults(delays)
                     baseUrl = "http://127.0.0.1:${server.port}"
                     timeout = 1.seconds
-                    env = { null }
-                    retryDelay = { delays += it }
-                    random = NoJitter
                 }.use { client ->
-                    shouldThrow<JevTimeoutException> { client.ask(Triage, state = payoutTicket) }
+                    shouldThrow<JevTimeoutException> { client.ask(Triage, state = PAYOUT_TICKET) }
                 }
                 server.awaitRequests(3) shouldBe 3
                 delays shouldBe listOf(500L, 1000L)

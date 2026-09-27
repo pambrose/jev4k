@@ -32,7 +32,11 @@ else
 NATIVE_TESTS :=
 endif
 JS_TESTS := jsNodeTest wasmJsNodeTest
+# Every test task this host runs: the JVM, Node.js, and the native tasks above.
+HOST_TESTS := jvmTest $(JS_TESTS) $(NATIVE_TESTS)
 RERUN = $(foreach task,$(1),$(task) --rerun)
+# Succeeds only when a Docker daemon is running. A recipe fragment, not $(shell): it runs when a recipe needs it.
+DOCKER_UP = docker info >/dev/null 2>&1
 GRADLE_DIST_URL := https://services.gradle.org/distributions
 WEBSITE_DIR := website
 SITE_DIR := $(WEBSITE_DIR)/jev4k
@@ -65,7 +69,7 @@ build:  ## Clean build without tests: compile every target, lint, detekt, and th
 	$(GRADLE) clean assemble lintKotlin detekt checkKotlinAbi
 
 tests:  ## Run lint, detekt, the ABI check, and every test this host can run (forces the tests to re-run)
-	$(GRADLE) check $(call RERUN,jvmTest $(JS_TESTS) $(NATIVE_TESTS))
+	$(GRADLE) check $(call RERUN,$(HOST_TESTS))
 
 jvm-tests:  ## Run the JVM tests only, the quickest loop
 	$(GRADLE) $(call RERUN,jvmTest)
@@ -111,13 +115,13 @@ docker-linux-tests: _require-docker  ## Run the linuxX64 and linuxArm64 tests in
 # targets in Docker, which is checked first rather than after the Gradle run. --continue lets every Gradle platform
 # report before the first failure stops the run; the Docker step runs only if they all pass.
 platform-tests: _require-docker  ## Run the tests on every platform: JVM, Node.js, this host's native, and Docker Linux
-	$(GRADLE) --continue $(call RERUN,jvmTest $(JS_TESTS) $(NATIVE_TESTS))
+	$(GRADLE) --continue $(call RERUN,$(HOST_TESTS))
 	$(MAKE) docker-linux-tests
 
 # Reproduce one row of CI's JDK matrix. The tests normally run on the build toolchain, so this is the only way
 # to exercise the bytecode floor locally. JDK defaults to that floor, the row most likely to catch something.
 test-jdk: _require-jdk  ## Run the tests on a specific JDK, e.g. make test-jdk JDK=21
-	$(GRADLE) jvmTest --rerun -PtestJavaVersion=$(JDK)
+	$(GRADLE) $(call RERUN,jvmTest) -PtestJavaVersion=$(JDK)
 
 # Every test target in one run, in the order that fails cheapest first. The JDK list mirrors the matrix in
 # .github/workflows/ci.yml, including the toolchain row that `tests` has already covered, so a green run here
@@ -132,7 +136,7 @@ all-tests:  ## Run every test target: tests, the CI JDK matrix, coverage floors,
 		$(MAKE) test-jdk JDK=$$jdk || exit 1; \
 	done
 	$(MAKE) coverage-verify
-	@if docker info >/dev/null 2>&1; then \
+	@if $(DOCKER_UP); then \
 		$(MAKE) docker-linux-tests; \
 	else \
 		echo "SKIP: docker-linux-tests (no running Docker daemon)"; \
@@ -224,11 +228,13 @@ example:  ## Run the Triage example against the live API (needs TYPESAFE_API_KEY
 	$(GRADLE) runExample
 
 # The JVM runs LiveSmokeTest, which spends tokens, and LiveProbeTest; the other platforms run LiveProbeTest, whose
-# two calls spend none. The simulators only see variables prefixed SIMCTL_CHILD_, so their probes stay skipped:
+# two calls spend none. Each task is filtered to those specs; wasmJsNodeTest ignores the filter and runs its whole
+# suite, which is harmless. The simulators only see variables prefixed SIMCTL_CHILD_, so their probes stay skipped:
 # a test binary spawned by simctl can't validate any TLS certificate, so they would fail there regardless.
+LIVE_PROBE_TESTS = $(foreach task,$(1),$(task) --rerun --tests "com.pambrose.jev4k.LiveProbeTest")
 live-tests:  ## Run the live API tests: the JVM smoke tests (needs TYPESAFE_API_KEY) and each platform's probes
 	JEV4K_LIVE=1 $(GRADLE) jvmTest --rerun --tests "com.pambrose.jev4k.LiveSmokeTest" \
-		--tests "com.pambrose.jev4k.LiveProbeTest" $(call RERUN,$(JS_TESTS) $(NATIVE_TESTS))
+		--tests "com.pambrose.jev4k.LiveProbeTest" $(call LIVE_PROBE_TESTS,$(JS_TESTS) $(NATIVE_TESTS))
 
 publish-local: _require-version  ## Publish artifacts to the local Maven repository
 	$(GRADLE) publishToMavenLocal
@@ -266,10 +272,10 @@ _check-gpg-env:
 	fi
 
 _require-macos:
-	@[ "$$(uname -s)" = Darwin ] || { echo "ERROR: this target needs macOS, the only host that builds every target" >&2; exit 1; }
+	@[ "$(HOST_OS)" = Darwin ] || { echo "ERROR: this target needs macOS, the only host that builds every target" >&2; exit 1; }
 
 _require-docker:
-	@docker info >/dev/null 2>&1 || { echo "ERROR: this target needs a running Docker daemon" >&2; exit 1; }
+	@$(DOCKER_UP) || { echo "ERROR: this target needs a running Docker daemon" >&2; exit 1; }
 
 _require-version:
 	@[ -n "$(VERSION)" ] || { echo "ERROR: Could not determine project version from gradle.properties" >&2; exit 1; }

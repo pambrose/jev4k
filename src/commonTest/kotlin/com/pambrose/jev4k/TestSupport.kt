@@ -1,5 +1,6 @@
 package com.pambrose.jev4k
 
+import com.pambrose.jev4k.internal.platformGetenv
 import io.kotest.core.TestConfiguration
 import io.kotest.core.spec.AutoCloseable as KotestAutoCloseable
 import io.ktor.client.engine.mock.MockEngine
@@ -53,6 +54,14 @@ internal fun <T : AutoCloseable> TestConfiguration.closeAfterSpec(closeable: T):
     return closeable
 }
 
+/** What every test client shares: a fake key, no environment, and each retry delay recorded in [delays], not slept. */
+internal fun JevConfigBuilder.testDefaults(delays: MutableList<Long>) {
+    apiKey = "test-key"
+    env = { null }
+    retryDelay = { delays += it }
+    random = NoJitter
+}
+
 /**
  * Every client here wraps a fresh Ktor engine. Both are closed when the spec ends rather than at process exit —
  * the client never closes an engine it was handed.
@@ -65,16 +74,19 @@ internal fun TestConfiguration.testJev(
     val delays = mutableListOf<Long>()
     val engine = MockEngine(handler)
     val client = JevClient {
-        apiKey = "test-key"
+        testDefaults(delays)
         this.retry = retry
         this.engine = engine
-        env = { null }
-        retryDelay = { delays += it }
-        random = NoJitter
         configure()
     }
     return TestJev(closeAfterSpec(client), closeAfterSpec(engine), delays)
 }
+
+/** A client whose every request gets the documented triage response. */
+internal fun TestConfiguration.triageJev(): TestJev = testJev { respondJson(TRIAGE_RESPONSE) }
+
+/** True when a live run was asked for with `JEV4K_LIVE=1`, as `make live-tests` does. */
+internal fun liveOptIn(): Boolean = platformGetenv("JEV4K_LIVE") == "1"
 
 internal fun MockRequestHandleScope.respondJson(
     body: String,
@@ -118,6 +130,9 @@ internal const val DOCUMENTED_RESPONSE = """
 
 /** [DOCUMENTED_RESPONSE] with the ids used by [Triage]. */
 internal val TRIAGE_RESPONSE = DOCUMENTED_RESPONSE.replace("\"is_urgent\"", "\"urgent\"")
+
+/** The ticket most client tests send as their state. */
+internal const val PAYOUT_TICKET = "Help! My payouts have been failing for 3 days."
 
 enum class Dept(
     override val description: String,

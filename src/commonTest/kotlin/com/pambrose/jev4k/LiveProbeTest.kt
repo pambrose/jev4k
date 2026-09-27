@@ -1,6 +1,5 @@
 package com.pambrose.jev4k
 
-import com.pambrose.jev4k.internal.platformGetenv
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import kotlin.time.Duration.Companion.milliseconds
@@ -11,7 +10,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * runs only when `JEV4K_LIVE=1` (`make live-tests` sets it), so ordinary runs never touch the network.
  */
 class LiveProbeTest : StringSpec() {
-    private val enabled = platformGetenv("JEV4K_LIVE") == "1"
+    private val enabled = liveOptIn()
 
     private fun probeClient(configure: JevConfigBuilder.() -> Unit = {}) =
         JevClient {

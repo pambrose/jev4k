@@ -1,6 +1,7 @@
 package com.pambrose.jev4k
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -137,6 +138,8 @@ class ConfigTest : StringSpec() {
             val text = config { apiKey = "super-secret-key" }.toString()
             text shouldNotContain "super-secret-key"
             text shouldContain "baseUrl=https://api.typesafe.ai"
+            // The default engine is named by its class, so this also checks that each platform can report it.
+            withClue(text) { Regex("engine=(CIO|Darwin|Curl|WinHttp|Js),").containsMatchIn(text) shouldBe true }
         }
 
         "retry policy defaults match the official SDKs" {

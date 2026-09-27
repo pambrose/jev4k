@@ -13,8 +13,7 @@ import io.kotest.matchers.string.shouldNotBeBlank
 import kotlin.reflect.KClass
 
 /** True only with a key and an explicit opt-in, so a live run is never something that just happens. */
-internal fun liveApiEnabled(): Boolean =
-    !System.getenv("TYPESAFE_API_KEY").isNullOrBlank() && System.getenv("JEV4K_LIVE") == "1"
+internal fun liveApiEnabled(): Boolean = !System.getenv("TYPESAFE_API_KEY").isNullOrBlank() && liveOptIn()
 
 class LiveApiCondition : Condition {
     override fun evaluate(kclass: KClass<out Spec>): Boolean = liveApiEnabled()
