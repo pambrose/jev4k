@@ -13,7 +13,7 @@ The full API reference is generated from the source with Dokka and published alo
 | Declaration                                                              | What it is                                                            |
 |--------------------------------------------------------------------------|-----------------------------------------------------------------------|
 | [`JevClient`](kdocs/jev4k/com.pambrose.jev4k/-jev-client/index.html)     | The client: builds the HTTP stack, holds the config, and runs queries |
-| [`BlockingJev`](kdocs/jev4k/com.pambrose.jev4k/-blocking-jev/index.html) | `jev.blocking`, the non-suspending mirror of the same calls           |
+| [`BlockingJev`](kdocs/jev4k/com.pambrose.jev4k/-blocking-jev/index.html) | `jev.blocking`, the non-suspending mirror of the same calls (JVM)     |
 | [`JevConfig`](kdocs/jev4k/com.pambrose.jev4k/-jev-config/index.html)     | Resolved settings: API key, base URL, model, timeout, retries         |
 | [`RetryPolicy`](kdocs/jev4k/com.pambrose.jev4k/-retry-policy/index.html) | Which failures are retried, and how long the backoff waits            |
 

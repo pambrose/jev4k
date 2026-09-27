@@ -1,9 +1,9 @@
 # Module jev4k
 
-A Kotlin DSL and client for TypeSafe's Jev "System One" model, built on the Ktor client and
-kotlinx.serialization. You send a *state* (text, JSON, or any `@Serializable` value) and a set of typed *questions*. Jev
-answers each question with a typed judgment and probabilities that code can branch on,
-without generating any text.
+A Kotlin Multiplatform DSL and client for TypeSafe's Jev "System One" model, built on the Ktor client and
+kotlinx.serialization. It runs on the JVM, Apple platforms, Linux, Windows, and Node.js (js and wasmJs). You send a
+*state* (text, JSON, or any `@Serializable` value) and a set of typed *questions*. Jev answers each question with a
+typed judgment and probabilities that code can branch on, without generating any text.
 
 There are three question types:
 
@@ -47,8 +47,8 @@ result.noul("refund").noul
 
 - [JevClient][com.pambrose.jev4k.JevClient] is the client, configured with
   [JevConfigBuilder][com.pambrose.jev4k.JevConfigBuilder] or the `TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL` and
-  `TYPESAFE_DEFAULT_MODEL` environment variables. [JevClient.blocking][com.pambrose.jev4k.JevClient.blocking]
-  offers the same calls without coroutines.
+  `TYPESAFE_DEFAULT_MODEL` environment variables. On the JVM,
+  [JevClient.blocking][com.pambrose.jev4k.JevClient.blocking] offers the same calls without coroutines.
 - [JevApi][com.pambrose.jev4k.JevApi] is the interface to depend on (and mock in tests);
   [evaluate][com.pambrose.jev4k.JevApi.evaluate] is the call every question goes through, and
   [models][com.pambrose.jev4k.JevApi.models] is its only other network call.

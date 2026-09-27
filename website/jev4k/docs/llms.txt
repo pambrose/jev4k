@@ -5,8 +5,9 @@
 > questions, and it answers each one with a typed value and the probabilities behind it.
 
 jev4k declares those questions in Kotlin, sends them in one HTTP request, and reads the answers back as typed
-values, down to enum-valued choices that work with an exhaustive `when`. It is built on the Ktor client (CIO) and
-kotlinx.serialization, has a suspend-first API with a blocking mirror, and targets Java 17.
+values, down to enum-valued choices that work with an exhaustive `when`. It is a Kotlin Multiplatform library built
+on the Ktor client and kotlinx.serialization, with a suspend-first API. It runs on the JVM (Java 17 bytecode, with a
+blocking mirror of the API), on Apple platforms, Linux and Windows, and on Node.js through the js and wasmJs targets.
 
 There are three kinds of question. A **Noul** asks whether something is true and answers with a probability. A
 **Choice** picks one of a set of options and reports a probability per option plus a confidence. A **Score**
@@ -17,7 +18,7 @@ declared once as a typed `JevQuery` object whose property names become the ids.
 
 - [Home](https://jev4k.com/): what the library does, with a first example and a diagram of the request flow
 - [Concepts](https://jev4k.com/concepts/): state, questions, answers, calibrated confidence, and the wire format behind them
-- [Installation](https://jev4k.com/getting-started/installation/): requirements, embedding notes, dependencies, and calling jev4k from Java
+- [Installation](https://jev4k.com/getting-started/installation/): requirements, supported platforms and engines, embedding notes, dependencies, and calling jev4k from Java
 - [Quick Start](https://jev4k.com/getting-started/quick-start/): an API key and a first query in a few lines
 
 ## Questions

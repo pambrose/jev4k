@@ -3,6 +3,72 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
+## v0.2.0 — unreleased
+
+> [!WARNING]
+> **Breaking change: the Maven coordinates have moved.** The group is now `com.pambrose.jev4k`, so every build
+> has to change its dependency to upgrade: Gradle builds to `com.pambrose.jev4k:jev4k:0.2.0`, Maven builds to
+> `com.pambrose.jev4k:jev4k-jvm:0.2.0`. 0.1.0 stays at `com.pambrose:jev4k`, and nothing newer will be published
+> there.
+>
+> **Nothing else changes.** On the JVM, 0.2.0 has 0.1.0's public API, Java surface, dependencies and Java 17
+> bytecode, and requests, retries, timeouts and errors behave exactly as before. Code written against 0.1.0 needs
+> only the new coordinates.
+
+jev4k is now a Kotlin Multiplatform library. The same questions, handles and typed answers work on the JVM, on
+Apple platforms, on Linux and Windows, and on Node.js.
+
+### Installing
+
+Gradle builds, JVM or multiplatform, depend on the root module, and Gradle picks the artifact for each target:
+
+```kotlin
+dependencies {
+    implementation("com.pambrose.jev4k:jev4k:0.2.0")
+}
+```
+
+**Maven builds also switch to `jev4k-jvm`.** `com.pambrose.jev4k:jev4k` is the multiplatform root module, which
+only Gradle knows how to resolve:
+
+```xml
+<dependency>
+    <groupId>com.pambrose.jev4k</groupId>
+    <artifactId>jev4k-jvm</artifactId>
+    <version>0.2.0</version>
+</dependency>
+```
+
+Because the group changed, tools that check for dependency updates won't offer 0.2.0 as an upgrade to
+`com.pambrose:jev4k`. And if another library brings in 0.1.0 alongside 0.2.0, Gradle treats the two as unrelated
+modules and puts both on the classpath, so exclude the old one:
+
+```kotlin
+configurations.all {
+    exclude(group = "com.pambrose", module = "jev4k")
+}
+```
+
+### Platforms
+
+| Platform | Default engine          |
+|----------|-------------------------|
+| JVM      | CIO                     |
+| Apple    | Darwin (`NSURLSession`) |
+| Linux    | Curl                    |
+| Windows  | WinHttp                 |
+| Node.js  | Js (`fetch`)            |
+
+A few things differ by platform. Blocking calls (`jev.blocking`) exist on the JVM only. The js and wasmJs targets
+run on Node.js, not in a browser, which would hand the API key to every visitor. On Linux, the Curl engine needs
+the system's CA certificates, and on iOS, App Transport Security blocks a plain `http://` base URL, such as a local
+Ollaya server, unless the app allows it.
+
+Every engine's way of reporting a failed connection is mapped to `JevConnectionException` and retried, so error
+handling written against the JVM client works unchanged elsewhere.
+
+**Full Changelog**: https://github.com/pambrose/jev4k/compare/0.1.0...0.2.0
+
 ## v0.1.0 — 2026-09-20
 
 The first release of jev4k, a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'s **Jev** model.

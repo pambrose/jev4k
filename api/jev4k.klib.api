@@ -1,0 +1,543 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, js, linuxArm64, linuxX64, macosArm64, mingwX64, tvosArm64, tvosSimulatorArm64, wasmJs, watchosArm32, watchosArm64, watchosDeviceArm64, watchosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.pambrose.jev4k:jev4k>
+open annotation class com.pambrose.jev4k/JevDsl : kotlin/Annotation { // com.pambrose.jev4k/JevDsl|null[0]
+    constructor <init>() // com.pambrose.jev4k/JevDsl.<init>|<init>(){}[0]
+}
+
+final enum class com.pambrose.jev4k/NoulBand : kotlin/Enum<com.pambrose.jev4k/NoulBand> { // com.pambrose.jev4k/NoulBand|null[0]
+    enum entry NO // com.pambrose.jev4k/NoulBand.NO|null[0]
+    enum entry UNCERTAIN // com.pambrose.jev4k/NoulBand.UNCERTAIN|null[0]
+    enum entry YES // com.pambrose.jev4k/NoulBand.YES|null[0]
+
+    final val entries // com.pambrose.jev4k/NoulBand.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<com.pambrose.jev4k/NoulBand> // com.pambrose.jev4k/NoulBand.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): com.pambrose.jev4k/NoulBand // com.pambrose.jev4k/NoulBand.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<com.pambrose.jev4k/NoulBand> // com.pambrose.jev4k/NoulBand.values|values#static(){}[0]
+}
+
+abstract interface com.pambrose.jev4k/JevApi { // com.pambrose.jev4k/JevApi|null[0]
+    abstract suspend fun evaluate(kotlinx.serialization.json/JsonElement, com.pambrose.jev4k/QuestionSet, kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/JevApi.evaluate|evaluate(kotlinx.serialization.json.JsonElement;com.pambrose.jev4k.QuestionSet;kotlin.String?){}[0]
+    abstract suspend fun models(): kotlin.collections/List<com.pambrose.jev4k/ModelInfo> // com.pambrose.jev4k/JevApi.models|models(){}[0]
+}
+
+abstract interface com.pambrose.jev4k/JevOption { // com.pambrose.jev4k/JevOption|null[0]
+    open val description // com.pambrose.jev4k/JevOption.description|{}description[0]
+        open fun <get-description>(): kotlin/String? // com.pambrose.jev4k/JevOption.description.<get-description>|<get-description>(){}[0]
+    open val entry // com.pambrose.jev4k/JevOption.entry|{}entry[0]
+        open fun <get-entry>(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/JevOption.entry.<get-entry>|<get-entry>(){}[0]
+    open val optionKey // com.pambrose.jev4k/JevOption.optionKey|{}optionKey[0]
+        open fun <get-optionKey>(): kotlin/String? // com.pambrose.jev4k/JevOption.optionKey.<get-optionKey>|<get-optionKey>(){}[0]
+}
+
+sealed interface com.pambrose.jev4k/Answer // com.pambrose.jev4k/Answer|null[0]
+
+sealed interface com.pambrose.jev4k/Question { // com.pambrose.jev4k/Question|null[0]
+    abstract val instructions // com.pambrose.jev4k/Question.instructions|{}instructions[0]
+        abstract fun <get-instructions>(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/Question.instructions.<get-instructions>|<get-instructions>(){}[0]
+}
+
+abstract class com.pambrose.jev4k/JevQuery { // com.pambrose.jev4k/JevQuery|null[0]
+    constructor <init>() // com.pambrose.jev4k/JevQuery.<init>|<init>(){}[0]
+
+    final val questions // com.pambrose.jev4k/JevQuery.questions|{}questions[0]
+        final fun <get-questions>(): com.pambrose.jev4k/QuestionSet // com.pambrose.jev4k/JevQuery.questions.<get-questions>|<get-questions>(){}[0]
+
+    final fun <#A1: kotlin/Enum<#A1>> enumChoiceProvider(kotlinx.serialization.json/JsonElement, kotlin/String?, kotlin.collections/List<#A1>): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ChoiceAnswer<#A1>> // com.pambrose.jev4k/JevQuery.enumChoiceProvider|enumChoiceProvider(kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.collections.List<0:0>){0§<kotlin.Enum<0:0>>}[0]
+    final fun choice(kotlin/String, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/ChoiceBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/JevQuery.choice|choice(kotlin.String;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.ChoiceBuilder,kotlin.Unit>){}[0]
+    final fun choice(kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/ChoiceBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/JevQuery.choice|choice(kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.ChoiceBuilder,kotlin.Unit>){}[0]
+    final fun noul(kotlin/String, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/NoulBuilder, kotlin/Unit>? = ...): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/NoulAnswer> // com.pambrose.jev4k/JevQuery.noul|noul(kotlin.String;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.NoulBuilder,kotlin.Unit>?){}[0]
+    final fun noul(kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/NoulBuilder, kotlin/Unit>? = ...): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/NoulAnswer> // com.pambrose.jev4k/JevQuery.noul|noul(kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.NoulBuilder,kotlin.Unit>?){}[0]
+    final fun score(kotlin/String, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/ScoreBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ScoreAnswer> // com.pambrose.jev4k/JevQuery.score|score(kotlin.String;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.ScoreBuilder,kotlin.Unit>){}[0]
+    final fun score(kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/ScoreBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ScoreAnswer> // com.pambrose.jev4k/JevQuery.score|score(kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.ScoreBuilder,kotlin.Unit>){}[0]
+    final inline fun <#A1: reified kotlin/Enum<#A1>> choice(kotlin/String, kotlin/String? = ...): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ChoiceAnswer<#A1>> // com.pambrose.jev4k/JevQuery.choice|choice(kotlin.String;kotlin.String?){0§<kotlin.Enum<0:0>>}[0]
+    final inline fun <#A1: reified kotlin/Enum<#A1>> choice(kotlinx.serialization.json/JsonElement, kotlin/String? = ...): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ChoiceAnswer<#A1>> // com.pambrose.jev4k/JevQuery.choice|choice(kotlinx.serialization.json.JsonElement;kotlin.String?){0§<kotlin.Enum<0:0>>}[0]
+}
+
+final class <#A: kotlin/Any> com.pambrose.jev4k/ChoiceAnswer : com.pambrose.jev4k/Answer { // com.pambrose.jev4k/ChoiceAnswer|null[0]
+    constructor <init>(#A, kotlin.collections/Map<#A, kotlin/Double>, kotlin/Double) // com.pambrose.jev4k/ChoiceAnswer.<init>|<init>(1:0;kotlin.collections.Map<1:0,kotlin.Double>;kotlin.Double){}[0]
+
+    final val choice // com.pambrose.jev4k/ChoiceAnswer.choice|{}choice[0]
+        final fun <get-choice>(): #A // com.pambrose.jev4k/ChoiceAnswer.choice.<get-choice>|<get-choice>(){}[0]
+    final val confidence // com.pambrose.jev4k/ChoiceAnswer.confidence|{}confidence[0]
+        final fun <get-confidence>(): kotlin/Double // com.pambrose.jev4k/ChoiceAnswer.confidence.<get-confidence>|<get-confidence>(){}[0]
+    final val probabilities // com.pambrose.jev4k/ChoiceAnswer.probabilities|{}probabilities[0]
+        final fun <get-probabilities>(): kotlin.collections/Map<#A, kotlin/Double> // com.pambrose.jev4k/ChoiceAnswer.probabilities.<get-probabilities>|<get-probabilities>(){}[0]
+    final val topProbability // com.pambrose.jev4k/ChoiceAnswer.topProbability|{}topProbability[0]
+        final fun <get-topProbability>(): kotlin/Double // com.pambrose.jev4k/ChoiceAnswer.topProbability.<get-topProbability>|<get-topProbability>(){}[0]
+
+    final fun component1(): #A // com.pambrose.jev4k/ChoiceAnswer.component1|component1(){}[0]
+    final fun component2(): kotlin.collections/Map<#A, kotlin/Double> // com.pambrose.jev4k/ChoiceAnswer.component2|component2(){}[0]
+    final fun component3(): kotlin/Double // com.pambrose.jev4k/ChoiceAnswer.component3|component3(){}[0]
+    final fun copy(#A = ..., kotlin.collections/Map<#A, kotlin/Double> = ..., kotlin/Double = ...): com.pambrose.jev4k/ChoiceAnswer<#A> // com.pambrose.jev4k/ChoiceAnswer.copy|copy(1:0;kotlin.collections.Map<1:0,kotlin.Double>;kotlin.Double){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/ChoiceAnswer.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/ChoiceAnswer.hashCode|hashCode(){}[0]
+    final fun probability(#A): kotlin/Double // com.pambrose.jev4k/ChoiceAnswer.probability|probability(1:0){}[0]
+    final fun ranked(): kotlin.collections/List<kotlin/Pair<#A, kotlin/Double>> // com.pambrose.jev4k/ChoiceAnswer.ranked|ranked(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/ChoiceAnswer.toString|toString(){}[0]
+}
+
+final class <#A: out com.pambrose.jev4k/Answer> com.pambrose.jev4k/QuestionProvider : kotlin.properties/PropertyDelegateProvider<com.pambrose.jev4k/JevQuery, com.pambrose.jev4k/QuestionRef<#A>> { // com.pambrose.jev4k/QuestionProvider|null[0]
+    final fun provideDelegate(com.pambrose.jev4k/JevQuery, kotlin.reflect/KProperty<*>): com.pambrose.jev4k/QuestionRef<#A> // com.pambrose.jev4k/QuestionProvider.provideDelegate|provideDelegate(com.pambrose.jev4k.JevQuery;kotlin.reflect.KProperty<*>){}[0]
+}
+
+final class <#A: out com.pambrose.jev4k/Answer> com.pambrose.jev4k/QuestionRef { // com.pambrose.jev4k/QuestionRef|null[0]
+    final val id // com.pambrose.jev4k/QuestionRef.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.pambrose.jev4k/QuestionRef.id.<get-id>|<get-id>(){}[0]
+    final val question // com.pambrose.jev4k/QuestionRef.question|{}question[0]
+        final fun <get-question>(): com.pambrose.jev4k/Question // com.pambrose.jev4k/QuestionRef.question.<get-question>|<get-question>(){}[0]
+
+    final fun getValue(kotlin/Any?, kotlin.reflect/KProperty<*>): com.pambrose.jev4k/QuestionRef<#A> // com.pambrose.jev4k/QuestionRef.getValue|getValue(kotlin.Any?;kotlin.reflect.KProperty<*>){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/QuestionRef.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/BlockingJev // com.pambrose.jev4k/BlockingJev|null[0]
+
+final class com.pambrose.jev4k/ChoiceBuilder { // com.pambrose.jev4k/ChoiceBuilder|null[0]
+    final fun (kotlin/String).means(kotlin/String) // com.pambrose.jev4k/ChoiceBuilder.means|means@kotlin.String(kotlin.String){}[0]
+    final fun (kotlin/String).means(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/ChoiceBuilder.means|means@kotlin.String(kotlinx.serialization.json.JsonElement){}[0]
+    final fun option(kotlin/String, kotlin/String? = ...) // com.pambrose.jev4k/ChoiceBuilder.option|option(kotlin.String;kotlin.String?){}[0]
+    final fun option(kotlin/String, kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/ChoiceBuilder.option|option(kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
+    final fun options(kotlin/Array<out kotlin/String>...) // com.pambrose.jev4k/ChoiceBuilder.options|options(kotlin.Array<out|kotlin.String>...){}[0]
+}
+
+final class com.pambrose.jev4k/ChoiceQuestion : com.pambrose.jev4k/Question { // com.pambrose.jev4k/ChoiceQuestion|null[0]
+    constructor <init>(kotlinx.serialization.json/JsonElement, kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // com.pambrose.jev4k/ChoiceQuestion.<init>|<init>(kotlinx.serialization.json.JsonElement;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+
+    final val instructions // com.pambrose.jev4k/ChoiceQuestion.instructions|{}instructions[0]
+        final fun <get-instructions>(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/ChoiceQuestion.instructions.<get-instructions>|<get-instructions>(){}[0]
+    final val options // com.pambrose.jev4k/ChoiceQuestion.options|{}options[0]
+        final fun <get-options>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // com.pambrose.jev4k/ChoiceQuestion.options.<get-options>|<get-options>(){}[0]
+
+    final fun component1(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/ChoiceQuestion.component1|component1(){}[0]
+    final fun component2(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // com.pambrose.jev4k/ChoiceQuestion.component2|component2(){}[0]
+    final fun copy(kotlinx.serialization.json/JsonElement = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...): com.pambrose.jev4k/ChoiceQuestion // com.pambrose.jev4k/ChoiceQuestion.copy|copy(kotlinx.serialization.json.JsonElement;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/ChoiceQuestion.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/ChoiceQuestion.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/ChoiceQuestion.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/JevAuthenticationException : com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/JevAuthenticationException|null[0]
+
+final class com.pambrose.jev4k/JevBadRequestException : com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/JevBadRequestException|null[0]
+
+final class com.pambrose.jev4k/JevClient : com.pambrose.jev4k/JevApi, kotlin/AutoCloseable { // com.pambrose.jev4k/JevClient|null[0]
+    constructor <init>(com.pambrose.jev4k/JevConfig) // com.pambrose.jev4k/JevClient.<init>|<init>(com.pambrose.jev4k.JevConfig){}[0]
+    constructor <init>(kotlin/Function1<com.pambrose.jev4k/JevConfigBuilder, kotlin/Unit> = ...) // com.pambrose.jev4k/JevClient.<init>|<init>(kotlin.Function1<com.pambrose.jev4k.JevConfigBuilder,kotlin.Unit>){}[0]
+
+    final val blocking // com.pambrose.jev4k/JevClient.blocking|{}blocking[0]
+        final fun <get-blocking>(): com.pambrose.jev4k/BlockingJev // com.pambrose.jev4k/JevClient.blocking.<get-blocking>|<get-blocking>(){}[0]
+    final val config // com.pambrose.jev4k/JevClient.config|{}config[0]
+        final fun <get-config>(): com.pambrose.jev4k/JevConfig // com.pambrose.jev4k/JevClient.config.<get-config>|<get-config>(){}[0]
+
+    final fun close() // com.pambrose.jev4k/JevClient.close|close(){}[0]
+    final suspend fun evaluate(kotlinx.serialization.json/JsonElement, com.pambrose.jev4k/QuestionSet, kotlin/String?): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/JevClient.evaluate|evaluate(kotlinx.serialization.json.JsonElement;com.pambrose.jev4k.QuestionSet;kotlin.String?){}[0]
+    final suspend fun models(): kotlin.collections/List<com.pambrose.jev4k/ModelInfo> // com.pambrose.jev4k/JevClient.models|models(){}[0]
+}
+
+final class com.pambrose.jev4k/JevConfig { // com.pambrose.jev4k/JevConfig|null[0]
+    final val apiKey // com.pambrose.jev4k/JevConfig.apiKey|{}apiKey[0]
+        final fun <get-apiKey>(): kotlin/String // com.pambrose.jev4k/JevConfig.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
+    final val baseUrl // com.pambrose.jev4k/JevConfig.baseUrl|{}baseUrl[0]
+        final fun <get-baseUrl>(): kotlin/String // com.pambrose.jev4k/JevConfig.baseUrl.<get-baseUrl>|<get-baseUrl>(){}[0]
+    final val defaultModel // com.pambrose.jev4k/JevConfig.defaultModel|{}defaultModel[0]
+        final fun <get-defaultModel>(): kotlin/String // com.pambrose.jev4k/JevConfig.defaultModel.<get-defaultModel>|<get-defaultModel>(){}[0]
+    final val engine // com.pambrose.jev4k/JevConfig.engine|{}engine[0]
+        final fun <get-engine>(): io.ktor.client.engine/HttpClientEngine? // com.pambrose.jev4k/JevConfig.engine.<get-engine>|<get-engine>(){}[0]
+    final val headers // com.pambrose.jev4k/JevConfig.headers|{}headers[0]
+        final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // com.pambrose.jev4k/JevConfig.headers.<get-headers>|<get-headers>(){}[0]
+    final val retry // com.pambrose.jev4k/JevConfig.retry|{}retry[0]
+        final fun <get-retry>(): com.pambrose.jev4k/RetryPolicy // com.pambrose.jev4k/JevConfig.retry.<get-retry>|<get-retry>(){}[0]
+    final val timeout // com.pambrose.jev4k/JevConfig.timeout|{}timeout[0]
+        final fun <get-timeout>(): kotlin.time/Duration // com.pambrose.jev4k/JevConfig.timeout.<get-timeout>|<get-timeout>(){}[0]
+
+    final fun toString(): kotlin/String // com.pambrose.jev4k/JevConfig.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/JevConfigBuilder { // com.pambrose.jev4k/JevConfigBuilder|null[0]
+    constructor <init>() // com.pambrose.jev4k/JevConfigBuilder.<init>|<init>(){}[0]
+
+    final val headers // com.pambrose.jev4k/JevConfigBuilder.headers|{}headers[0]
+        final fun <get-headers>(): kotlin.collections/MutableMap<kotlin/String, kotlin/String> // com.pambrose.jev4k/JevConfigBuilder.headers.<get-headers>|<get-headers>(){}[0]
+
+    final var apiKey // com.pambrose.jev4k/JevConfigBuilder.apiKey|{}apiKey[0]
+        final fun <get-apiKey>(): kotlin/String? // com.pambrose.jev4k/JevConfigBuilder.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
+        final fun <set-apiKey>(kotlin/String?) // com.pambrose.jev4k/JevConfigBuilder.apiKey.<set-apiKey>|<set-apiKey>(kotlin.String?){}[0]
+    final var baseUrl // com.pambrose.jev4k/JevConfigBuilder.baseUrl|{}baseUrl[0]
+        final fun <get-baseUrl>(): kotlin/String? // com.pambrose.jev4k/JevConfigBuilder.baseUrl.<get-baseUrl>|<get-baseUrl>(){}[0]
+        final fun <set-baseUrl>(kotlin/String?) // com.pambrose.jev4k/JevConfigBuilder.baseUrl.<set-baseUrl>|<set-baseUrl>(kotlin.String?){}[0]
+    final var defaultModel // com.pambrose.jev4k/JevConfigBuilder.defaultModel|{}defaultModel[0]
+        final fun <get-defaultModel>(): kotlin/String? // com.pambrose.jev4k/JevConfigBuilder.defaultModel.<get-defaultModel>|<get-defaultModel>(){}[0]
+        final fun <set-defaultModel>(kotlin/String?) // com.pambrose.jev4k/JevConfigBuilder.defaultModel.<set-defaultModel>|<set-defaultModel>(kotlin.String?){}[0]
+    final var engine // com.pambrose.jev4k/JevConfigBuilder.engine|{}engine[0]
+        final fun <get-engine>(): io.ktor.client.engine/HttpClientEngine? // com.pambrose.jev4k/JevConfigBuilder.engine.<get-engine>|<get-engine>(){}[0]
+        final fun <set-engine>(io.ktor.client.engine/HttpClientEngine?) // com.pambrose.jev4k/JevConfigBuilder.engine.<set-engine>|<set-engine>(io.ktor.client.engine.HttpClientEngine?){}[0]
+    final var retry // com.pambrose.jev4k/JevConfigBuilder.retry|{}retry[0]
+        final fun <get-retry>(): com.pambrose.jev4k/RetryPolicy // com.pambrose.jev4k/JevConfigBuilder.retry.<get-retry>|<get-retry>(){}[0]
+        final fun <set-retry>(com.pambrose.jev4k/RetryPolicy) // com.pambrose.jev4k/JevConfigBuilder.retry.<set-retry>|<set-retry>(com.pambrose.jev4k.RetryPolicy){}[0]
+    final var timeout // com.pambrose.jev4k/JevConfigBuilder.timeout|{}timeout[0]
+        final fun <get-timeout>(): kotlin.time/Duration // com.pambrose.jev4k/JevConfigBuilder.timeout.<get-timeout>|<get-timeout>(){}[0]
+        final fun <set-timeout>(kotlin.time/Duration) // com.pambrose.jev4k/JevConfigBuilder.timeout.<set-timeout>|<set-timeout>(kotlin.time.Duration){}[0]
+
+    final fun build(): com.pambrose.jev4k/JevConfig // com.pambrose.jev4k/JevConfigBuilder.build|build(){}[0]
+}
+
+final class com.pambrose.jev4k/JevConfigException : com.pambrose.jev4k/JevException { // com.pambrose.jev4k/JevConfigException|null[0]
+    constructor <init>(kotlin/String) // com.pambrose.jev4k/JevConfigException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class com.pambrose.jev4k/JevNotFoundException : com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/JevNotFoundException|null[0]
+
+final class com.pambrose.jev4k/JevOverloadedException : com.pambrose.jev4k/JevInternalServerException // com.pambrose.jev4k/JevOverloadedException|null[0]
+
+final class com.pambrose.jev4k/JevPermissionDeniedException : com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/JevPermissionDeniedException|null[0]
+
+final class com.pambrose.jev4k/JevRateLimitException : com.pambrose.jev4k/JevApiException { // com.pambrose.jev4k/JevRateLimitException|null[0]
+    final val retryAfter // com.pambrose.jev4k/JevRateLimitException.retryAfter|{}retryAfter[0]
+        final fun <get-retryAfter>(): kotlin.time/Duration? // com.pambrose.jev4k/JevRateLimitException.retryAfter.<get-retryAfter>|<get-retryAfter>(){}[0]
+}
+
+final class com.pambrose.jev4k/JevResponseValidationException : com.pambrose.jev4k/JevApiException { // com.pambrose.jev4k/JevResponseValidationException|null[0]
+    constructor <init>(kotlin/String, kotlin/String?, kotlin/String?, kotlin/String?, kotlin/String, kotlin/Int = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin/Throwable? = ...) // com.pambrose.jev4k/JevResponseValidationException.<init>|<init>(kotlin.String;kotlin.String?;kotlin.String?;kotlin.String?;kotlin.String;kotlin.Int;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.Throwable?){}[0]
+
+    final val fieldPath // com.pambrose.jev4k/JevResponseValidationException.fieldPath|{}fieldPath[0]
+        final fun <get-fieldPath>(): kotlin/String? // com.pambrose.jev4k/JevResponseValidationException.fieldPath.<get-fieldPath>|<get-fieldPath>(){}[0]
+}
+
+final class com.pambrose.jev4k/JevResult { // com.pambrose.jev4k/JevResult|null[0]
+    final val answers // com.pambrose.jev4k/JevResult.answers|{}answers[0]
+        final fun <get-answers>(): kotlin.collections/Map<kotlin/String, com.pambrose.jev4k/Answer> // com.pambrose.jev4k/JevResult.answers.<get-answers>|<get-answers>(){}[0]
+    final val choices // com.pambrose.jev4k/JevResult.choices|{}choices[0]
+        final fun <get-choices>(): kotlin.collections/Map<kotlin/String, com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/JevResult.choices.<get-choices>|<get-choices>(){}[0]
+    final val model // com.pambrose.jev4k/JevResult.model|{}model[0]
+        final fun <get-model>(): kotlin/String // com.pambrose.jev4k/JevResult.model.<get-model>|<get-model>(){}[0]
+    final val nouls // com.pambrose.jev4k/JevResult.nouls|{}nouls[0]
+        final fun <get-nouls>(): kotlin.collections/Map<kotlin/String, com.pambrose.jev4k/NoulAnswer> // com.pambrose.jev4k/JevResult.nouls.<get-nouls>|<get-nouls>(){}[0]
+    final val questions // com.pambrose.jev4k/JevResult.questions|{}questions[0]
+        final fun <get-questions>(): com.pambrose.jev4k/QuestionSet // com.pambrose.jev4k/JevResult.questions.<get-questions>|<get-questions>(){}[0]
+    final val raw // com.pambrose.jev4k/JevResult.raw|{}raw[0]
+        final fun <get-raw>(): kotlinx.serialization.json/JsonObject // com.pambrose.jev4k/JevResult.raw.<get-raw>|<get-raw>(){}[0]
+    final val requestId // com.pambrose.jev4k/JevResult.requestId|{}requestId[0]
+        final fun <get-requestId>(): kotlin/String? // com.pambrose.jev4k/JevResult.requestId.<get-requestId>|<get-requestId>(){}[0]
+    final val requestedModel // com.pambrose.jev4k/JevResult.requestedModel|{}requestedModel[0]
+        final fun <get-requestedModel>(): kotlin/String // com.pambrose.jev4k/JevResult.requestedModel.<get-requestedModel>|<get-requestedModel>(){}[0]
+    final val scores // com.pambrose.jev4k/JevResult.scores|{}scores[0]
+        final fun <get-scores>(): kotlin.collections/Map<kotlin/String, com.pambrose.jev4k/ScoreAnswer> // com.pambrose.jev4k/JevResult.scores.<get-scores>|<get-scores>(){}[0]
+    final val usage // com.pambrose.jev4k/JevResult.usage|{}usage[0]
+        final fun <get-usage>(): com.pambrose.jev4k/Usage // com.pambrose.jev4k/JevResult.usage.<get-usage>|<get-usage>(){}[0]
+
+    final fun <#A1: com.pambrose.jev4k/Answer> get(com.pambrose.jev4k/QuestionRef<#A1>): #A1 // com.pambrose.jev4k/JevResult.get|get(com.pambrose.jev4k.QuestionRef<0:0>){0§<com.pambrose.jev4k.Answer>}[0]
+    final fun <#A1: kotlin/Enum<#A1>> enumChoiceOf(kotlin/String, kotlin.collections/List<#A1>): com.pambrose.jev4k/ChoiceAnswer<#A1> // com.pambrose.jev4k/JevResult.enumChoiceOf|enumChoiceOf(kotlin.String;kotlin.collections.List<0:0>){0§<kotlin.Enum<0:0>>}[0]
+    final fun choice(kotlin/String): com.pambrose.jev4k/ChoiceAnswer<kotlin/String> // com.pambrose.jev4k/JevResult.choice|choice(kotlin.String){}[0]
+    final fun noul(kotlin/String): com.pambrose.jev4k/NoulAnswer // com.pambrose.jev4k/JevResult.noul|noul(kotlin.String){}[0]
+    final fun score(kotlin/String): com.pambrose.jev4k/ScoreAnswer // com.pambrose.jev4k/JevResult.score|score(kotlin.String){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/JevResult.toString|toString(){}[0]
+    final inline fun <#A1: reified kotlin/Enum<#A1>> enumChoice(kotlin/String): com.pambrose.jev4k/ChoiceAnswer<#A1> // com.pambrose.jev4k/JevResult.enumChoice|enumChoice(kotlin.String){0§<kotlin.Enum<0:0>>}[0]
+}
+
+final class com.pambrose.jev4k/JevTimeoutException : com.pambrose.jev4k/JevConnectionException { // com.pambrose.jev4k/JevTimeoutException|null[0]
+    constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.pambrose.jev4k/JevTimeoutException.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+}
+
+final class com.pambrose.jev4k/JevUnprocessableEntityException : com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/JevUnprocessableEntityException|null[0]
+
+final class com.pambrose.jev4k/JevValidationException : com.pambrose.jev4k/JevException { // com.pambrose.jev4k/JevValidationException|null[0]
+    constructor <init>(kotlin.collections/List<kotlin/String>, kotlin/Throwable? = ...) // com.pambrose.jev4k/JevValidationException.<init>|<init>(kotlin.collections.List<kotlin.String>;kotlin.Throwable?){}[0]
+
+    final val problems // com.pambrose.jev4k/JevValidationException.problems|{}problems[0]
+        final fun <get-problems>(): kotlin.collections/List<kotlin/String> // com.pambrose.jev4k/JevValidationException.problems.<get-problems>|<get-problems>(){}[0]
+}
+
+final class com.pambrose.jev4k/ModelInfo { // com.pambrose.jev4k/ModelInfo|null[0]
+    constructor <init>(kotlin/String, kotlin/String?, kotlin/String?) // com.pambrose.jev4k/ModelInfo.<init>|<init>(kotlin.String;kotlin.String?;kotlin.String?){}[0]
+
+    final val description // com.pambrose.jev4k/ModelInfo.description|{}description[0]
+        final fun <get-description>(): kotlin/String? // com.pambrose.jev4k/ModelInfo.description.<get-description>|<get-description>(){}[0]
+    final val name // com.pambrose.jev4k/ModelInfo.name|{}name[0]
+        final fun <get-name>(): kotlin/String // com.pambrose.jev4k/ModelInfo.name.<get-name>|<get-name>(){}[0]
+    final val releaseDate // com.pambrose.jev4k/ModelInfo.releaseDate|{}releaseDate[0]
+        final fun <get-releaseDate>(): kotlin/String? // com.pambrose.jev4k/ModelInfo.releaseDate.<get-releaseDate>|<get-releaseDate>(){}[0]
+
+    final fun component1(): kotlin/String // com.pambrose.jev4k/ModelInfo.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // com.pambrose.jev4k/ModelInfo.component2|component2(){}[0]
+    final fun component3(): kotlin/String? // com.pambrose.jev4k/ModelInfo.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin/String? = ...): com.pambrose.jev4k/ModelInfo // com.pambrose.jev4k/ModelInfo.copy|copy(kotlin.String;kotlin.String?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/ModelInfo.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/ModelInfo.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/ModelInfo.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/NoulAnswer : com.pambrose.jev4k/Answer { // com.pambrose.jev4k/NoulAnswer|null[0]
+    constructor <init>(kotlin/Double) // com.pambrose.jev4k/NoulAnswer.<init>|<init>(kotlin.Double){}[0]
+
+    final val noul // com.pambrose.jev4k/NoulAnswer.noul|{}noul[0]
+        final fun <get-noul>(): kotlin/Double // com.pambrose.jev4k/NoulAnswer.noul.<get-noul>|<get-noul>(){}[0]
+
+    final fun band(kotlin/Double = ..., kotlin/Double = ...): com.pambrose.jev4k/NoulBand // com.pambrose.jev4k/NoulAnswer.band|band(kotlin.Double;kotlin.Double){}[0]
+    final fun component1(): kotlin/Double // com.pambrose.jev4k/NoulAnswer.component1|component1(){}[0]
+    final fun copy(kotlin/Double = ...): com.pambrose.jev4k/NoulAnswer // com.pambrose.jev4k/NoulAnswer.copy|copy(kotlin.Double){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/NoulAnswer.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/NoulAnswer.hashCode|hashCode(){}[0]
+    final fun isTrue(kotlin/Double = ...): kotlin/Boolean // com.pambrose.jev4k/NoulAnswer.isTrue|isTrue(kotlin.Double){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/NoulAnswer.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/NoulBuilder { // com.pambrose.jev4k/NoulBuilder|null[0]
+    final fun whenFalse(kotlin/String) // com.pambrose.jev4k/NoulBuilder.whenFalse|whenFalse(kotlin.String){}[0]
+    final fun whenFalse(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/NoulBuilder.whenFalse|whenFalse(kotlinx.serialization.json.JsonElement){}[0]
+    final fun whenTrue(kotlin/String) // com.pambrose.jev4k/NoulBuilder.whenTrue|whenTrue(kotlin.String){}[0]
+    final fun whenTrue(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/NoulBuilder.whenTrue|whenTrue(kotlinx.serialization.json.JsonElement){}[0]
+}
+
+final class com.pambrose.jev4k/NoulQuestion : com.pambrose.jev4k/Question { // com.pambrose.jev4k/NoulQuestion|null[0]
+    constructor <init>(kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement? = ..., kotlinx.serialization.json/JsonElement? = ...) // com.pambrose.jev4k/NoulQuestion.<init>|<init>(kotlinx.serialization.json.JsonElement;kotlinx.serialization.json.JsonElement?;kotlinx.serialization.json.JsonElement?){}[0]
+
+    final val instructions // com.pambrose.jev4k/NoulQuestion.instructions|{}instructions[0]
+        final fun <get-instructions>(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/NoulQuestion.instructions.<get-instructions>|<get-instructions>(){}[0]
+    final val whenFalse // com.pambrose.jev4k/NoulQuestion.whenFalse|{}whenFalse[0]
+        final fun <get-whenFalse>(): kotlinx.serialization.json/JsonElement? // com.pambrose.jev4k/NoulQuestion.whenFalse.<get-whenFalse>|<get-whenFalse>(){}[0]
+    final val whenTrue // com.pambrose.jev4k/NoulQuestion.whenTrue|{}whenTrue[0]
+        final fun <get-whenTrue>(): kotlinx.serialization.json/JsonElement? // com.pambrose.jev4k/NoulQuestion.whenTrue.<get-whenTrue>|<get-whenTrue>(){}[0]
+
+    final fun component1(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/NoulQuestion.component1|component1(){}[0]
+    final fun component2(): kotlinx.serialization.json/JsonElement? // com.pambrose.jev4k/NoulQuestion.component2|component2(){}[0]
+    final fun component3(): kotlinx.serialization.json/JsonElement? // com.pambrose.jev4k/NoulQuestion.component3|component3(){}[0]
+    final fun copy(kotlinx.serialization.json/JsonElement = ..., kotlinx.serialization.json/JsonElement? = ..., kotlinx.serialization.json/JsonElement? = ...): com.pambrose.jev4k/NoulQuestion // com.pambrose.jev4k/NoulQuestion.copy|copy(kotlinx.serialization.json.JsonElement;kotlinx.serialization.json.JsonElement?;kotlinx.serialization.json.JsonElement?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/NoulQuestion.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/NoulQuestion.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/NoulQuestion.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/QueryBuilder { // com.pambrose.jev4k/QueryBuilder|null[0]
+    final fun <#A1: com.pambrose.jev4k/Answer> add(com.pambrose.jev4k/QuestionRef<#A1>): com.pambrose.jev4k/QuestionRef<#A1> // com.pambrose.jev4k/QueryBuilder.add|add(com.pambrose.jev4k.QuestionRef<0:0>){0§<com.pambrose.jev4k.Answer>}[0]
+    final fun choice(kotlin/String, kotlin/String, kotlin/Function1<com.pambrose.jev4k/ChoiceBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/QueryBuilder.choice|choice(kotlin.String;kotlin.String;kotlin.Function1<com.pambrose.jev4k.ChoiceBuilder,kotlin.Unit>){}[0]
+    final fun choice(kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/Function1<com.pambrose.jev4k/ChoiceBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/QueryBuilder.choice|choice(kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.Function1<com.pambrose.jev4k.ChoiceBuilder,kotlin.Unit>){}[0]
+    final fun include(com.pambrose.jev4k/JevQuery) // com.pambrose.jev4k/QueryBuilder.include|include(com.pambrose.jev4k.JevQuery){}[0]
+    final fun noul(kotlin/String, kotlin/String, kotlin/Function1<com.pambrose.jev4k/NoulBuilder, kotlin/Unit>? = ...): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/NoulAnswer> // com.pambrose.jev4k/QueryBuilder.noul|noul(kotlin.String;kotlin.String;kotlin.Function1<com.pambrose.jev4k.NoulBuilder,kotlin.Unit>?){}[0]
+    final fun noul(kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/Function1<com.pambrose.jev4k/NoulBuilder, kotlin/Unit>? = ...): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/NoulAnswer> // com.pambrose.jev4k/QueryBuilder.noul|noul(kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.Function1<com.pambrose.jev4k.NoulBuilder,kotlin.Unit>?){}[0]
+    final fun question(kotlin/String, com.pambrose.jev4k/Question): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/Answer> // com.pambrose.jev4k/QueryBuilder.question|question(kotlin.String;com.pambrose.jev4k.Question){}[0]
+    final fun score(kotlin/String, kotlin/String, kotlin/Function1<com.pambrose.jev4k/ScoreBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ScoreAnswer> // com.pambrose.jev4k/QueryBuilder.score|score(kotlin.String;kotlin.String;kotlin.Function1<com.pambrose.jev4k.ScoreBuilder,kotlin.Unit>){}[0]
+    final fun score(kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/Function1<com.pambrose.jev4k/ScoreBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ScoreAnswer> // com.pambrose.jev4k/QueryBuilder.score|score(kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.Function1<com.pambrose.jev4k.ScoreBuilder,kotlin.Unit>){}[0]
+    final inline fun <#A1: reified kotlin/Enum<#A1>> choice(kotlin/String, kotlin/String): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ChoiceAnswer<#A1>> // com.pambrose.jev4k/QueryBuilder.choice|choice(kotlin.String;kotlin.String){0§<kotlin.Enum<0:0>>}[0]
+    final inline fun <#A1: reified kotlin/Enum<#A1>> choice(kotlin/String, kotlinx.serialization.json/JsonElement): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ChoiceAnswer<#A1>> // com.pambrose.jev4k/QueryBuilder.choice|choice(kotlin.String;kotlinx.serialization.json.JsonElement){0§<kotlin.Enum<0:0>>}[0]
+}
+
+final class com.pambrose.jev4k/QuestionSet : kotlin.collections/Iterable<com.pambrose.jev4k/QuestionRef<*>> { // com.pambrose.jev4k/QuestionSet|null[0]
+    final val ids // com.pambrose.jev4k/QuestionSet.ids|{}ids[0]
+        final fun <get-ids>(): kotlin.collections/List<kotlin/String> // com.pambrose.jev4k/QuestionSet.ids.<get-ids>|<get-ids>(){}[0]
+    final val size // com.pambrose.jev4k/QuestionSet.size|{}size[0]
+        final fun <get-size>(): kotlin/Int // com.pambrose.jev4k/QuestionSet.size.<get-size>|<get-size>(){}[0]
+
+    final fun contains(com.pambrose.jev4k/QuestionRef<*>): kotlin/Boolean // com.pambrose.jev4k/QuestionSet.contains|contains(com.pambrose.jev4k.QuestionRef<*>){}[0]
+    final fun get(kotlin/String): com.pambrose.jev4k/QuestionRef<*>? // com.pambrose.jev4k/QuestionSet.get|get(kotlin.String){}[0]
+    final fun iterator(): kotlin.collections/Iterator<com.pambrose.jev4k/QuestionRef<*>> // com.pambrose.jev4k/QuestionSet.iterator|iterator(){}[0]
+    final fun toJson(): kotlinx.serialization.json/JsonObject // com.pambrose.jev4k/QuestionSet.toJson|toJson(){}[0]
+}
+
+final class com.pambrose.jev4k/RetryPolicy { // com.pambrose.jev4k/RetryPolicy|null[0]
+    constructor <init>(kotlin/Int = ..., kotlin.time/Duration = ..., kotlin.time/Duration = ..., kotlin/Double = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin/Boolean = ..., kotlin.time/Duration = ..., kotlin/Boolean = ..., kotlin/Boolean = ...) // com.pambrose.jev4k/RetryPolicy.<init>|<init>(kotlin.Int;kotlin.time.Duration;kotlin.time.Duration;kotlin.Double;kotlin.collections.Set<kotlin.Int>;kotlin.Boolean;kotlin.time.Duration;kotlin.Boolean;kotlin.Boolean){}[0]
+
+    final val initialBackoff // com.pambrose.jev4k/RetryPolicy.initialBackoff|{}initialBackoff[0]
+        final fun <get-initialBackoff>(): kotlin.time/Duration // com.pambrose.jev4k/RetryPolicy.initialBackoff.<get-initialBackoff>|<get-initialBackoff>(){}[0]
+    final val jitter // com.pambrose.jev4k/RetryPolicy.jitter|{}jitter[0]
+        final fun <get-jitter>(): kotlin/Double // com.pambrose.jev4k/RetryPolicy.jitter.<get-jitter>|<get-jitter>(){}[0]
+    final val maxBackoff // com.pambrose.jev4k/RetryPolicy.maxBackoff|{}maxBackoff[0]
+        final fun <get-maxBackoff>(): kotlin.time/Duration // com.pambrose.jev4k/RetryPolicy.maxBackoff.<get-maxBackoff>|<get-maxBackoff>(){}[0]
+    final val maxRetries // com.pambrose.jev4k/RetryPolicy.maxRetries|{}maxRetries[0]
+        final fun <get-maxRetries>(): kotlin/Int // com.pambrose.jev4k/RetryPolicy.maxRetries.<get-maxRetries>|<get-maxRetries>(){}[0]
+    final val maxRetryAfter // com.pambrose.jev4k/RetryPolicy.maxRetryAfter|{}maxRetryAfter[0]
+        final fun <get-maxRetryAfter>(): kotlin.time/Duration // com.pambrose.jev4k/RetryPolicy.maxRetryAfter.<get-maxRetryAfter>|<get-maxRetryAfter>(){}[0]
+    final val respectRetryAfter // com.pambrose.jev4k/RetryPolicy.respectRetryAfter|{}respectRetryAfter[0]
+        final fun <get-respectRetryAfter>(): kotlin/Boolean // com.pambrose.jev4k/RetryPolicy.respectRetryAfter.<get-respectRetryAfter>|<get-respectRetryAfter>(){}[0]
+    final val retryOnConnectionError // com.pambrose.jev4k/RetryPolicy.retryOnConnectionError|{}retryOnConnectionError[0]
+        final fun <get-retryOnConnectionError>(): kotlin/Boolean // com.pambrose.jev4k/RetryPolicy.retryOnConnectionError.<get-retryOnConnectionError>|<get-retryOnConnectionError>(){}[0]
+    final val retryOnTimeout // com.pambrose.jev4k/RetryPolicy.retryOnTimeout|{}retryOnTimeout[0]
+        final fun <get-retryOnTimeout>(): kotlin/Boolean // com.pambrose.jev4k/RetryPolicy.retryOnTimeout.<get-retryOnTimeout>|<get-retryOnTimeout>(){}[0]
+    final val retryStatuses // com.pambrose.jev4k/RetryPolicy.retryStatuses|{}retryStatuses[0]
+        final fun <get-retryStatuses>(): kotlin.collections/Set<kotlin/Int> // com.pambrose.jev4k/RetryPolicy.retryStatuses.<get-retryStatuses>|<get-retryStatuses>(){}[0]
+
+    final fun backoff(kotlin/Int, kotlin/Double): kotlin.time/Duration // com.pambrose.jev4k/RetryPolicy.backoff|backoff(kotlin.Int;kotlin.Double){}[0]
+    final fun component1(): kotlin/Int // com.pambrose.jev4k/RetryPolicy.component1|component1(){}[0]
+    final fun component2(): kotlin.time/Duration // com.pambrose.jev4k/RetryPolicy.component2|component2(){}[0]
+    final fun component3(): kotlin.time/Duration // com.pambrose.jev4k/RetryPolicy.component3|component3(){}[0]
+    final fun component4(): kotlin/Double // com.pambrose.jev4k/RetryPolicy.component4|component4(){}[0]
+    final fun component5(): kotlin.collections/Set<kotlin/Int> // com.pambrose.jev4k/RetryPolicy.component5|component5(){}[0]
+    final fun component6(): kotlin/Boolean // com.pambrose.jev4k/RetryPolicy.component6|component6(){}[0]
+    final fun component7(): kotlin.time/Duration // com.pambrose.jev4k/RetryPolicy.component7|component7(){}[0]
+    final fun component8(): kotlin/Boolean // com.pambrose.jev4k/RetryPolicy.component8|component8(){}[0]
+    final fun component9(): kotlin/Boolean // com.pambrose.jev4k/RetryPolicy.component9|component9(){}[0]
+    final fun copy(kotlin/Int = ..., kotlin.time/Duration = ..., kotlin.time/Duration = ..., kotlin/Double = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin/Boolean = ..., kotlin.time/Duration = ..., kotlin/Boolean = ..., kotlin/Boolean = ...): com.pambrose.jev4k/RetryPolicy // com.pambrose.jev4k/RetryPolicy.copy|copy(kotlin.Int;kotlin.time.Duration;kotlin.time.Duration;kotlin.Double;kotlin.collections.Set<kotlin.Int>;kotlin.Boolean;kotlin.time.Duration;kotlin.Boolean;kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/RetryPolicy.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/RetryPolicy.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/RetryPolicy.toString|toString(){}[0]
+
+    final object Companion { // com.pambrose.jev4k/RetryPolicy.Companion|null[0]
+        final val NONE // com.pambrose.jev4k/RetryPolicy.Companion.NONE|{}NONE[0]
+            final fun <get-NONE>(): com.pambrose.jev4k/RetryPolicy // com.pambrose.jev4k/RetryPolicy.Companion.NONE.<get-NONE>|<get-NONE>(){}[0]
+    }
+}
+
+final class com.pambrose.jev4k/ScoreAnswer : com.pambrose.jev4k/Answer { // com.pambrose.jev4k/ScoreAnswer|null[0]
+    constructor <init>(kotlin/Double, kotlin.collections/Map<kotlin/Int, kotlin/Double>, kotlin.collections/Map<kotlin/Int, kotlinx.serialization.json/JsonElement>, kotlin/Double, kotlin/Int) // com.pambrose.jev4k/ScoreAnswer.<init>|<init>(kotlin.Double;kotlin.collections.Map<kotlin.Int,kotlin.Double>;kotlin.collections.Map<kotlin.Int,kotlinx.serialization.json.JsonElement>;kotlin.Double;kotlin.Int){}[0]
+
+    final val confidence // com.pambrose.jev4k/ScoreAnswer.confidence|{}confidence[0]
+        final fun <get-confidence>(): kotlin/Double // com.pambrose.jev4k/ScoreAnswer.confidence.<get-confidence>|<get-confidence>(){}[0]
+    final val legend // com.pambrose.jev4k/ScoreAnswer.legend|{}legend[0]
+        final fun <get-legend>(): kotlin.collections/Map<kotlin/Int, kotlinx.serialization.json/JsonElement> // com.pambrose.jev4k/ScoreAnswer.legend.<get-legend>|<get-legend>(){}[0]
+    final val levelCount // com.pambrose.jev4k/ScoreAnswer.levelCount|{}levelCount[0]
+        final fun <get-levelCount>(): kotlin/Int // com.pambrose.jev4k/ScoreAnswer.levelCount.<get-levelCount>|<get-levelCount>(){}[0]
+    final val mostLikelyLevel // com.pambrose.jev4k/ScoreAnswer.mostLikelyLevel|{}mostLikelyLevel[0]
+        final fun <get-mostLikelyLevel>(): kotlin/Int // com.pambrose.jev4k/ScoreAnswer.mostLikelyLevel.<get-mostLikelyLevel>|<get-mostLikelyLevel>(){}[0]
+    final val nearestLevel // com.pambrose.jev4k/ScoreAnswer.nearestLevel|{}nearestLevel[0]
+        final fun <get-nearestLevel>(): kotlin/Int // com.pambrose.jev4k/ScoreAnswer.nearestLevel.<get-nearestLevel>|<get-nearestLevel>(){}[0]
+    final val normalized // com.pambrose.jev4k/ScoreAnswer.normalized|{}normalized[0]
+        final fun <get-normalized>(): kotlin/Double // com.pambrose.jev4k/ScoreAnswer.normalized.<get-normalized>|<get-normalized>(){}[0]
+    final val probabilities // com.pambrose.jev4k/ScoreAnswer.probabilities|{}probabilities[0]
+        final fun <get-probabilities>(): kotlin.collections/Map<kotlin/Int, kotlin/Double> // com.pambrose.jev4k/ScoreAnswer.probabilities.<get-probabilities>|<get-probabilities>(){}[0]
+    final val score // com.pambrose.jev4k/ScoreAnswer.score|{}score[0]
+        final fun <get-score>(): kotlin/Double // com.pambrose.jev4k/ScoreAnswer.score.<get-score>|<get-score>(){}[0]
+
+    final fun component1(): kotlin/Double // com.pambrose.jev4k/ScoreAnswer.component1|component1(){}[0]
+    final fun component2(): kotlin.collections/Map<kotlin/Int, kotlin/Double> // com.pambrose.jev4k/ScoreAnswer.component2|component2(){}[0]
+    final fun component3(): kotlin.collections/Map<kotlin/Int, kotlinx.serialization.json/JsonElement> // com.pambrose.jev4k/ScoreAnswer.component3|component3(){}[0]
+    final fun component4(): kotlin/Double // com.pambrose.jev4k/ScoreAnswer.component4|component4(){}[0]
+    final fun component5(): kotlin/Int // com.pambrose.jev4k/ScoreAnswer.component5|component5(){}[0]
+    final fun copy(kotlin/Double = ..., kotlin.collections/Map<kotlin/Int, kotlin/Double> = ..., kotlin.collections/Map<kotlin/Int, kotlinx.serialization.json/JsonElement> = ..., kotlin/Double = ..., kotlin/Int = ...): com.pambrose.jev4k/ScoreAnswer // com.pambrose.jev4k/ScoreAnswer.copy|copy(kotlin.Double;kotlin.collections.Map<kotlin.Int,kotlin.Double>;kotlin.collections.Map<kotlin.Int,kotlinx.serialization.json.JsonElement>;kotlin.Double;kotlin.Int){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/ScoreAnswer.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/ScoreAnswer.hashCode|hashCode(){}[0]
+    final fun legendText(kotlin/Int): kotlin/String? // com.pambrose.jev4k/ScoreAnswer.legendText|legendText(kotlin.Int){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/ScoreAnswer.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/ScoreBuilder { // com.pambrose.jev4k/ScoreBuilder|null[0]
+    final fun level(kotlin/String) // com.pambrose.jev4k/ScoreBuilder.level|level(kotlin.String){}[0]
+    final fun level(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/ScoreBuilder.level|level(kotlinx.serialization.json.JsonElement){}[0]
+    final fun levels(kotlin/Array<out kotlin/String>...) // com.pambrose.jev4k/ScoreBuilder.levels|levels(kotlin.Array<out|kotlin.String>...){}[0]
+}
+
+final class com.pambrose.jev4k/ScoreQuestion : com.pambrose.jev4k/Question { // com.pambrose.jev4k/ScoreQuestion|null[0]
+    constructor <init>(kotlinx.serialization.json/JsonElement, kotlin.collections/List<kotlinx.serialization.json/JsonElement>) // com.pambrose.jev4k/ScoreQuestion.<init>|<init>(kotlinx.serialization.json.JsonElement;kotlin.collections.List<kotlinx.serialization.json.JsonElement>){}[0]
+
+    final val instructions // com.pambrose.jev4k/ScoreQuestion.instructions|{}instructions[0]
+        final fun <get-instructions>(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/ScoreQuestion.instructions.<get-instructions>|<get-instructions>(){}[0]
+    final val levels // com.pambrose.jev4k/ScoreQuestion.levels|{}levels[0]
+        final fun <get-levels>(): kotlin.collections/List<kotlinx.serialization.json/JsonElement> // com.pambrose.jev4k/ScoreQuestion.levels.<get-levels>|<get-levels>(){}[0]
+
+    final fun component1(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/ScoreQuestion.component1|component1(){}[0]
+    final fun component2(): kotlin.collections/List<kotlinx.serialization.json/JsonElement> // com.pambrose.jev4k/ScoreQuestion.component2|component2(){}[0]
+    final fun copy(kotlinx.serialization.json/JsonElement = ..., kotlin.collections/List<kotlinx.serialization.json/JsonElement> = ...): com.pambrose.jev4k/ScoreQuestion // com.pambrose.jev4k/ScoreQuestion.copy|copy(kotlinx.serialization.json.JsonElement;kotlin.collections.List<kotlinx.serialization.json.JsonElement>){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/ScoreQuestion.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/ScoreQuestion.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/ScoreQuestion.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/UnknownAnswer : com.pambrose.jev4k/Answer { // com.pambrose.jev4k/UnknownAnswer|null[0]
+    constructor <init>(kotlin/String?, kotlinx.serialization.json/JsonObject) // com.pambrose.jev4k/UnknownAnswer.<init>|<init>(kotlin.String?;kotlinx.serialization.json.JsonObject){}[0]
+
+    final val raw // com.pambrose.jev4k/UnknownAnswer.raw|{}raw[0]
+        final fun <get-raw>(): kotlinx.serialization.json/JsonObject // com.pambrose.jev4k/UnknownAnswer.raw.<get-raw>|<get-raw>(){}[0]
+    final val type // com.pambrose.jev4k/UnknownAnswer.type|{}type[0]
+        final fun <get-type>(): kotlin/String? // com.pambrose.jev4k/UnknownAnswer.type.<get-type>|<get-type>(){}[0]
+
+    final fun component1(): kotlin/String? // com.pambrose.jev4k/UnknownAnswer.component1|component1(){}[0]
+    final fun component2(): kotlinx.serialization.json/JsonObject // com.pambrose.jev4k/UnknownAnswer.component2|component2(){}[0]
+    final fun copy(kotlin/String? = ..., kotlinx.serialization.json/JsonObject = ...): com.pambrose.jev4k/UnknownAnswer // com.pambrose.jev4k/UnknownAnswer.copy|copy(kotlin.String?;kotlinx.serialization.json.JsonObject){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/UnknownAnswer.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/UnknownAnswer.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/UnknownAnswer.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/Usage { // com.pambrose.jev4k/Usage|null[0]
+    constructor <init>(kotlin/Long?, kotlin/Long?) // com.pambrose.jev4k/Usage.<init>|<init>(kotlin.Long?;kotlin.Long?){}[0]
+
+    final val inputTokens // com.pambrose.jev4k/Usage.inputTokens|{}inputTokens[0]
+        final fun <get-inputTokens>(): kotlin/Long? // com.pambrose.jev4k/Usage.inputTokens.<get-inputTokens>|<get-inputTokens>(){}[0]
+    final val outputTokens // com.pambrose.jev4k/Usage.outputTokens|{}outputTokens[0]
+        final fun <get-outputTokens>(): kotlin/Long? // com.pambrose.jev4k/Usage.outputTokens.<get-outputTokens>|<get-outputTokens>(){}[0]
+
+    final fun component1(): kotlin/Long? // com.pambrose.jev4k/Usage.component1|component1(){}[0]
+    final fun component2(): kotlin/Long? // com.pambrose.jev4k/Usage.component2|component2(){}[0]
+    final fun copy(kotlin/Long? = ..., kotlin/Long? = ...): com.pambrose.jev4k/Usage // com.pambrose.jev4k/Usage.copy|copy(kotlin.Long?;kotlin.Long?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/Usage.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/Usage.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/Usage.toString|toString(){}[0]
+}
+
+open class com.pambrose.jev4k/JevApiException : com.pambrose.jev4k/JevException { // com.pambrose.jev4k/JevApiException|null[0]
+    constructor <init>(kotlin/Int, kotlin/String?, kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>, kotlin/String?, kotlin/String, kotlin/String, kotlin/Throwable? = ...) // com.pambrose.jev4k/JevApiException.<init>|<init>(kotlin.Int;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.String?;kotlin.String;kotlin.String;kotlin.Throwable?){}[0]
+
+    final val body // com.pambrose.jev4k/JevApiException.body|{}body[0]
+        final fun <get-body>(): kotlin/String? // com.pambrose.jev4k/JevApiException.body.<get-body>|<get-body>(){}[0]
+    final val bodyJson // com.pambrose.jev4k/JevApiException.bodyJson|{}bodyJson[0]
+        final fun <get-bodyJson>(): kotlinx.serialization.json/JsonElement? // com.pambrose.jev4k/JevApiException.bodyJson.<get-bodyJson>|<get-bodyJson>(){}[0]
+    final val endpoint // com.pambrose.jev4k/JevApiException.endpoint|{}endpoint[0]
+        final fun <get-endpoint>(): kotlin/String // com.pambrose.jev4k/JevApiException.endpoint.<get-endpoint>|<get-endpoint>(){}[0]
+    final val headers // com.pambrose.jev4k/JevApiException.headers|{}headers[0]
+        final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> // com.pambrose.jev4k/JevApiException.headers.<get-headers>|<get-headers>(){}[0]
+    final val requestId // com.pambrose.jev4k/JevApiException.requestId|{}requestId[0]
+        final fun <get-requestId>(): kotlin/String? // com.pambrose.jev4k/JevApiException.requestId.<get-requestId>|<get-requestId>(){}[0]
+    final val status // com.pambrose.jev4k/JevApiException.status|{}status[0]
+        final fun <get-status>(): kotlin/Int // com.pambrose.jev4k/JevApiException.status.<get-status>|<get-status>(){}[0]
+}
+
+open class com.pambrose.jev4k/JevConnectionException : com.pambrose.jev4k/JevException { // com.pambrose.jev4k/JevConnectionException|null[0]
+    constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.pambrose.jev4k/JevConnectionException.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+}
+
+open class com.pambrose.jev4k/JevInternalServerException : com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/JevInternalServerException|null[0]
+
+sealed class com.pambrose.jev4k/JevException : kotlin/RuntimeException // com.pambrose.jev4k/JevException|null[0]
+
+final object com.pambrose.jev4k/JevDefaults { // com.pambrose.jev4k/JevDefaults|null[0]
+    final const val API_KEY_ENV // com.pambrose.jev4k/JevDefaults.API_KEY_ENV|{}API_KEY_ENV[0]
+        final fun <get-API_KEY_ENV>(): kotlin/String // com.pambrose.jev4k/JevDefaults.API_KEY_ENV.<get-API_KEY_ENV>|<get-API_KEY_ENV>(){}[0]
+    final const val BASE_URL // com.pambrose.jev4k/JevDefaults.BASE_URL|{}BASE_URL[0]
+        final fun <get-BASE_URL>(): kotlin/String // com.pambrose.jev4k/JevDefaults.BASE_URL.<get-BASE_URL>|<get-BASE_URL>(){}[0]
+    final const val BASE_URL_ENV // com.pambrose.jev4k/JevDefaults.BASE_URL_ENV|{}BASE_URL_ENV[0]
+        final fun <get-BASE_URL_ENV>(): kotlin/String // com.pambrose.jev4k/JevDefaults.BASE_URL_ENV.<get-BASE_URL_ENV>|<get-BASE_URL_ENV>(){}[0]
+    final const val DEFAULT_MODEL_ENV // com.pambrose.jev4k/JevDefaults.DEFAULT_MODEL_ENV|{}DEFAULT_MODEL_ENV[0]
+        final fun <get-DEFAULT_MODEL_ENV>(): kotlin/String // com.pambrose.jev4k/JevDefaults.DEFAULT_MODEL_ENV.<get-DEFAULT_MODEL_ENV>|<get-DEFAULT_MODEL_ENV>(){}[0]
+    final const val MODEL // com.pambrose.jev4k/JevDefaults.MODEL|{}MODEL[0]
+        final fun <get-MODEL>(): kotlin/String // com.pambrose.jev4k/JevDefaults.MODEL.<get-MODEL>|<get-MODEL>(){}[0]
+    final const val REQUEST_ID_HEADER // com.pambrose.jev4k/JevDefaults.REQUEST_ID_HEADER|{}REQUEST_ID_HEADER[0]
+        final fun <get-REQUEST_ID_HEADER>(): kotlin/String // com.pambrose.jev4k/JevDefaults.REQUEST_ID_HEADER.<get-REQUEST_ID_HEADER>|<get-REQUEST_ID_HEADER>(){}[0]
+    final const val RETRY_AFTER_MS_HEADER // com.pambrose.jev4k/JevDefaults.RETRY_AFTER_MS_HEADER|{}RETRY_AFTER_MS_HEADER[0]
+        final fun <get-RETRY_AFTER_MS_HEADER>(): kotlin/String // com.pambrose.jev4k/JevDefaults.RETRY_AFTER_MS_HEADER.<get-RETRY_AFTER_MS_HEADER>|<get-RETRY_AFTER_MS_HEADER>(){}[0]
+
+    final val TIMEOUT // com.pambrose.jev4k/JevDefaults.TIMEOUT|{}TIMEOUT[0]
+        final fun <get-TIMEOUT>(): kotlin.time/Duration // com.pambrose.jev4k/JevDefaults.TIMEOUT.<get-TIMEOUT>|<get-TIMEOUT>(){}[0]
+}
+
+final const val com.pambrose.jev4k/MAX_CHOICE_OPTIONS // com.pambrose.jev4k/MAX_CHOICE_OPTIONS|{}MAX_CHOICE_OPTIONS[0]
+    final fun <get-MAX_CHOICE_OPTIONS>(): kotlin/Int // com.pambrose.jev4k/MAX_CHOICE_OPTIONS.<get-MAX_CHOICE_OPTIONS>|<get-MAX_CHOICE_OPTIONS>(){}[0]
+final const val com.pambrose.jev4k/MAX_SCORE_LEVELS // com.pambrose.jev4k/MAX_SCORE_LEVELS|{}MAX_SCORE_LEVELS[0]
+    final fun <get-MAX_SCORE_LEVELS>(): kotlin/Int // com.pambrose.jev4k/MAX_SCORE_LEVELS.<get-MAX_SCORE_LEVELS>|<get-MAX_SCORE_LEVELS>(){}[0]
+final const val com.pambrose.jev4k/MIN_SCORE_LEVELS // com.pambrose.jev4k/MIN_SCORE_LEVELS|{}MIN_SCORE_LEVELS[0]
+    final fun <get-MIN_SCORE_LEVELS>(): kotlin/Int // com.pambrose.jev4k/MIN_SCORE_LEVELS.<get-MIN_SCORE_LEVELS>|<get-MIN_SCORE_LEVELS>(){}[0]
+
+final val com.pambrose.jev4k.internal/ValueJson // com.pambrose.jev4k.internal/ValueJson|{}ValueJson[0]
+    final fun <get-ValueJson>(): kotlinx.serialization.json/Json // com.pambrose.jev4k.internal/ValueJson.<get-ValueJson>|<get-ValueJson>(){}[0]
+
+final fun <#A: kotlin/Any?> com.pambrose.jev4k/encodeValue(#A, kotlinx.serialization/KSerializer<#A>): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/encodeValue|encodeValue(0:0;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
+final fun <#A: kotlin/Enum<#A>> com.pambrose.jev4k/enumChoiceRef(kotlin/String, kotlinx.serialization.json/JsonElement, kotlin.collections/List<#A>): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ChoiceAnswer<#A>> // com.pambrose.jev4k/enumChoiceRef|enumChoiceRef(kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.collections.List<0:0>){0§<kotlin.Enum<0:0>>}[0]
+final fun com.pambrose.jev4k/entry(kotlin/Array<out kotlin/Pair<kotlin/String, kotlin/Any?>>...): kotlinx.serialization.json/JsonObject // com.pambrose.jev4k/entry|entry(kotlin.Array<out|kotlin.Pair<kotlin.String,kotlin.Any?>>...){}[0]
+final fun com.pambrose.jev4k/jevApiException(kotlin/Int, kotlin/String? = ..., kotlin/String? = ..., kotlin.time/Duration? = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ...): com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/jevApiException|jevApiException(kotlin.Int;kotlin.String?;kotlin.String?;kotlin.time.Duration?;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
+final fun com.pambrose.jev4k/jevResult(kotlin/String, com.pambrose.jev4k/QuestionSet, kotlin/String = ..., kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/jevResult|jevResult(kotlin.String;com.pambrose.jev4k.QuestionSet;kotlin.String;kotlin.String?){}[0]
+final fun com.pambrose.jev4k/jevResult(kotlinx.serialization.json/JsonObject, com.pambrose.jev4k/QuestionSet, kotlin/String = ..., kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/jevResult|jevResult(kotlinx.serialization.json.JsonObject;com.pambrose.jev4k.QuestionSet;kotlin.String;kotlin.String?){}[0]
+final fun com.pambrose.jev4k/jsonOf(kotlin/Any?): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/jsonOf|jsonOf(kotlin.Any?){}[0]
+final fun com.pambrose.jev4k/questions(kotlin/Function1<com.pambrose.jev4k/QueryBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionSet // com.pambrose.jev4k/questions|questions(kotlin.Function1<com.pambrose.jev4k.QueryBuilder,kotlin.Unit>){}[0]
+final fun com.pambrose.jev4k/rubric(kotlin/String, kotlin/String? = ..., kotlin.collections/List<kotlin/String> = ...): kotlinx.serialization.json/JsonObject // com.pambrose.jev4k/rubric|rubric(kotlin.String;kotlin.String?;kotlin.collections.List<kotlin.String>){}[0]
+final inline fun <#A: reified kotlin/Any?> com.pambrose.jev4k/jsonEntry(#A): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/jsonEntry|jsonEntry(0:0){0§<kotlin.Any?>}[0]
+final inline fun <#A: reified kotlin/Any?> com.pambrose.jev4k/serializerOrReport(): kotlinx.serialization/KSerializer<#A> // com.pambrose.jev4k/serializerOrReport|serializerOrReport(){0§<kotlin.Any?>}[0]
+final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, kotlin/String, kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;kotlin.String;kotlin.String?){}[0]
+final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, kotlinx.serialization.json/JsonElement, kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;kotlinx.serialization.json.JsonElement;kotlin.String?){}[0]
+final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/query(kotlin/String, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/QueryBuilder, kotlin/Unit>): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/query|query@com.pambrose.jev4k.JevApi(kotlin.String;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.QueryBuilder,kotlin.Unit>){}[0]
+final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/query(kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/QueryBuilder, kotlin/Unit>): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/query|query@com.pambrose.jev4k.JevApi(kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.QueryBuilder,kotlin.Unit>){}[0]
+final suspend inline fun <#A: reified kotlin/Any> (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, #A, kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;0:0;kotlin.String?){0§<kotlin.Any>}[0]
+final suspend inline fun <#A: reified kotlin/Any> (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/query(#A, kotlin/String? = ..., noinline kotlin/Function1<com.pambrose.jev4k/QueryBuilder, kotlin/Unit>): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/query|query@com.pambrose.jev4k.JevApi(0:0;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.QueryBuilder,kotlin.Unit>){0§<kotlin.Any>}[0]

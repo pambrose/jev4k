@@ -4,7 +4,7 @@ How to cut a jev4k release. The first release has extra steps, listed separately
 still being set up and nothing has reached Maven Central yet.
 
 This file is for maintainers and isn't part of any published site: Zensical builds `website/jev4k/docs`, and
-Dokka includes only `docs/packages.md` (`build.gradle.kts:88`).
+Dokka includes only `docs/packages.md` (`build.gradle.kts:246`).
 
 ## Current state
 
@@ -21,8 +21,9 @@ Verified 2026-09-20.
 | Published site                        | ✅ live at <https://jev4k.com/>, KDocs included             |
 | Git tags                              | ✅ `0.1.0` at `b7c2b5e`, with a `v0.1.0` GitHub release      |
 | `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                   |
-| `gradle.properties` version           | `0.1.1`, the next release number                            |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.1.0 dated 2026-09-20; changelog has an Unreleased section |
+| `gradle.properties` version           | `0.2.0`, the next release number (the multiplatform move)   |
+| `gradle.properties` group             | `com.pambrose.jev4k` from 0.2.0 (0.1.0 was `com.pambrose`)  |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.1.0 dated 2026-09-20; 0.2.0 sections marked unreleased    |
 
 ## Before the first release, once
 
@@ -47,12 +48,15 @@ Verified 2026-09-20.
 
 - [ ] Set `version=` in `gradle.properties`. It is always a plain release number; `-PoverrideVersion=`
   supplies snapshot versions, so no `-SNAPSHOT` is ever committed.
-- [ ] Follow SemVer. Anything that changes the public API of `src/main` is at least a minor bump while the
-  library is pre-1.0.
+- [ ] Follow SemVer. Anything that changes the public API (`src/commonMain` or any other main source set) is at
+  least a minor bump while the library is pre-1.0. The dumps in `api/` show exactly what changed: `make abi-check`
+  fails on any difference, and `make abi-update`, run on a Mac, records an intended one.
 
 ### 2. Verify the tree
 
-- [ ] `make tests` — kotlinter, detekt and the full suite, forced to re-run.
+- [ ] `make tests` on a Mac — kotlinter, detekt, the ABI check, and the suite on the JVM, Node.js (js and wasmJs),
+  macOS and the iOS simulator (and the tvOS and watchOS simulators where a device is installed), forced to re-run.
+  `make docker-linux-tests` runs linuxX64 and linuxArm64; the Windows tests run in CI (step 4).
 - [ ] `make coverage-verify` — the line and branch floors in `build.gradle.kts`.
 - [ ] `cd website/jev4k && uv run zensical build --clean` — must report "No issues found".
 - [ ] `make site-build` — the site plus Dokka KDocs under `/kdocs`.
@@ -87,17 +91,23 @@ Signing and credentials, all outside the repository:
 
 Then:
 
+- [ ] Publish from a Mac. Only macOS builds the Apple targets, and a release that left them out would publish a
+  root module pointing at artifacts that don't exist; the publishing targets refuse to run anywhere else.
 - [ ] `make publish-maven-central`. It runs `publishAndReleaseToMavenCentral`, and
   `publishToMavenCentral(automaticRelease = true)` promotes the staging repository on its own, so there is
   nothing to click in the Central portal.
 - [ ] Confirm the artifact is really there before tagging:
 
   ```bash
-  curl -sI https://repo1.maven.org/maven2/com/pambrose/jev4k/<version>/jev4k-<version>.jar | head -1
+  curl -sI https://repo1.maven.org/maven2/com/pambrose/jev4k/jev4k-jvm/<version>/jev4k-jvm-<version>.jar | head -1
+  curl -sI https://repo1.maven.org/maven2/com/pambrose/jev4k/jev4k/<version>/jev4k-<version>.module | head -1
   ```
 
   Central's indexes take a few minutes to catch up, so the jar may land before search does.
-- [ ] Check the published set: jar, sources jar, Dokka HTML javadoc jar, POM, and a `.asc` for each.
+- [ ] Check the published set. `jev4k` is the root module (`.module`, POM, metadata jar); `jev4k-jvm` carries the
+  jar; `jev4k-js`, `jev4k-wasm-js` and one artifact per native target (`jev4k-macosarm64`, `jev4k-linuxx64`,
+  `jev4k-mingwx64`, …) carry klibs. Each has a sources jar, a Dokka HTML javadoc jar, a POM, and a `.asc` for
+  every file.
 
 ### 6. Tag and create the GitHub release
 
@@ -115,6 +125,10 @@ Then:
 
   `<notes>` is the body of this version's section of `RELEASE_NOTES.md`, ending with the **Full Changelog**
   link.
+
+- [ ] If the release breaks anything, the notes open with a `> [!WARNING]` callout saying what breaks and what
+  doesn't, and it is the first thing on the release page (GitHub renders it as a Warning box). 0.2.0's is the
+  move to the `com.pambrose.jev4k` group. Check the page after publishing: `gh release view <version> --web`.
 
 ### 7. After
 

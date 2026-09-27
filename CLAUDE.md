@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`jev4k` is a Kotlin DSL and client for TypeSafe's Jev "System One" model, built on the Ktor client (CIO engine) and
+`jev4k` is a Kotlin Multiplatform DSL and client for TypeSafe's Jev "System One" model, built on the Ktor client and
 kotlinx.serialization. You describe a state and typed questions (Noul, Choice, Score), and it returns typed answers. The
-library is `com.pambrose.jev4k` under `src/main/kotlin`. A runnable example is
-`src/test/kotlin/com/pambrose/jev4k/examples/TriageExample.kt`.
+library is `com.pambrose.jev4k`, almost all of it common code under `src/commonMain/kotlin`, for the JVM (the primary
+target), Apple platforms, Linux, Windows, and Node.js (js and wasmJs). A runnable example is
+`src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt`.
 
 ## TypeSafe / Jev API docs
 
@@ -55,10 +56,38 @@ There are two DSL layers over one core model. Both produce a validated `Question
     - `HttpRequestRetry` must be installed **before** `HttpTimeout`, otherwise one timeout cancels every retry.
     - `expectSuccess = false`: non-2xx responses map to `JevApiException` subclasses (`apiException` in `Errors.kt`)
       after retries run out, keeping the raw body and the `x-typesafe-request-id` header.
-    - `BlockingJev` (`jev.blocking`) wraps the suspend API in `runBlocking`.
+    - `BlockingJev` (`jev.blocking`) wraps the suspend API in `runBlocking`, on the JVM only (see Platforms).
+    - `JevClient.execute` classifies a failed call in one place: `SerializationException` becomes
+      `JevValidationException`, a `CancellationException` is rethrown untouched (checked first, because on
+      Kotlin/Native it is also an `IllegalStateException`), and any other `Throwable` becomes `JevTimeoutException`
+      or `JevConnectionException` if it is one, or is rethrown. `Throwable`, because the Js engine reports a failed
+      fetch as a `kotlin.Error`. `isConnectionError` in `Retry.kt` uses the same predicate, so what is reported as
+      a connection error is also what gets retried.
 - **Config** (`JevConfig.kt`). Each setting resolves as explicit value, then env var, then default; blank env values are
   ignored. The env vars are `TYPESAFE_API_KEY` (required), `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal
-  hooks (`env`, `retryDelay`, `random`) make tests deterministic.
+  hooks (`env`, `retryDelay`, `random`) make tests deterministic; `env` defaults to `platformGetenv`.
+- **Platforms** (`internal/Platform.kt` and its actuals). Everything that differs between platforms is an `internal`
+  expect: `platformGetenv`, `defaultHttpClient` + `DEFAULT_ENGINE_NAME`, `isPlatformConnectionError`, and
+  `Enum<*>.enumTypeName()` (which keeps `enumChoiceRef`'s `@PublishedApi` signature unchanged). Actual files carry a
+  platform suffix (`Platform.jvm.kt`, `Engine.linux.kt`) so JVM facade names never clash.
+    - Default engines: CIO on the JVM (`jvmMain`), Darwin (`appleMain`), Curl (`linuxMain`), WinHttp (`mingwMain`),
+      and the Js engine bundled in `ktor-client-core` (`webMain`, shared by js and wasmJs). CIO can't be used
+      natively: Ktor's native TLS fails with "TLS sessions are not supported on Native platform".
+    - How each engine reports a refused connection: CIO and Darwin throw an `IOException`; Curl and WinHttp a bare
+      `IllegalStateException` (matched by exact class, so a native `CancellationException` never counts); the Js
+      engine `Error("Fail to fetch")`. `PlatformEngineTest` dials a dead loopback port on every platform to pin this.
+      The bare-ISE rule is deliberately broad: Curl and WinHttp also throw one for local setup failures (a failed
+      handle or proxy setup), which are then retried and reported as connection errors with the cause kept, and the
+      rule follows the host's default engine rather than the engine in use. `ClientJvmTest` pins that the JVM
+      treats a bare ISE as an ordinary failure.
+    - `BlockingJev` is an `expect class`. The `jvmMain` actual is the real one; the `nativeMain` and `webMain` actuals
+      are empty. `JevClient` keeps `val blocking = BlockingJev(this)` in common code, so the JVM class file, and
+      Java's `jev.getBlocking()`, are exactly as before. `-Xexpect-actual-classes` silences the Beta warning.
+    - `platformGetenv` on js/wasmJs is a `js()` call that must be the whole body of a top-level function (a
+      Kotlin/Wasm rule) and needs `@OptIn(ExperimentalWasmJsInterop::class)`. It reads `process.env`, so it only
+      works on Node.js, the only JS runtime targeted.
+    - Common code can't use JVM-only APIs such as `Map.putIfAbsent`, and needs explicit `kotlin.jvm.JvmOverloads` /
+      `kotlin.jvm.JvmSynthetic` imports (only the JVM imports `kotlin.jvm.*` by default).
 - **Validation** (`Questions.kt`). Every problem is collected into one `JevValidationException` before anything is sent:
   at least one question, unique non-blank ids, non-empty instructions, 1..255 Choice options, 2..10 Score levels.
 
@@ -89,19 +118,22 @@ There are two DSL layers over one core model. Both produce a validated `Question
   breaks into a one-item list, a stray rule and two loose paragraphs, each landing in its own grid cell. The page
   still builds cleanly, so only the rendered HTML (or a look at the page) catches it: one `<ul>` holding every `<li>`
   is right, one `<ul>` per card is not.
+- **Admonitions need an indented body.** Write `!!! warning "Title"`, a blank line, then the body indented four
+  spaces. An unindented body builds cleanly but renders as an empty titled box followed by an ordinary paragraph;
+  in the HTML, the `<div class="admonition">` holds nothing but its `admonition-title`.
 - **Commands.** `make site` serves the site with live reload. `make site-build` builds it into `website/jev4k/site` and
   copies the Dokka KDocs to `site/kdocs`; the `KDocs` nav entry, `api.md`, is an ordinary page that links there.
   `make check-site` and `make upgrade-site` manage the Python dependencies.
-- **Examples are never written inline in pages.** They live in `src/test/kotlin/website` (`package website`) and are
-  pulled in with `--8<-- "File.kt:section"` inside a fenced block. `pymdownx.snippets` resolves them from that folder,
-  with `check_paths` and `dedent_subsections` on.
+- **Examples are never written inline in pages.** They live in `src/jvmTest/kotlin/website` (`package website`) and
+  are pulled in with `--8<-- "File.kt:section"` inside a fenced block. `pymdownx.snippets` resolves them from that
+  folder, with `check_paths` and `dedent_subsections` on.
     - A section is the region between `// --8<-- [start:section]` and `// --8<-- [end:section]` (`#` markers in `.txt`
       files).
     - To show a directive literally in a page, prefix it with `;`.
     - Never write marker text such as `--8<-- [start:x]` in page prose. The snippets extension deletes any line
       containing one, so the rest of that sentence disappears.
-- **The Java example** lives in `src/test/java/website/JavaInterop.java` and is compiled by `compileTestJava`, so it
-  doubles as a guard on the Java-visible surface: its two-argument `qb.noul(...)` call stops compiling if
+- **The Java example** lives in `src/jvmTest/java/website/JavaInterop.java` and is compiled by `compileJvmTestJava`,
+  so it doubles as a guard on the Java-visible surface: its two-argument `qb.noul(...)` call stops compiling if
   `@JvmOverloads` is dropped. It doesn't guard `@JvmSynthetic`, because kotlinc marks reified inline functions synthetic
   on its own. `zensical.toml`'s snippet `base_path` includes that folder.
 - **Example files are compiled and linted like any test source, but they aren't tests.** Keep Kotest and MockK out of
@@ -111,8 +143,8 @@ There are two DSL layers over one core model. Both produce a validated `Question
       the line above.
     - **Trailing comments in an example are aligned in a column** within each run of consecutive lines, in the `website`
       examples and in the README's fenced blocks. `.editorconfig` disables ktlint's `no-multi-spaces` for
-      `src/test/kotlin/website/*.kt` so the padding survives `make format`; `src/main` keeps the rule. Keep new examples
-      aligned, and keep the padded line within 120 characters.
+      `src/jvmTest/kotlin/website/*.kt` so the padding survives `make format`; the library sources keep the rule.
+      Keep new examples aligned, and keep the padded line within 120 characters.
 - **After changing an example or a page,** run `make tests` and `cd website/jev4k && uv run zensical build --clean`. The
   build must report "No issues found".
 
@@ -120,7 +152,30 @@ There are two DSL layers over one core model. Both produce a validated `Question
 
 - Gradle 9.7.1 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
   `gradle.properties`; the version is always a release number, and `-PoverrideVersion=...` replaces it for snapshots.
-- Publishing uses `com.vanniktech.maven.publish`.
+- Kotlin Multiplatform (`kotlin-multiplatform` plugin; `java-library` is incompatible with it). Targets: `jvm`,
+  `js { nodejs() }`, `wasmJs { nodejs() }`, `macosArm64`, `iosArm64`, `iosX64`, `iosSimulatorArm64`, `tvosArm64`,
+  `tvosSimulatorArm64`, `watchosArm32`, `watchosArm64`, `watchosSimulatorArm64`, `watchosDeviceArm64`, `linuxX64`,
+  `linuxArm64`, `mingwX64`, the same list as `~/git/common-utils`.
+    - Source sets follow the default hierarchy: `commonMain`, `jvmMain`, `nativeMain` (split into `appleMain`,
+      `linuxMain` and `mingwMain` for the engines), and `webMain` for js + wasmJs. Tests are `commonTest` and
+      `jvmTest`.
+    - Only a Mac compiles every target. Linux and Windows skip the Apple ones quietly
+      (`kotlin.native.ignoreDisabledTargets=true`), and a Mac cross-compiles and links Linux and Windows binaries but
+      can't run them itself; `make docker-linux-tests` runs the Linux ones in containers.
+    - The User-Agent version is compiled in: a configuration-cache-safe `generateBuildInfo` task writes
+      `internal const val JEV4K_VERSION` into `build/generated/buildinfo`, a `commonMain` source directory.
+    - The JS toolchains' lockfiles live in `kotlin-js-store/` and are committed (`.gitignore` negates the global
+      `*.lock` ignore for them). The `yarnResolutions` map in `build.gradle.kts` pins patched versions of vulnerable
+      transitive npm packages, as in common-utils; after changing it, delete `build/js/package.json` and
+      `build/wasm/package.json`, run `kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock`, and check the lockfile diff.
+- Publishing uses `com.vanniktech.maven.publish` with `KotlinMultiplatform(...)`.
+    - The group is `com.pambrose.jev4k`, so every artifact lands under one `com/pambrose/jev4k/` directory, as with
+      common-utils. 0.1.0 was published as `com.pambrose:jev4k`, and nothing newer goes there. The group is also
+      part of the klib's unique name, which `api/jev4k.klib.api` records.
+    - `com.pambrose.jev4k:jev4k` is the root module, which Gradle resolves per target; the JVM jar is `jev4k-jvm`,
+      which is what Maven consumers name. Every other target gets its own artifact (`jev4k-js`, `jev4k-macosarm64`, …).
+    - The Apple artifacts can only be built on macOS, so releases are published from a Mac; the publishing Makefile
+      targets refuse to run elsewhere.
     - The Dokka HTML is packaged as the javadoc jar, alongside a sources jar and POM metadata (Apache 2.0,
       github.com/pambrose/jev4k).
     - `publishToMavenCentral(automaticRelease = true)`.
@@ -139,19 +194,25 @@ There are two DSL layers over one core model. Both produce a validated `Question
     - `jvm-toolchain = "25"` is what compiles the project (`jvmToolchain(...)`). The foojay resolver plugin in
       `settings.gradle.kts` downloads a matching JDK automatically if one isn't installed. That plugin keeps an inline
       version because the catalog isn't available in the settings `plugins {}` block.
-    - `jvm-target = "17"` is the floor consumers need. It drives `compilerOptions.jvmTarget`,
-      `java.source/targetCompatibility` (hence `org.gradle.jvm.version = 17` in the published metadata) and Dokka's
+    - `jvm-target = "17"` is the floor consumers need. It drives the jvm target's `compilerOptions.jvmTarget`,
+      `java.source/targetCompatibility` (javac, for `JavaInterop.java`, must agree with kotlinc) and Dokka's
       `jdkVersion`. `-Xjdk-release=17` is also passed, so compiling on 25 can't link against an API that's missing on
       17 — `jvmTarget` alone would only set the class-file version.
+    - The multiplatform plugin doesn't publish `org.gradle.jvm.version`, so `build.gradle.kts` sets it to 17 on
+      `jvmApiElements` and `jvmRuntimeElements` itself. Without it Gradle can't warn a consumer on an older JDK.
     - jev4k is embedded in other applications, so don't raise the target without a reason: Java 25 bytecode makes the
       jar unusable on every JDK below 25. The sources compile cleanly as low as Java 8, so 17 is a choice, not a
       constraint.
 - `kotlin.code.style=official` is set in `gradle.properties` (4-space indentation).
-- `compilerOptions.optIn` carries `kotlinx.serialization.ExperimentalSerializationApi` for the whole project, so no
+- `compilerOptions.optIn` carries `kotlinx.serialization.ExperimentalSerializationApi` for every compilation, so no
   source file needs an `@OptIn` for it (the `JsonArrayBuilder.addAll` overloads used in the website examples are the
   current reason). Opt-in is compile-time only and doesn't propagate to consumers of the published jar.
 - Detekt (`dev.detekt` 2.0.0-alpha, the line used in the author's other repos) runs as part of `check`, so `make tests`
   lints too.
+    - The plain `detekt` task, the one `check` runs, defaults to `src/main` and `src/test`, which no longer exist, so
+      its `source` is set to every `src/*/kotlin` directory. It runs without type resolution, as before the
+      multiplatform move; the per-source-set `detekt<SourceSet>` tasks exist but aren't wired in.
+    - `MatchingDeclarationName` lists `web` among its `multiplatformTargets`, for `BlockingJev.web.kt`.
     - Config: `config/detekt/detekt.yml`, generated by `detektGenerateConfig` with `buildUponDefaultConfig = true`.
     - Deliberate deviations from the defaults: `CyclomaticComplexMethod` 25, `LongMethod` 140, `LongParameterList`
       12/12, `TooManyFunctions` 20 (40 per class), `ReturnCount` max 3, and `EmptyFunctionBlock` and `MagicNumber` off.
@@ -168,22 +229,30 @@ There are two DSL layers over one core model. Both produce a validated `Question
       `string-template-indent`, `indent`, `multiline-expression-wrapping`, `chain-method-continuation`,
       `no-trailing-spaces`, `import-ordering`.
     - Because the `indent` rule is off, `make format` can wrap code without re-indenting it. Check its output by eye.
+    - Files under `build/` (Kotest's KSP-generated launchers, `BuildInfo.kt`) are excluded from lint. The exclusion
+      spec reads a local `val`, not a script-level one: a lambda that touches the build script can't be stored in
+      the configuration cache.
 - A gitignored `.env` in the project root supplies environment variables to every `Test` and `JavaExec` task, through
   the author's `com.pambrose.envvar` convention plugin (same `gradle-plugins` catalog version as kotlinter).
   `.env.example` is the committed template; copy it and fill in `TYPESAFE_API_KEY` so `make example` and
   `make live-tests` work without exporting anything.
-    - Editing `.env` invalidates the configuration cache, but the `test` task's environment isn't a task input, so an
-      up-to-date `test` won't re-run on its own. `make tests` and `make live-tests` pass `--rerun-tasks`, so they always
-      see the current values.
+    - Only JVM tasks see `.env`; the JS and native test tasks aren't `Test` tasks. They inherit the shell's environment,
+      which is how `JEV4K_LIVE=1` reaches them in `make live-tests`. The simulators only pass variables prefixed
+      `SIMCTL_CHILD_`.
+    - Editing `.env` invalidates the configuration cache, but `jvmTest`'s environment isn't a task input, so an
+      up-to-date `jvmTest` won't re-run on its own. `make tests` and `make live-tests` pass `--rerun` to each test task,
+      so they always see the current values. (`--rerun-tasks` would also recompile all sixteen targets.)
 - Dokka (`org.jetbrains.dokka` 2.2.0) builds the KDoc site. `make kdocs` writes it to `build/dokka/html`.
-    - The site documents the public API of `src/main` only. Every other Dokka source set is suppressed, so nothing under
-      `src/test` (test classes, fixtures, the example) is included, and the `com.pambrose.jev4k.internal` package is
-      excluded. `docs/packages.md` supplies the module and package overview pages.
+    - The site documents the public API of the main source sets, with a tab per platform (common, jvm, native, web).
+      Source sets whose names end in `Test` are suppressed, so no test class, fixture or example is included, and the
+      `com.pambrose.jev4k.internal` package is excluded. `docs/packages.md` supplies the module and package overview
+      pages.
     - kotlinx.serialization and Ktor types link to their online API docs through `externalDocumentationLinks`.
-    - `moduleVersion` is `project.version`, `jdkVersion` comes from the catalog's `jvm-target` version, and
+    - `moduleVersion` is `project.version`, `jvmMain`'s `jdkVersion` comes from the catalog's `jvm-target` version, and
       `suppressInheritedMembers` is on. Pages don't repeat inherited members: a subclass such as `JevRateLimitException`
       links to `JevApiException` for `status`, `body` and `requestId`.
-    - `sourceLink` and `homepageLink` point at `github.com/pambrose/jev4k` on `master`.
+    - `sourceLink` (rooted at `src/`, so it covers every source set) and `homepageLink` point at
+      `github.com/pambrose/jev4k` on `master`.
     - In a class comment, refer to a constructor property as `[name][Class.name]`. A bare `[name]` points at the
       constructor parameter, which Dokka leaves unlinked.
 - Java interop is a deliberate, narrow contract: `@JvmOverloads` on `JevClient`'s builder constructor, `BlockingJev`'s
@@ -195,34 +264,50 @@ There are two DSL layers over one core model. Both produce a validated `Question
   new reified member so the set stays uniform. Because Java can reach neither `QueryBuilder.choice<E>()` nor the
   `internal` `enumChoiceRef`, a Java caller can only get an enum-backed Choice by building a `ChoiceQuestion` and
   passing it to `QueryBuilder.question(id, question)`; the README and the Installation page say so.
-- The jar manifest carries `Implementation-Version` (used in the client's User-Agent) and
+- The JVM jar's manifest carries `Implementation-Version` and
   `Automatic-Module-Name: com.pambrose.jev4k`, which pins the JPMS module name for consumers instead of letting it
   derive from the jar's file name. The README and the site's Installation page document what an embedding app inherits:
-  seven POM dependencies, no logging binding, and how to drop CIO when supplying another engine.
+  seven POM dependencies (in `jev4k-jvm`'s POM), no logging binding, and how to drop CIO when supplying another
+  engine.
+- KGP's ABI validation (`abiValidation()`) guards the public API. `api/jev4k.api` is the JVM surface, Java callers
+  included, and `api/jev4k.klib.api` covers the other targets. `checkKotlinAbi` runs under `check`;
+  `make abi-update` (`updateKotlinAbi`) rewrites the dumps after an intended change and must run on a Mac, since a
+  host that can't compile a target keeps that target's old declarations. The JVM dump was taken before the
+  multiplatform move and still matches it.
 - Coverage uses Kover (`org.jetbrains.kotlinx.kover`).
-    - `.github/workflows/ci.yml` runs on every push to `master`: `build -x test` (compile, kotlinter, detekt), then
-      `test koverVerify koverXmlReport koverLog`, and uploads `build/reports/kover/report.xml` to Codecov with the
-      `unittests` flag. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
+    - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs
+      `build koverVerify koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js,
+      wasmJs and linuxX64 tests), then uploads `build/reports/kover/report.xml` to Codecov with the `unittests`
+      flag. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
       a drop of more than 1% and reports patch coverage without gating on it.
-    - A second `test` job in the same workflow runs the suite on JDK 17, 21 and 25. Tests otherwise run on the
-      toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints the test task's `javaLauncher`;
+    - `native-apple` (macos-latest: `macosArm64Test iosSimulatorArm64Test`) and `native-windows` (windows-latest:
+      `mingwX64Test`) run the tests Linux can't. Every job that compiles native code caches `~/.konan`, `docs.yml`
+      included, since Dokka resolves the native source sets.
+    - A `test` job in the same workflow runs `jvmTest` on JDK 17, 21 and 25. Tests otherwise run on the
+      toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints `jvmTest`'s `javaLauncher`;
       `-XX:+EnableDynamicAgentLoading` is added only from 21 up, because an unrecognized `-XX` option stops JDK 17
       from starting. `make test-jdk JDK=17` reproduces one row, `make all-tests` the whole set.
     - The `kover {}` block sets line and branch floors (`minLineCoveragePct`, `minBranchCoveragePct`) a few points below
-      the measured totals. `koverVerify` is deliberately not wired into `check`, because it would fail every
-      `build -x test` at 0%. Run it with `make coverage-verify`. Raise the floors when coverage has moved up and stayed
-      there.
-    - Kover measures `src/main` only. The website examples and test fixtures are never counted.
+      the measured totals. `koverVerify` is deliberately not wired into `check`, because it would fail every build
+      that skips the tests at 0%. Run it with `make coverage-verify`. Raise the floors when coverage has moved up and
+      stayed there.
+    - Kover measures the JVM target's main code (`src/commonMain` plus `src/jvmMain`); `codecov.yml` flags the same
+      paths. The website examples and test fixtures are never counted.
 - Enum constants used as Choice options are UPPER_CASE. Their names are sent to the model as option keys unless
   `JevOption.optionKey` overrides them (the `Dept` test fixture sends lowercase keys that way).
 
 The `Makefile` wraps the common Gradle invocations; `make` (or `make help`) lists every target.
 
 ```bash
-make build                                            # clean build, skipping tests
-make tests                                            # kotlinter + detekt + all tests, forcing re-execution
-make test-jdk JDK=17                                  # run the tests on one JDK, as CI's matrix does
-make all-tests                                        # tests + the JDK matrix + coverage floors + live tests
+make build                                            # clean build of every target, lint, ABI check; no tests
+make tests                                            # lint + ABI check + every test this host runs, re-run
+make jvm-tests                                        # the JVM tests only, the quickest loop
+make js-tests                                         # the tests on Node.js (js and wasmJs)
+make native-tests                                     # macOS + iOS/tvOS/watchOS simulators on a Mac, linuxX64 on Linux
+make docker-linux-tests                               # linuxX64 + linuxArm64 tests in Docker containers (needs Docker)
+make platform-tests                                   # jvm + js + native + docker-linux tests; no lint or ABI check
+make test-jdk JDK=17                                  # run the JVM tests on one JDK, as CI's matrix does
+make all-tests                                        # tests + the JDK matrix + coverage floors + Docker Linux + live tests
 make lint                                             # kotlinter (lintKotlin) + detekt
 make kdocs                                            # Dokka HTML site in build/dokka/html
 make coverage-open                                    # Kover HTML coverage report, opened in a browser
@@ -234,25 +319,57 @@ make publish-maven-central                            # sign and release <versio
 make format                                           # auto-format sources with ktlint (formatKotlin)
 make detekt                                           # detekt static analysis only
 make detekt-baseline                                  # regenerate config/detekt/baseline.xml
+make abi-check                                        # check the public API against api/
+make abi-update                                       # rewrite the api/ dumps after an intended change (macOS)
 make example                                          # run TriageExample against the live API (needs TYPESAFE_API_KEY)
-make live-tests                                       # run LiveSmokeTest against the live API (needs TYPESAFE_API_KEY)
+make live-tests                                       # LiveSmokeTest (needs TYPESAFE_API_KEY) + every platform's probes
 make tree                                             # dependency tree
 make versions                                         # report newer dependency/plugin/Gradle versions (ben-manes)
 make upgrade-wrapper                                  # regenerate the wrapper at the catalog's gradle-wrapper version
-./gradlew test --tests "com.pambrose.jev4k.DslTest"   # run a single test class
+./gradlew jvmTest --tests "com.pambrose.jev4k.DslTest" # run a single test class on the JVM
 ```
 
 To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then run `make upgrade-wrapper`.
 
 ## Testing
 
-- Test classes are named `*Test`. Each is a Kotest `StringSpec()` with an `init {}` block, under
-  `src/test/kotlin/com/pambrose/jev4k/`.
+- Test classes are named `*Test`. Each is a Kotest `StringSpec()` with an `init {}` block.
+    - Specs for common code go in `src/commonTest/kotlin/com/pambrose/jev4k/`, so they run on every platform the host
+      supports. `src/jvmTest` keeps what needs the JVM: MockK specs, `BlockingJevTest`, `LiveSmokeTest`,
+      `ClientJvmTest` (the blocking wrapper and the real-CIO timeout case), `SilentServer`, the example, and the
+      website examples. A class name can't be in both, so a JVM-only remainder is named `…JvmTest`.
+    - Kotest runs the non-JVM targets through the `io.kotest` plugin and KSP, which generate each target's entry
+      point. The plugin only does that for test tasks the host can run, so `build.gradle.kts` adds the processor to
+      `kspLinuxX64Test` and `kspLinuxArm64Test` itself; without that, a Linux test binary linked on a Mac holds no
+      specs, and linuxArm64 (which has no test task) none anywhere.
+    - `make docker-linux-tests` links both Linux test binaries and runs each in a `buildpack-deps:noble-curl`
+      container of its own architecture (Ubuntu plus `ca-certificates`). A Kotest native binary exits 0 even when
+      a test fails, since Gradle reads the verdict from its TeamCity messages, so the target fails on a
+      `##teamcity[testFailed` line or a missing Kotest `Specs:` summary. Full logs go to `build/docker-linux-tests/`.
+    - KGP runs a simulator test in the first available device of its platform. Xcode creates iOS devices by
+      default but installs no tvOS or watchOS runtime, so `build.gradle.kts` reads `xcrun simctl list devices
+      available --json` and disables `tvosSimulatorArm64Test`/`watchosSimulatorArm64Test` (and their link tasks)
+      when that platform has no device. The configuration cache re-runs the listing, so adding a device (a runtime
+      from Xcode → Settings → Components, then `xcrun simctl create` if it made none) enables the tests on the next
+      build. Their `LiveProbeTest` stays skipped for the same `SIMCTL_CHILD_` reason as iOS.
+    - Kotest's `autoClose` takes Kotest's own `AutoCloseable`, which is only `java.lang.AutoCloseable` on the JVM;
+      common tests wrap a `kotlin.AutoCloseable` with `closeAfterSpec(...)` from `TestSupport.kt`.
+    - Construct exceptions with common APIs: `kotlinx.io.IOException`, Ktor's `SocketTimeoutException(message)`
+      factory (the class's native constructor is internal), `CancellationException(message, cause)` rather than
+      `initCause`. A bare `IllegalStateException` counts as a connection failure on Linux and Windows, so don't use
+      one as a generic "some other error".
 - HTTP is tested with Ktor's `MockEngine` through `testJev(...)` in `TestSupport.kt`. It injects the engine and records
-  retry delays instead of sleeping, and `NoJitter` makes backoff predictable. `SilentServer` is a local socket that
-  never responds, for testing real-CIO timeouts.
+  retry delays instead of sleeping, and `NoJitter` makes backoff predictable. `SilentServer` (JVM) is a local socket
+  that never responds, for testing real-CIO timeouts. `PlatformEngineTest` drives each platform's real default
+  engine against a dead loopback port.
 - MockK is used where a dependency is mocked: `ConsumerTest` mocks `JevApi` to show how application code is tested
   without HTTP.
-- `LiveSmokeTest` makes real API calls and runs only when `TYPESAFE_API_KEY` is set and `JEV4K_LIVE=1`
+- `LiveSmokeTest` (JVM) makes real API calls and runs only when `TYPESAFE_API_KEY` is set and `JEV4K_LIVE=1`
   (`make live-tests` sets it), so ordinary runs never spend tokens.
+- `LiveProbeTest` (common) runs only with `JEV4K_LIVE=1` and spends no tokens: an invalid key must come back as
+  `JevAuthenticationException` over TLS, and a 1 ms timeout as `JevTimeoutException`. It passes on the JVM, Node.js
+  and macOS, and on linuxX64 and linuxArm64 under `JEV4K_LIVE=1 make docker-linux-tests`. A plain `ubuntu` image
+  fails the TLS probe: without `ca-certificates` Curl can't verify the certificate and reports a
+  `JevConnectionException`. A test binary spawned by `simctl` on the iOS simulator can't validate any TLS
+  certificate (`NSURLErrorDomain -1202`, even for apple.com), so its probes stay skipped.
 - Test JVMs run with `-XX:+EnableDynamicAgentLoading` for MockK on JDK 25.

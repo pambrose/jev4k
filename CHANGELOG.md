@@ -6,9 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-## [Unreleased]
+## [0.2.0] — unreleased
 
-Nothing yet.
+jev4k is now a Kotlin Multiplatform library, published under the new group `com.pambrose.jev4k`. The JVM API is
+unchanged; the other platforms are new.
+
+### Added
+
+- Targets beyond the JVM: Apple platforms (`macosArm64`, `iosArm64`, `iosX64`, `iosSimulatorArm64`, `tvosArm64`,
+  `tvosSimulatorArm64`, `watchosArm32`, `watchosArm64`, `watchosSimulatorArm64`, `watchosDeviceArm64`), Linux
+  (`linuxX64`, `linuxArm64`), Windows (`mingwX64`), and Node.js (`js`, `wasmJs`). The whole API is common code.
+- A default Ktor engine per platform: CIO on the JVM, as before, Darwin on Apple platforms, Curl on Linux, WinHttp
+  on Windows, and the `fetch`-based Js engine on Node.js. CIO can't make HTTPS requests on Kotlin/Native, hence the
+  others.
+- Each engine's own way of reporting a failed connection (a bare `IllegalStateException` from Curl and WinHttp, a
+  failed fetch from the Js engine) becomes a `JevConnectionException` and is retried like an `IOException`.
+- ABI validation. `api/jev4k.api` (the JVM surface) and `api/jev4k.klib.api` (the other targets) record the public
+  API; `make tests` and CI fail when it changes, and `make abi-update` rewrites them after an intended change.
+- `LiveProbeTest`, two opt-in calls to the real API that spend no tokens, run on every platform: an invalid key must
+  come back as `JevAuthenticationException` and a 1 ms timeout as `JevTimeoutException`.
+- `make docker-linux-tests` runs the linuxX64 and linuxArm64 tests in Docker containers, so any host with Docker can
+  run them, and linuxArm64, which has no Gradle test task, is tested at all. `make all-tests` includes it when Docker
+  is running.
+- The tvOS and watchOS simulator tests run on a Mac that has a simulator device for them, and are skipped on one
+  that doesn't; `make tests` and `make native-tests` include them.
+
+### Changed
+
+- **Breaking: Maven coordinates.** The group is now `com.pambrose.jev4k`, so every artifact sits under one group, as
+  common-utils' do. `com.pambrose.jev4k:jev4k` is the multiplatform root module: Gradle builds depend on it and get
+  the right artifact for each target, and Maven builds depend on `com.pambrose.jev4k:jev4k-jvm`. 0.1.0 stays at
+  `com.pambrose:jev4k`, and nothing newer is published there.
+- The JVM API is unchanged: its ABI dump matches 0.1.0's, `JavaInterop.java` compiles as before, and the
+  `jev4k-jvm` POM lists the same seven dependencies. The published metadata still carries
+  `org.gradle.jvm.version = 17`.
+- `JevClient.blocking` has its methods on the JVM only. On the other platforms `BlockingJev` has no members:
+  Kotlin/JS and Kotlin/Wasm can't block a thread, and Kotlin/Native callers can wrap the suspend calls in
+  `runBlocking` themselves.
+- The `User-Agent` version is compiled in rather than read from the jar manifest, so it is correct on every
+  platform and in tests. The JVM jar still carries `Implementation-Version` and `Automatic-Module-Name`.
+- Sources moved to `src/commonMain`, `src/jvmMain` and the per-platform source sets. Tests moved to
+  `src/commonTest`, which runs on every platform, and `src/jvmTest`, which keeps the MockK, blocking, live-smoke and
+  real-CIO tests, the runnable example, and the documentation examples.
+- `make build` compiles every target without running tests; `make tests` re-runs every test task the host supports;
+  `jvm-tests`, `js-tests`, `native-tests`, `platform-tests` (every platform's tests, Docker Linux included),
+  `abi-check` and `abi-update` are new. The Maven Central publishing targets require macOS, the only host that
+  builds the Apple targets.
+- CI runs the jvm, js, wasmJs and linuxX64 tests on Linux, and adds a macOS job (macOS and the iOS simulator) and a
+  Windows job (`mingwX64`).
 
 ## [0.1.0] - 2026-09-20
 
@@ -116,5 +161,5 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
-[Unreleased]: https://github.com/pambrose/jev4k/compare/0.1.0...HEAD
+[0.2.0]: https://github.com/pambrose/jev4k/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/pambrose/jev4k/releases/tag/0.1.0

@@ -358,6 +358,8 @@ naming:
             - 'macosX64'
             - 'mingwX64'
             - 'linuxX64'
+            # jev4k's shared js + wasmJs source set (BlockingJev.web.kt).
+            - 'web'
     MemberNameEqualsClassName:
         active: true
         ignoreOverridden: true

@@ -42,6 +42,7 @@ For a single yes/no policy, `band()` automates the clear cases and sends the res
 Set the band from labeled examples of your own traffic, and watch the automation rate alongside accuracy.
 
 !!! warning "Adversarial content"
-Jev doesn't treat the state as hostile by default. Text written to steer it, such as injected instructions or
-content arguing for its own classification, can move the answer. Be explicit in your criteria, and test edge
-cases before deploying.
+
+    Jev doesn't treat the state as hostile by default. Text written to steer it, such as injected instructions or
+    content arguing for its own classification, can move the answer. Be explicit in your criteria, and test edge
+    cases before deploying.

@@ -10,6 +10,7 @@ secrets/
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea/artifacts/
 *.iws
 *.iml
 *.ipr
@@ -52,6 +53,10 @@ __pycache__/
 ### The docs site's lockfile is committed: the docs workflow builds with `uv run --locked`, which fails without
 ### it. This negation is what keeps it in git, because a global *.lock ignore would otherwise hide it.
 !website/uv.lock
+
+### The Node.js lockfiles for the js and wasmJs test toolchains are committed too (the same global *.lock ignore
+### would hide them). Regenerate them with kotlinUpgradeYarnLock and kotlinWasmUpgradeYarnLock.
+!kotlin-js-store/**/yarn.lock
 
 ### Zensical build output ###
 website/**/site/

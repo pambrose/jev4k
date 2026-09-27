@@ -30,7 +30,7 @@ Blank environment variables are ignored.
 | `defaultModel` | `TYPESAFE_DEFAULT_MODEL` | `jev-latest`                                                                   |
 | `timeout`      |                          | 10 seconds per HTTP attempt                                                    |
 | `retry`        |                          | `RetryPolicy()`, matching the official SDKs; see [Retries & Errors](errors.md) |
-| `engine`       |                          | a CIO engine created by the client                                             |
+| `engine`       |                          | the platform's default engine, created by the client (CIO on the JVM)          |
 | `headers`      |                          | none; extra headers sent with every request                                    |
 
 A missing API key throws a `JevConfigException` that names `TYPESAFE_API_KEY`. `JevConfig.toString()` redacts
@@ -54,7 +54,9 @@ client at it with three environment variables:
 
 ## A custom HTTP engine
 
-To tune connection pooling, TLS, or proxies, pass your own Ktor engine:
+The client creates its own engine unless you pass one: CIO on the JVM, Darwin on Apple platforms, Curl on Linux,
+WinHttp on Windows, and the `fetch`-based Js engine on Node.js. To tune connection pooling, TLS, or proxies, pass
+your own Ktor engine:
 
 ```kotlin
 --8<-- "ClientExamples.kt:engine"
@@ -69,7 +71,8 @@ timeouts are left to an engine you supply, so settings like `endpoint.connectTim
 
 ## Security
 
-- Keep API keys on the server. Never ship them in a browser or mobile client.
+- Keep API keys on the server. Never ship them in a browser or mobile client; an Apple-platform app should reach
+  Jev through a backend of your own (`baseUrl`) that adds the real key.
 - The key is sent as `Authorization: Bearer ...` on every request, and redacted from `JevConfig.toString()`.
 - Every request carries a `User-Agent` of `jev4k/<version>`. A `headers` entry of the same name replaces the
   built-in one rather than adding a second value, so a gateway that needs its own `Authorization` can have it.

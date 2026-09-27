@@ -28,13 +28,15 @@ icon: lucide/send
 
 ## Blocking calls
 
-`jev.blocking` mirrors every call without coroutines, for scripts, `main`, tests and Java callers:
+On the JVM, `jev.blocking` mirrors every call without coroutines, for scripts, `main`, tests and Java callers:
 
 ```kotlin
 --8<-- "ClientExamples.kt:blocking"
 ```
 
-Blocking calls block the calling thread. Don't use them from inside a coroutine.
+Blocking calls block the calling thread. Don't use them from inside a coroutine. They exist on the JVM only; on
+every other platform `BlockingJev` has no members. Kotlin/JS and Kotlin/Wasm can't block a thread at all, and
+Kotlin/Native code that needs to can wrap the suspend calls in `runBlocking` itself.
 
 ## Choosing a model
 

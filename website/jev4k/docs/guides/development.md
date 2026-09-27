@@ -18,17 +18,29 @@ To run a single test class:
 --8<-- "Development.txt:single-test"
 ```
 
-- **Checks.** `make tests` runs kotlinter (ktlint), detekt, and the Kotest suite.
-- **JDK coverage.** The tests run on the build toolchain by default. CI also runs them on JDK 17, 21 and 25,
+- **Checks.** `make tests` runs kotlinter (ktlint), detekt, the ABI check, and the Kotest suite on every platform
+  the host can run: the JVM, Node.js (js and wasmJs), and the native targets (macOS and the iOS simulator on a
+  Mac, linuxX64 on Linux). CI runs the rest, on a macOS and a Windows runner. The tvOS and watchOS simulator tests
+  run on a Mac that has a simulator device for them (Xcode installs neither by default) and are skipped otherwise.
+- **Linux tests anywhere.** `make docker-linux-tests` links the linuxX64 and linuxArm64 test binaries and runs each
+  in a Docker container of its own architecture, so a Mac can run the Linux tests too. It is the only place
+  linuxArm64's tests run. `JEV4K_LIVE=1 make docker-linux-tests` adds the live probes.
+- **API dumps.** `api/jev4k.api` (the JVM surface, Java callers included) and `api/jev4k.klib.api` (every other
+  target) record the public API, and `make tests` fails if it changes. After an intended change, run
+  `make abi-update` on a Mac, the only host that compiles every target, and commit the new dumps.
+- **JDK coverage.** The JVM tests run on the build toolchain by default. CI also runs them on JDK 17, 21 and 25,
   since jev4k ships Java 17 bytecode and compiling against the 17 API doesn't prove it behaves there.
   `make test-jdk JDK=17` reproduces one of those rows, and `make all-tests` runs every test target there is.
 - **Coverage.** `make coverage-open` builds the Kover report and opens it; `make coverage-verify` checks the
   line and branch floors. CI uploads the same report to
   [Codecov](https://codecov.io/gh/pambrose/jev4k).
 - **No traffic leaves the machine in unit tests.** They exercise the client through Ktor's `MockEngine`, apart
-  from one timeout test that drives the real CIO engine against a loopback socket.
-- **Live tests are opt-in.** They run only when `TYPESAFE_API_KEY` is set and `JEV4K_LIVE=1`, which
-  `make live-tests` sets.
+  from one timeout test that drives the real CIO engine against a loopback socket, and one test per platform
+  that dials a loopback port nothing listens on, to check how that platform's default engine reports a refused
+  connection.
+- **Live tests are opt-in.** They run only when `JEV4K_LIVE=1`, which `make live-tests` sets. The JVM smoke
+  tests also need `TYPESAFE_API_KEY`; the probes that run on every platform send an invalid key and a 1 ms
+  timeout, so they spend no tokens.
 - **`.env` supplies the key.** Copy `.env.example` to `.env` (gitignored) and set `TYPESAFE_API_KEY`. Gradle
   loads it into every test and example task, so nothing needs exporting in your shell.
 
@@ -40,14 +52,17 @@ to every page. Point a coding agent at `https://jev4k.com/llms.txt` and it can f
 
 ## Project layout
 
-| Path                                 | Contents                                      |
-|--------------------------------------|-----------------------------------------------|
-| `src/main/kotlin/com/pambrose/jev4k` | the library                                   |
-| `src/test/kotlin/com/pambrose/jev4k` | the Kotest tests and the runnable example     |
-| `src/test/kotlin/website`            | the code examples used by this site           |
-| `src/test/java/website`              | the Java example used by this site            |
-| `website/jev4k`                      | this documentation site                       |
-| `jev-docs/`                          | a compressed copy of TypeSafe's documentation |
+| Path                                       | Contents                                                          |
+|--------------------------------------------|-------------------------------------------------------------------|
+| `src/commonMain/kotlin/com/pambrose/jev4k` | the library, shared by every platform                             |
+| `src/jvmMain`, `src/nativeMain`, …         | per-platform code: `BlockingJev`, the default engines, `getenv`   |
+| `src/commonTest/kotlin/com/pambrose/jev4k` | the Kotest tests that run on every platform                       |
+| `src/jvmTest/kotlin/com/pambrose/jev4k`    | the JVM-only tests (MockK, blocking, live smoke) and the example  |
+| `src/jvmTest/kotlin/website`               | the code examples used by this site                               |
+| `src/jvmTest/java/website`                 | the Java example used by this site                                |
+| `api/`                                     | the public API dumps checked by `make tests`                      |
+| `website/jev4k`                            | this documentation site                                           |
+| `jev-docs/`                                | a compressed copy of TypeSafe's documentation                     |
 
 ## This site
 
@@ -82,8 +97,8 @@ directly and have to be updated together if the domain ever changes.
 
 ### Code examples
 
-Code examples aren't written into the pages. They live in `src/test/kotlin/website` as ordinary Kotlin, with the
-Java example in `src/test/java/website`, so they compile against the real API and pass the same lint checks as
+Code examples aren't written into the pages. They live in `src/jvmTest/kotlin/website` as ordinary Kotlin, with the
+Java example in `src/jvmTest/java/website`, so they compile against the real API and pass the same lint checks as
 the rest of the code. A page includes a region of a file with a snippet directive:
 
 ````markdown
@@ -94,7 +109,7 @@ the rest of the code. A page includes a region of a file with a snippet directiv
 
 That includes the region of `NoulExamples.kt` fenced by a pair of comment markers, a `start:basic` marker and an
 `end:basic` marker, dedented. (The markers use the same `--8<--` prefix as the directive; see any file in
-`src/test/kotlin/website`.) The site's `zensical.toml` sets `check_paths`, so a reference to a missing file fails
+`src/jvmTest/kotlin/website`.) The site's `zensical.toml` sets `check_paths`, so a reference to a missing file fails
 the build. Non-Kotlin snippets, such as shell commands, live in `.txt` files next to them.
 
 The examples are compiled with the test sources, but they aren't tests, and nothing runs them.

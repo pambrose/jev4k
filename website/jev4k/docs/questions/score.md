@@ -81,6 +81,7 @@ the nearest level. There's no threshold to tune:
 ```
 
 !!! warning "Don't interpolate numbers"
-A score of 1.5 between "$1,000" and "$10,000" doesn't mean $5,500. Score levels aren't numerically
-calibrated. Use scores for thresholds and ranking, and extract exact values another way; see
-[Extraction](../patterns/extraction.md).
+
+    A score of 1.5 between "$1,000" and "$10,000" doesn't mean $5,500. Score levels aren't numerically
+    calibrated. Use scores for thresholds and ranking, and extract exact values another way; see
+    [Extraction](../patterns/extraction.md).

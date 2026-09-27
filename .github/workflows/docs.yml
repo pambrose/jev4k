@@ -40,6 +40,13 @@ jobs:
                     distribution: temurin
                     java-version: 25
             -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            # Dokka documents every source set, the native ones included, so it needs the Kotlin/Native toolchain;
+            # setup-gradle doesn't cache it. The catalog pins the Kotlin version, so its hash is a good cache key.
+            -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+                with:
+                    path: ~/.konan
+                    key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+                    restore-keys: konan-${{ runner.os }}-
             -   run: ./gradlew dokkaGeneratePublicationHtml
 
             # Copy KDocs into the Zensical site output; the site's "KDocs" page links to /kdocs/.

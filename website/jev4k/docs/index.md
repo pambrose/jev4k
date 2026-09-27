@@ -50,7 +50,9 @@ graph TD
 - **Structured criteria**: contrastive rubrics, examples, and JSON field specs in
   [instructions and options](questions/structured.md).
 - **Any state**: text, JSON, or any `@Serializable` value.
-- **Suspend-first client** on Ktor, with a [blocking mirror](client/calls.md) for scripts and `main`.
+- **Suspend-first client** on Ktor, with a [blocking mirror](client/calls.md) on the JVM for scripts and `main`.
+- **Multiplatform**: the JVM, Apple platforms, Linux, Windows, and Node.js, with the same API on
+  [every one](getting-started/installation.md#platforms).
 - **SDK-parity retries**: the official SDKs' [retry and timeout rules](client/errors.md), including
   server `Retry-After` hints.
 - **Validation before sending**: every problem with a request is reported at once, without a network call.

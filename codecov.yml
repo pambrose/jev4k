@@ -26,8 +26,10 @@ comment:
     behavior: default
     require_changes: true
 
+# Kover measures the JVM target, which runs the common code as well as the JVM-only code.
 flags:
     unittests:
         paths:
-            - src/main/
+            - src/commonMain/
+            - src/jvmMain/
         carryforward: true

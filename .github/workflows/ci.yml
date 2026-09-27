@@ -16,8 +16,11 @@ permissions:
     contents: read
 
 jobs:
+    # Linux runs the jvm, js, wasmJs and linuxX64 tests. It can't run the Apple or Windows test executables, so the
+    # native-apple and native-windows jobs below cover those.
     build:
         runs-on: ubuntu-latest
+        timeout-minutes: 60
         steps:
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             # JDK 25 is the toolchain in the catalog.
@@ -26,15 +29,22 @@ jobs:
                     distribution: temurin
                     java-version: 25
             -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
+            # downloads. The catalog pins the Kotlin version, so its hash is a good cache key.
+            -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+                with:
+                    path: ~/.konan
+                    key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+                    # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what
+                    # is missing.
+                    restore-keys: konan-${{ runner.os }}-
 
-            # build runs check without the tests, and check already includes lintKotlin and detekt.
-            -   name: Compile, lint, and detekt (no tests)
-                run: ./gradlew clean build -x test
-
-            # --continue lets the Kover report tasks run even if some tests fail, so coverage is still uploaded.
-            # LiveSmokeTest stays disabled: it needs JEV4K_LIVE=1 and TYPESAFE_API_KEY, neither of which is set here.
-            -   name: Run tests and generate coverage report
-                run: ./gradlew --continue test koverVerify koverXmlReport koverLog
+            # build runs check, which compiles every target this host supports and runs lintKotlin, detekt, the ABI
+            # check against api/, and the jvm, js, wasmJs and linuxX64 tests. --continue lets the Kover report tasks
+            # run even if some tests fail, so coverage is still uploaded. The live tests stay disabled: they need
+            # JEV4K_LIVE=1 (and LiveSmokeTest a TYPESAFE_API_KEY), and neither is set here.
+            -   name: Build, lint, check the ABI, run the tests, and generate the coverage report
+                run: ./gradlew --continue build koverVerify koverXmlReport koverLog
 
             -   name: Upload test reports on failure
                 if: failure()
@@ -63,6 +73,7 @@ jobs:
     test:
         name: Tests on JDK ${{ matrix.java }}
         runs-on: ubuntu-latest
+        timeout-minutes: 30
         strategy:
             # One JDK failing shouldn't hide the result on the others.
             fail-fast: false
@@ -88,7 +99,7 @@ jobs:
             # shortcut rather than a requirement.
             -   name: Run tests on JDK ${{ matrix.java }}
                 run: >
-                    ./gradlew test -PtestJavaVersion=${{ matrix.java }}
+                    ./gradlew jvmTest -PtestJavaVersion=${{ matrix.java }}
                     "-Porg.gradle.java.installations.fromEnv=JAVA_HOME_${{ matrix.java }}_X64,JAVA_HOME_25_X64"
 
             -   name: Upload test reports on failure
@@ -96,6 +107,75 @@ jobs:
                 uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
                 with:
                     name: test-reports-jdk-${{ matrix.java }}
+                    path: |
+                        build/reports/tests/
+                        build/test-results/
+                    retention-days: 7
+
+    # The Apple targets' tests need a macOS host. The watchOS and tvOS simulator test tasks are disabled in the build
+    # (Xcode doesn't install those simulator runtimes by default), and Gradle skips iosX64Test on the arm64 runner.
+    native-apple:
+        runs-on: macos-latest
+        timeout-minutes: 60
+        steps:
+            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+                with:
+                    distribution: temurin
+                    java-version: 25
+            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
+            # downloads. The catalog pins the Kotlin version, so its hash is a good cache key.
+            -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+                with:
+                    path: ~/.konan
+                    key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+                    # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what
+                    # is missing.
+                    restore-keys: konan-${{ runner.os }}-
+
+            -   name: Run the macOS and iOS simulator tests
+                run: ./gradlew macosArm64Test iosSimulatorArm64Test
+
+            -   name: Upload test reports on failure
+                if: failure()
+                uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+                with:
+                    name: test-reports-apple
+                    path: |
+                        build/reports/tests/
+                        build/test-results/
+                    retention-days: 7
+
+    native-windows:
+        runs-on: windows-latest
+        timeout-minutes: 60
+        steps:
+            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+                with:
+                    distribution: temurin
+                    java-version: 25
+            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
+            # downloads. The catalog pins the Kotlin version, so its hash is a good cache key.
+            -   uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+                with:
+                    path: ~/.konan
+                    key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+                    # A catalog bump that leaves Kotlin alone still restores the toolchain; Gradle downloads what
+                    # is missing.
+                    restore-keys: konan-${{ runner.os }}-
+
+            -   name: Run the mingwX64 tests
+                shell: bash
+                run: ./gradlew mingwX64Test
+
+            -   name: Upload test reports on failure
+                if: failure()
+                uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+                with:
+                    name: test-reports-windows
                     path: |
                         build/reports/tests/
                         build/test-results/

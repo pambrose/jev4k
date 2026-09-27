@@ -3,7 +3,7 @@
 # ============================================================================
 #
 # Code examples are not written into these pages. They live in
-# src/test/kotlin/website (compiled with the test sources, so they can't drift
+# src/jvmTest/kotlin/website (compiled with the JVM test sources, so they can't drift
 # from the API) and are pulled in with pymdownx.snippets:
 #
 #     ```kotlin
@@ -162,11 +162,11 @@ emoji_generator = "zensical.extensions.emoji.to_svg"
 # pymdownx.inlinehilite - highlighted inline code
 [project.markdown_extensions.pymdownx.inlinehilite]
 
-# pymdownx.snippets - import the code examples from src/test/kotlin/website.
+# pymdownx.snippets - import the code examples from src/jvmTest/kotlin/website.
 # check_paths fails the build when a referenced file is missing, and
 # dedent_subsections strips the indentation of regions taken from inside a function.
 [project.markdown_extensions.pymdownx.snippets]
-base_path = ["../../src/test/kotlin/website", "../../src/test/java/website", "../.."]
+base_path = ["../../src/jvmTest/kotlin/website", "../../src/jvmTest/java/website", "../.."]
 check_paths = true
 dedent_subsections = true
 

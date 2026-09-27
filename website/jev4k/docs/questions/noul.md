@@ -64,6 +64,7 @@ ask one Noul per thing and combine the answers in code:
 ```
 
 !!! tip "Negations don't add up"
-`P(refund)` and `P(not a refund)`, asked as two Nouls, needn't sum to 1, and a Noul and a yes/no Choice on
-the same question can differ. Ask each question the way you mean it, and don't reuse a threshold tuned for
-one form with another.
+
+    `P(refund)` and `P(not a refund)`, asked as two Nouls, needn't sum to 1, and a Noul and a yes/no Choice on
+    the same question can differ. Ask each question the way you mean it, and don't reuse a threshold tuned for
+    one form with another.

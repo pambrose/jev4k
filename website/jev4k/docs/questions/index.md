@@ -23,10 +23,11 @@ your code needs.
   looks like.
 
 !!! warning "A Noul is not a degree"
-A Noul value of 0.5 means yes and no are equally likely. It doesn't mean "medium". "Is the candidate
-strong in Python?" is a poor Noul, because "strong" isn't defined. Either ask a clean yes/no ("Does the
-resume state the candidate used Python at work?") or measure degree with a Score whose levels describe
-each amount of experience.
+
+    A Noul value of 0.5 means yes and no are equally likely. It doesn't mean "medium". "Is the candidate
+    strong in Python?" is a poor Noul, because "strong" isn't defined. Either ask a clean yes/no ("Does the
+    resume state the candidate used Python at work?") or measure degree with a Score whose levels describe
+    each amount of experience.
 
 ```kotlin
 --8<-- "BestPracticeExamples.kt:degree"

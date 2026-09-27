@@ -41,7 +41,7 @@ compiler points at every place that needs to handle it.
 
 ## Without coroutines
 
-jev4k's calls are `suspend` functions. From ordinary code (a script, `main`, a Java caller), use the blocking
+jev4k's calls are `suspend` functions. From ordinary JVM code (a script, `main`, a Java caller), use the blocking
 mirror on `jev.blocking`:
 
 ```kotlin
