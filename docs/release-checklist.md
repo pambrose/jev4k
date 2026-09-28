@@ -1,10 +1,10 @@
 # Release checklist
 
-How to cut a jev4k release. The first release has extra steps, listed separately, because the repository is
-still being set up and nothing has reached Maven Central yet.
+How to cut a jev4k release. The one-time setup steps are complete and kept below as a record; every release
+follows the steps after them.
 
 This file is for maintainers and isn't part of any published site: Zensical builds `website/jev4k/docs`, and
-Dokka includes only `docs/packages.md` (`build.gradle.kts:246`).
+Dokka includes only `docs/packages.md` (the `includes.from("docs/packages.md")` call in `build.gradle.kts`).
 
 ## Current state
 
@@ -19,6 +19,8 @@ Verified 2026-09-20.
 | `CODECOV_TOKEN` repository secret     | ✅ set                                                      |
 | `master` on the remote                | ✅ pushed, with `ci.yml` green on it                        |
 | Published site                        | ✅ live at <https://jev4k.com/>, KDocs included             |
+| Site deploys                          | on a published GitHub release, or a manual `docs.yml` run   |
+| Required checks on `master`           | `ci-ok`, `docs` and GitGuardian                             |
 | Git tags                              | ✅ `0.1.0` at `b7c2b5e`, with a `v0.1.0` GitHub release      |
 | `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                   |
 | `gradle.properties` version           | `0.2.0`, the next release number (the multiplatform move)   |
@@ -41,6 +43,13 @@ Verified 2026-09-20.
 6. [x] **Check the badges render.** All eight in `README.md:3-10` resolve now that CI, the docs deploy, the
    Central upload and the release all exist: `release: v0.1.0`, `maven-central: v0.1.0` and the Codecov
    percentage were the three waiting on something.
+7. [x] **Deploy the site from releases, not from `master` (2026-09-27).** `docs.yml` builds the site on every PR
+   and `master` push but deploys it only when a release is published, so jev4k.com never shows a version that
+   isn't on Central yet. A release runs on its tag, so the `github-pages` environment allows tags matching
+   `[0-9]*.[0-9]*.[0-9]*` as well as the `master` branch (Settings → Environments → github-pages).
+8. [x] **Require every CI job (2026-09-27).** Branch protection on `master` requires `ci-ok`, a `ci.yml` job that
+   passes only when every other job (the build, the JDK matrix and both native jobs) did, plus the `docs` build
+   and GitGuardian.
 
 ## Every release
 
@@ -58,7 +67,7 @@ Verified 2026-09-20.
   macOS and the iOS simulator (and the tvOS and watchOS simulators where a device is installed), forced to re-run.
   `make docker-linux-tests` runs linuxX64 and linuxArm64; the Windows tests run in CI (step 4).
 - [ ] `make coverage-verify` — the line and branch floors in `build.gradle.kts`.
-- [ ] `cd website/jev4k && uv run zensical build --clean` — must report "No issues found".
+- [ ] `cd website/jev4k && uv run zensical build --clean --strict` — must report "No issues found".
 - [ ] `make site-build` — the site plus Dokka KDocs under `/kdocs`.
 - [ ] Optional: `make live-tests` and `make example`, which call the real API and spend tokens. Worth doing
   when the request or response mapping changed.
@@ -73,15 +82,20 @@ Verified 2026-09-20.
   `https://github.com/pambrose/jev4k/commits/<tag>`; later releases use
   `https://github.com/pambrose/jev4k/compare/<previous-tag>...<tag>`.
 - [ ] `README.md`: update any version shown in a dependency snippet.
+- [ ] `src/jvmTest/kotlin/website/GettingStarted.txt`: update the released version in the `dependency-gradle`,
+  `dependency-kmp`, `dependency-maven` and `exclude-cio` snippets, which the site's Installation page shows. The
+  `composite-dependency` snippet tracks `gradle.properties` instead (step 7).
 - [ ] Add a new `## [Unreleased]` section to `CHANGELOG.md` only if work continues before the next release.
 
-### 4. Commit and push
+### 4. Commit and open the release PR
 
-- [ ] Commit the version bump and the release documents together.
-- [ ] Push to `master` and wait for `ci.yml` (build, tests, Kover, Codecov) and `docs.yml` (Zensical build,
-  Dokka, Pages deploy) to go green. Don't publish from a tree that CI hasn't accepted.
+- [ ] Commit the version bump and the release documents together, on a branch.
+- [ ] Open a PR and wait for the required checks: `ci-ok` (build, tests, Kover, Codecov, the JDK matrix and the
+  native jobs), `docs` (Zensical and Dokka) and GitGuardian. Don't publish from a tree that CI hasn't accepted.
+- [ ] Don't merge yet. Merging puts the new version's install lines in the README on GitHub, so the artifacts
+  go to Central first (step 5).
 
-### 5. Publish to Maven Central
+### 5. Publish to Maven Central, from the release branch
 
 Signing and credentials, all outside the repository:
 
@@ -91,8 +105,9 @@ Signing and credentials, all outside the repository:
 
 Then:
 
-- [ ] Publish from a Mac. Only macOS builds the Apple targets, and a release that left them out would publish a
-  root module pointing at artifacts that don't exist; the publishing targets refuse to run anywhere else.
+- [ ] Publish from a Mac, with the release branch checked out at the commit CI accepted. Only macOS builds the
+  Apple targets, and a release that left them out would publish a root module pointing at artifacts that don't
+  exist; the publishing targets refuse to run anywhere else.
 - [ ] `make publish-maven-central`. It runs `publishAndReleaseToMavenCentral`, and
   `publishToMavenCentral(automaticRelease = true)` promotes the staging repository on its own, so there is
   nothing to click in the Central portal.
@@ -103,15 +118,18 @@ Then:
   curl -sI https://repo1.maven.org/maven2/com/pambrose/jev4k/jev4k/<version>/jev4k-<version>.module | head -1
   ```
 
-  Central's indexes take a few minutes to catch up, so the jar may land before search does.
+  Central's indexes take a few minutes to catch up, so the jar may land before search does. Don't merge until
+  both return `200`.
 - [ ] Check the published set. `jev4k` is the root module (`.module`, POM, metadata jar); `jev4k-jvm` carries the
   jar; `jev4k-js`, `jev4k-wasm-js` and one artifact per native target (`jev4k-macosarm64`, `jev4k-linuxx64`,
   `jev4k-mingwx64`, …) carry klibs. Each has a sources jar, a Dokka HTML javadoc jar, a POM, and a `.asc` for
   every file.
 
-### 6. Tag and create the GitHub release
+### 6. Merge, tag and create the GitHub release
 
-- [ ] Tag with the bare version number, no `v` prefix:
+- [ ] Squash-merge the release PR, then update `master` locally (`git switch master && git pull`) and delete the
+  release branch. The squash commit has the same tree as the commit that was published.
+- [ ] Tag the merge commit on `master` with the bare version number, no `v` prefix:
 
   ```bash
   git tag <version> && git push origin <version>
@@ -129,6 +147,8 @@ Then:
 - [ ] If the release breaks anything, the notes open with a `> [!WARNING]` callout saying what breaks and what
   doesn't, and it is the first thing on the release page (GitHub renders it as a Warning box). 0.2.0's is the
   move to the `com.pambrose.jev4k` group. Check the page after publishing: `gh release view <version> --web`.
+- [ ] Publishing the release starts `docs.yml`, which deploys jev4k.com from the tag. Watch it finish:
+  `gh run list --workflow docs.yml --limit 1`, then `gh run watch <run-id>`.
 
 ### 7. After
 
@@ -137,4 +157,5 @@ Then:
 - [ ] The GitHub release and Maven Central badges in the README show the new number. Both are cached by
   shields.io for a few minutes.
 - [ ] A dependency on the new coordinates resolves from a scratch project.
-- [ ] Bump `gradle.properties` to the next planned version when development resumes.
+- [ ] Bump `gradle.properties` to the next planned version when development resumes, together with the
+  `composite-dependency` snippet in `src/jvmTest/kotlin/website/GettingStarted.txt`, which names that version.

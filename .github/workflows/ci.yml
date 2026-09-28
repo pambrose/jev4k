@@ -117,8 +117,9 @@ jobs:
                         build/test-results/
                     retention-days: 7
 
-    # The native tests Linux can't run: the macOS and iOS simulator tests on macOS (Gradle skips iosX64Test on the
-    # arm64 runner), and the mingwX64 tests on Windows.
+    # The native tests Linux can't run: the macOS and the iOS, tvOS and watchOS simulator tests on macOS (Gradle skips
+    # iosX64Test on the arm64 runner, and a tvOS or watchOS test when the runner has no simulator device for it), and
+    # the mingwX64 tests on Windows.
     native:
         name: Native tests on ${{ matrix.name }}
         runs-on: ${{ matrix.os }}
@@ -130,7 +131,7 @@ jobs:
                 include:
                     -   name: apple
                         os: macos-latest
-                        tasks: macosArm64Test iosSimulatorArm64Test
+                        tasks: macosArm64Test iosSimulatorArm64Test tvosSimulatorArm64Test watchosSimulatorArm64Test
                     -   name: windows
                         os: windows-latest
                         tasks: mingwX64Test
@@ -171,3 +172,19 @@ jobs:
                         build/reports/tests/
                         build/test-results/
                     retention-days: 7
+
+    # The one CI check branch protection requires (with the docs site's "docs" check and GitGuardian). It passes only
+    # when every job above succeeded, so the JDK matrix and both native jobs gate a merge too, and renaming a job or a
+    # matrix entry can't silently drop a required check.
+    ci-ok:
+        if: always()
+        needs: [ build, test, native ]
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            -   name: Fail unless every CI job succeeded
+                env:
+                    RESULTS: ${{ join(needs.*.result, ' ') }}
+                run: |
+                    echo "Job results: $RESULTS"
+                    for result in $RESULTS; do [ "$result" = success ] || exit 1; done

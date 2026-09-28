@@ -52,8 +52,11 @@ unchanged; the other platforms are new.
   `jvm-tests`, `js-tests`, `native-tests`, `platform-tests` (every platform's tests, Docker Linux included),
   `abi-check` and `abi-update` are new. The Maven Central publishing targets require macOS, the only host that
   builds the Apple targets.
-- CI runs the jvm, js, wasmJs and linuxX64 tests on Linux, and adds a macOS job (macOS and the iOS simulator) and a
-  Windows job (`mingwX64`).
+- CI runs the jvm, js, wasmJs and linuxX64 tests on Linux, and adds a macOS job (macOS and the iOS, tvOS and
+  watchOS simulators) and a Windows job (`mingwX64`). A `ci-ok` job, required by branch protection, passes only when
+  every other job did, so the JDK matrix and the native jobs gate a merge.
+- The documentation site is built, in strict mode, on every pull request and `master` push, and deployed only when a
+  release is published, so it never shows a version that isn't on Maven Central yet.
 
 ## [0.1.0] - 2026-09-20
 

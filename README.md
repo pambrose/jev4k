@@ -558,7 +558,7 @@ suspend fun route(jev: JevApi, ticket: Ticket): Team = jev.ask(Triage, state = t
 
 val jev = mockk<JevApi>()
 coEvery { jev.evaluate(any(), any(), any()) } returns
-    jevResult("""{"answers":{"team":{"type":"choice","choice":"technical","confidence":0.9}}}""", Triage.questions)
+    jevResult("""{"answers":{"team":{"type":"choice","choice":"TECHNICAL","confidence":0.9}}}""", Triage.questions)
 route(jev, ticket) shouldBe Team.TECHNICAL
 
 // The same for error handling: 429 gives a JevRateLimitException, 401 a JevAuthenticationException, and so on.
@@ -598,7 +598,7 @@ file into the environment of the test and example tasks, so `make example` and `
 exporting anything.
 
 ```bash
-make build                  # compile every target, lint, and check the ABI, without running tests
+make build                  # compile every target and the doc examples, lint, check the ABI; no tests
 make tests                  # kotlinter + detekt + ABI check + every test this host can run
 make jvm-tests              # the JVM tests only, the quickest loop
 make lint                   # kotlinter + detekt only

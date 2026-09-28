@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 1 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 10 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -36,10 +36,10 @@ Every issue has a number. Tick its box when it's fixed, and update the count bel
   mistake is blamed on the server
 - [ ] [#12](#issue-12) **Java interop.** Java can't reach any `Duration`-typed API (timeout, `RetryPolicy`,
   `retryAfter`), yet the docs say "everything else is callable"
-- [ ] [#13](#issue-13) **CI.** The docs site and KDocs are never built on PRs, and Zensical runs without `--strict`
-- [ ] [#14](#issue-14) **Release.** Install snippets name the unpublished 0.2.0 coordinates, and the docs deploy
+- [x] [#13](#issue-13) **CI.** The docs site and KDocs are never built on PRs, and Zensical runs without `--strict`
+- [x] [#14](#issue-14) **Release.** Install snippets name the unpublished 0.2.0 coordinates, and the docs deploy
   before Central has them
-- [ ] [#15](#issue-15) **Docs.** The README's MockK testing example fails: `"technical"` versus the enum key
+- [x] [#15](#issue-15) **Docs.** The README's MockK testing example fails: `"technical"` versus the enum key
   `TECHNICAL`
 - [ ] [#16](#issue-16) **Examples.** Examples that build Choice options from caller data throw on ordinary inputs
   (over 255 lines, empty lists)
@@ -101,7 +101,7 @@ Java interop and public API
 
 Tests
 
-- [ ] [#50](#issue-50) The "no tests discovered" guard is off for every test task
+- [x] [#50](#issue-50) The "no tests discovered" guard is off for every test task
 - [ ] [#51](#issue-51) No test checks that `platformGetenv` actually returns a value
 - [ ] [#52](#issue-52) `mapModels`'s rejection branches and optional fields are untested
 - [ ] [#53](#issue-53) The default `retryDelay` (the real wait) never runs in any test
@@ -112,10 +112,10 @@ Tests
 
 Build and CI
 
-- [ ] [#58](#issue-58) Branch protection requires only `build`, so the JDK matrix and native jobs never block a merge
-- [ ] [#59](#issue-59) CI's Apple row omits the tvOS and watchOS simulator tests
+- [x] [#58](#issue-58) Branch protection requires only `build`, so the JDK matrix and native jobs never block a merge
+- [x] [#59](#issue-59) CI's Apple row omits the tvOS and watchOS simulator tests
 - [ ] [#60](#issue-60) linuxArm64 is published, but no CI job runs its tests
-- [ ] [#61](#issue-61) `make build` never compiles `jvmTest`, so the website examples and the Java guard go unchecked
+- [x] [#61](#issue-61) `make build` never compiles `jvmTest`, so the website examples and the Java guard go unchecked
 - [ ] [#62](#issue-62) `check` links test binaries the host can never run (iosX64, mingwX64)
 - [ ] [#63](#issue-63) javac compiles the Java example against JDK 25's library instead of `--release 17`
 - [ ] [#64](#issue-64) The JDK 21 gate on `-XX:+EnableDynamicAgentLoading` rests on a false premise
@@ -126,8 +126,8 @@ Build and CI
 
 Release and documentation
 
-- [ ] [#69](#issue-69) The release checklist's version step names only README.md, not `GettingStarted.txt`
-- [ ] [#70](#issue-70) The release checklist's intro and its Dokka line reference are stale
+- [x] [#69](#issue-69) The release checklist's version step names only README.md, not `GettingStarted.txt`
+- [x] [#70](#issue-70) The release checklist's intro and its Dokka line reference are stale
 - [ ] [#71](#issue-71) The release notes say JVM error handling "works unchanged elsewhere"; Linux and Windows
   retry every bare `IllegalStateException`
 - [ ] [#72](#issue-72) The docs say jev4k writes nothing to stderr; without an SLF4J provider a warning appears
@@ -484,6 +484,10 @@ Either way, extend `JavaInterop.java` and run `make abi-update` on a Mac.
 
 **Medium** · CI · small · `.github/workflows/docs.yml:2`
 
+**Fixed.** `docs.yml` builds the site and KDocs on every PR and `master` push with `--strict`, in its own
+concurrency group per ref, and deploys only for a published release or a manual run. Its `docs` check is required,
+and `make site-build` and CLAUDE.md use `--strict` too.
+
 **What's wrong.** `docs.yml` runs only on pushes to master and manual dispatch, and `ci.yml`'s `build` runs neither
 Zensical nor Dokka. So a PR that breaks something in the docs build passes every check:
 - a `--8<--` snippet;
@@ -506,6 +510,10 @@ broken anchor fixed earlier today was one of these.
 
 **Medium** · Release · small · `README.md:83`, `src/jvmTest/kotlin/website/GettingStarted.txt:9`,
 `.github/workflows/docs.yml:3`
+
+**Fixed (option b).** `docs.yml` deploys only when a release is published, or on a manual run, and the
+`github-pages` environment now accepts release tags as well as `master`. The release checklist publishes to Central
+from the release PR's branch, then merges, tags and publishes the release, which deploys the site.
 
 **What's wrong.** On `kmp`, every install snippet names coordinates that aren't on Central yet: `jev4k:0.2.0` in
 the new group, and `jev4k-jvm:0.2.0` for Maven. That covers the README, the Installation page (through
@@ -532,6 +540,8 @@ For `kmp` itself, don't merge until 0.2.0 is on Central, or merge and publish in
 #### 15. The README's MockK testing example fails
 
 **Medium** · Docs · small · `README.md:561`
+
+**Fixed.** The fixture answers `"TECHNICAL"`.
 
 **What's wrong.** The README's `Team` enum has no `optionKey` override, so its keys are `BILLING`, `TECHNICAL` and
 `SALES`. The testing snippet's fixture answers `"choice":"technical"`. Copying the recommended testing idiom fails
@@ -1084,6 +1094,10 @@ enforces a 30 s total budget. A total budget can be added later if it's wanted.
 
 **Low** · Tests · small · `build.gradle.kts:461`
 
+**Fixed.** A `gradle.taskGraph.whenReady` listener, registered after Kotest's, switches `failOnNoDiscoveredTests`
+back on for every test task. A macOS test binary stripped of its specs now fails with "did not discover any tests".
+The previous build script let the same binary pass.
+
 **What's wrong.** Gradle 9's `failOnNoDiscoveredTests` would catch a test task that found no tests. The Kotest
 plugin turns it off for every test task once the task graph is ready, which makes the build's own override
 redundant. A Kotest, KSP or Kotlin upgrade that left a target's binary without specs would keep CI green while that
@@ -1198,6 +1212,9 @@ LiveProbeTest, which uses a fake key, passes. The build succeeds without a singl
 
 **Low** · CI · small · `.github/workflows/ci.yml:122`
 
+**Fixed.** `ci.yml` has a `ci-ok` job that fails unless `build`, `test` and `native` all succeeded. Branch
+protection on `master` now requires `ci-ok`, `docs` and GitGuardian.
+
 **What's wrong.** Only `build` and the GitGuardian check are required on master (checked through the API). The JDK
 17/21/25 matrix and both native jobs report their results but don't gate. A PR can merge green while it breaks:
 - Apple compilation;
@@ -1214,6 +1231,9 @@ succeeded, and make it the required check.
 #### 59. CI's Apple row omits the tvOS and watchOS simulator tests
 
 **Low** · CI · small · `.github/workflows/ci.yml:133`
+
+**Fixed.** The Apple row also runs `tvosSimulatorArm64Test` and `watchosSimulatorArm64Test`, which are skipped where
+the runner has no device.
 
 **What's wrong.** The build now runs the tvOS and watchOS simulator tests wherever a device exists, and
 `make tests` includes them. The CI Apple row still lists only macOS and iOS, so the published tvOS and watchOS
@@ -1241,6 +1261,8 @@ release checklist mentions that in passing inside another checkbox.
 #### 61. `make build` never compiles `jvmTest`
 
 **Low** · Build · small · `Makefile:68`
+
+**Fixed.** `make build` also runs `jvmTestClasses`.
 
 **What's wrong.** `assemble` doesn't compile the JVM test sources, so `make build` skips the website examples and
 the `JavaInterop.java` guard. An API change can pass `make abi-update` and `make build` while breaking both. The
@@ -1335,6 +1357,8 @@ managed with `make check-site` and `make upgrade-site`.
 
 **Low** · Release · small · `docs/release-checklist.md:75`
 
+**Fixed.** Steps 3 and 7 name `GettingStarted.txt` and its snippets.
+
 **What's wrong.** The Installation page takes its coordinates from `GettingStarted.txt`. Four of its snippets carry
 the released version, and the composite-build snippet tracks `gradle.properties`. The checklist doesn't mention the
 file, and nothing checks it.
@@ -1346,6 +1370,9 @@ file, and nothing checks it.
 #### 70. The release checklist's intro and its Dokka line reference are stale
 
 **Low** · Release · small · `docs/release-checklist.md:4`, `:7`
+
+**Fixed.** The intro describes the one-time section as a record, and the Dokka reference names the call rather than
+a line.
 
 **What's wrong.**
 - The intro still says nothing has reached Central, while the table below it records 0.1.0 as published.

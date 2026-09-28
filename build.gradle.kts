@@ -456,12 +456,12 @@ tasks.named<Test>("jvmTest") {
     }
 }
 
-// Kotest discovers commonTest specs on every target; a target whose test binary ends up with none must not fail
-// the build for it.
-tasks.withType<AbstractTestTask>().configureEach {
-    if (this !is Test) {
-        failOnNoDiscoveredTests.set(false)
-    }
+// Gradle fails a test task that discovers no tests, so a target whose test binary lost its specs (after a Kotest,
+// KSP or Kotlin upgrade, say) can't pass unnoticed. The Kotest plugin switches that guard off for every test task
+// once the task graph is ready; this listener, registered after the plugin's, switches it back on. A run filtered
+// with --tests is exempt either way.
+gradle.taskGraph.whenReady {
+    tasks.withType<AbstractTestTask>().configureEach { failOnNoDiscoveredTests.set(true) }
 }
 
 tasks.named<Jar>("jvmJar") {

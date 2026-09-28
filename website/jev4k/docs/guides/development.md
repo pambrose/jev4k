@@ -74,9 +74,11 @@ The site is built with [Zensical](https://zensical.org) from `website/jev4k`:
 
 ### Publishing
 
-The site is published to GitHub Pages at <https://jev4k.com/> by `.github/workflows/docs.yml`. The workflow runs on
-every push to `master`, or on demand from the Actions tab. It builds the site from the locked `website/uv.lock`, builds
-the KDocs with Dokka, copies them under `/kdocs`, and deploys the result: the same steps as `make site-build`.
+The site is published to GitHub Pages at <https://jev4k.com/> by `.github/workflows/docs.yml`. On every pull request
+and push to `master` it builds the site from the locked `website/uv.lock` in strict mode, builds the KDocs with Dokka
+and copies them under `/kdocs`: the same steps as `make site-build`. It deploys the result only when a release is
+published, or when run by hand from the Actions tab, so the site never shows a version that isn't on Maven Central
+yet.
 
 The repository needs one setting before the first deploy: under **Settings → Pages → Build and deployment**, set
 **Source** to **GitHub Actions**. After a failed deploy, re-run just the failed deploy job; the build job's artifact

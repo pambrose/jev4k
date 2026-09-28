@@ -1,37 +1,53 @@
 name: Documentation
 on:
+    # Pull requests and pushes to master only build the site, so a broken snippet, link or Dokka setting fails a
+    # check before it merges.
+    pull_request:
     push:
         branches:
             - master
+    # The site is deployed only when a release is published, after its artifacts are on Maven Central, or on a
+    # manual run, so jev4k.com never shows install instructions for a version Central doesn't have yet. A release
+    # runs on its tag, so the github-pages environment allows release tags as well as master.
+    release:
+        types: [ published ]
     workflow_dispatch:
 
 # Least privilege by default; each job asks for what it needs.
 permissions:
     contents: read
 
+# Deploys share one group and are never cancelled. Build-only runs get a group per ref, so a newer push to a PR
+# supersedes its older run, and no build-only run can replace a deploy waiting in the queue.
 concurrency:
-    group: pages
-    cancel-in-progress: false
+    group: >-
+        ${{ (github.event_name == 'release' || github.event_name == 'workflow_dispatch')
+        && 'pages' || format('docs-{0}', github.ref) }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-    # Build the docs site + KDocs and upload the Pages artifact. Kept separate from
-    # the deploy job so that recovering a failed deploy means re-running only the
-    # deploy job (via "Re-run failed jobs"), which does NOT re-upload the artifact.
-    # actions/deploy-pages hard-fails when a run contains more than one artifact
-    # named "github-pages", which is what re-running a combined build+deploy job did.
-    build:
+    # Build the docs site + KDocs, and upload the Pages artifact when deploying. Kept separate from the deploy job
+    # so that recovering a failed deploy means re-running only the deploy job (via "Re-run failed jobs"), which does
+    # NOT re-upload the artifact. actions/deploy-pages hard-fails when a run contains more than one artifact named
+    # "github-pages", which is what re-running a combined build+deploy job did. Its check, "docs", is required by
+    # branch protection.
+    docs:
         runs-on: ubuntu-latest
         permissions:
             contents: read
             pages: read
+        env:
+            DEPLOY: ${{ github.event_name == 'release' || github.event_name == 'workflow_dispatch' }}
         steps:
             -   uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+                if: env.DEPLOY == 'true'
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
             # Build the Zensical documentation site from website/uv.lock, the same resolution `make site`
-            # uses locally. uv reads website/.python-version and installs that Python itself.
+            # uses locally. uv reads website/.python-version and installs that Python itself. --strict turns
+            # warnings, such as a link to a missing anchor, into failures.
             -   uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-            -   run: uv run --locked zensical build --clean
+            -   run: uv run --locked zensical build --clean --strict
                 working-directory: website/jev4k
 
             # Build KDoc API documentation (the toolchain in the catalog is JDK 25).
@@ -59,14 +75,16 @@ jobs:
             -   run: cp -r build/dokka/html website/jev4k/site/kdocs
 
             -   uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+                if: env.DEPLOY == 'true'
                 with:
                     path: website/jev4k/site
 
-    # Deploy the artifact produced by the build job. Deliberately minimal (no
-    # checkout or build) so re-running just this job re-deploys the existing
-    # artifact without rebuilding or re-uploading it.
+    # Deploy the artifact produced by the docs job, for a published release or a manual run only. Deliberately
+    # minimal (no checkout or build) so re-running just this job re-deploys the existing artifact without
+    # rebuilding or re-uploading it.
     deploy:
-        needs: build
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        needs: docs
         runs-on: ubuntu-latest
         permissions:
             pages: write

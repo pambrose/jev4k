@@ -65,8 +65,10 @@ clean-all: clean clean-site  ## clean + remove .gradle and .kotlin caches and th
 	rm -rf .gradle .kotlin
 
 # `build -x allTests` would still run each target's test task, so this names what `build` does besides testing.
-build:  ## Clean build without tests: compile every target, lint, detekt, and the ABI check
-	$(GRADLE) clean assemble lintKotlin detekt checkKotlinAbi
+# `assemble` compiles no test sources, so jvmTestClasses is named too: it compiles the documentation examples and
+# JavaInterop.java, which break when the API they show changes.
+build:  ## Clean build without tests: compile every target and the JVM test sources, lint, detekt, and the ABI check
+	$(GRADLE) clean assemble jvmTestClasses lintKotlin detekt checkKotlinAbi
 
 tests:  ## Run lint, detekt, the ABI check, and every test this host can run (forces the tests to re-run)
 	$(GRADLE) check $(call RERUN,$(HOST_TESTS))
@@ -166,7 +168,7 @@ site: clean-site  ## Serve the docs site locally with Zensical (http://localhost
 	cd $(SITE_DIR) && uv run zensical serve
 
 site-build: clean-site kdocs  ## Build the static docs site into website/jev4k/site, with KDocs under /kdocs
-	cd $(SITE_DIR) && uv run --locked zensical build --clean
+	cd $(SITE_DIR) && uv run --locked zensical build --clean --strict
 	cp -r build/dokka/html $(SITE_DIR)/site/kdocs
 
 clean-site:  ## Remove the generated docs site and its cache

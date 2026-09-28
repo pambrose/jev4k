@@ -104,11 +104,13 @@ There are two DSL layers over one core model. Both produce a validated `Question
   `slate` palette) is the default. `docs/stylesheets/extra.css` widens the page grid from 61rem to 90rem so 120-column
   examples fit without horizontal scrolling. Emoji and icons come from Zensical's own extension, so `mkdocs-material`
   isn't needed.
-- **Publishing.** `.github/workflows/docs.yml` publishes the site to GitHub Pages on every push to `master`, or on
-  manual dispatch. It runs the same steps as `make site-build` (Zensical build, Dokka, KDocs copied to `/kdocs`) in a
-  build job, and a separate deploy job can be re-run on its own. `zensical.toml` sets `site_url`, `repo_url` and
-  `edit_uri`, and Dokka's `sourceLink`/`homepageLink` point at `github.com/pambrose/jev4k` on `master`. The
-  repository's Pages source must be set to "GitHub Actions".
+- **Publishing.** `.github/workflows/docs.yml` runs the same steps as `make site-build` (Zensical build with
+  `--strict`, Dokka, KDocs copied to `/kdocs`) in its `docs` job on every PR and `master` push, as a required check.
+  It deploys to GitHub Pages only when a release is published, or on manual dispatch, so jev4k.com never shows a
+  version that isn't on Maven Central yet; a separate deploy job can be re-run on its own. A release runs on its
+  tag, so the `github-pages` environment allows tags matching `[0-9]*.[0-9]*.[0-9]*` as well as `master`.
+  `zensical.toml` sets `site_url`, `repo_url` and `edit_uri`, and Dokka's `sourceLink`/`homepageLink` point at
+  `github.com/pambrose/jev4k` on `master`. The repository's Pages source must be set to "GitHub Actions".
 - **Custom domain.** The site is served at <https://jev4k.com/>, not `pambrose.github.io/jev4k/`, so page URLs carry no
   path prefix. `docs/CNAME` holds the bare domain and Zensical copies it to `site/CNAME`; GitHub Pages reads the domain
   from that file, and without it an Actions-published site can lose the custom domain set under Settings → Pages on a
@@ -151,8 +153,9 @@ There are two DSL layers over one core model. Both produce a validated `Question
       examples and in the README's fenced blocks. `.editorconfig` disables ktlint's `no-multi-spaces` for
       `src/jvmTest/kotlin/website/*.kt` so the padding survives `make format`; the library sources keep the rule.
       Keep new examples aligned, and keep the padded line within 120 characters.
-- **After changing an example or a page,** run `make tests` and `cd website/jev4k && uv run zensical build --clean`. The
-  build must report "No issues found".
+- **After changing an example or a page,** run `make tests` and
+  `cd website/jev4k && uv run zensical build --clean --strict`. The build must report "No issues found"; `--strict`
+  turns warnings, such as a link to a missing anchor, into failures, as CI's `docs` check does.
 
 ## Build
 
@@ -286,11 +289,14 @@ There are two DSL layers over one core model. Both produce a validated `Question
       wasmJs and linuxX64 tests), then uploads `build/reports/kover/report.xml` to Codecov with the `unittests`
       flag. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
       a drop of more than 1% and reports patch coverage without gating on it.
-    - A `native` matrix job runs the tests Linux can't: `macosArm64Test iosSimulatorArm64Test` on macos-latest and
-      `mingwX64Test` on windows-latest. Every job that compiles native code caches `~/.konan`, keyed on the Kotlin
-      version alone (read from the catalog) with no `restore-keys`, so an old toolchain is never carried forward.
-      `docs.yml` only restores that cache, because Dokka, which resolves the native source sets, finishes first and
-      would otherwise save a toolchain without the compiler's dependencies under the build job's key.
+    - A `native` matrix job runs the tests Linux can't: the macOS and iOS, tvOS and watchOS simulator tests on
+      macos-latest (a tvOS or watchOS task is skipped when the runner has no device for it) and `mingwX64Test` on
+      windows-latest. A final `ci-ok` job passes only when every other job succeeded; branch protection on `master`
+      requires it, the `docs` check and GitGuardian, so the JDK matrix and the native jobs gate a merge.
+    - Every job that compiles native code caches `~/.konan`, keyed on the Kotlin version alone (read from the
+      catalog) with no `restore-keys`, so an old toolchain is never carried forward. `docs.yml` only restores that
+      cache, because Dokka, which resolves the native source sets, finishes first and would otherwise save a
+      toolchain without the compiler's dependencies under the build job's key.
     - A `test` job in the same workflow runs `jvmTest` on JDK 17, 21 and 25. Tests otherwise run on the
       toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints `jvmTest`'s `javaLauncher`;
       `-XX:+EnableDynamicAgentLoading` is added only from 21 up, because an unrecognized `-XX` option stops JDK 17
@@ -307,7 +313,7 @@ There are two DSL layers over one core model. Both produce a validated `Question
 The `Makefile` wraps the common Gradle invocations; `make` (or `make help`) lists every target.
 
 ```bash
-make build                                            # clean build of every target, lint, ABI check; no tests
+make build                                            # clean build of every target + doc examples, lint, ABI; no tests
 make tests                                            # lint + ABI check + every test this host runs, re-run
 make jvm-tests                                        # the JVM tests only, the quickest loop
 make js-tests                                         # the tests on Node.js (js and wasmJs)

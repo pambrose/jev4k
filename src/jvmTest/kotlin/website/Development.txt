@@ -1,5 +1,5 @@
 # --8<-- [start:make-targets]
-make build              # compile every target, lint, and check the ABI, without running tests
+make build              # compile every target and the doc examples, lint, check the ABI; no tests
 make tests              # kotlinter + detekt + ABI check + every test this host can run
 make jvm-tests          # the JVM tests only, the quickest loop
 make js-tests           # the tests on Node.js (js and wasmJs)
