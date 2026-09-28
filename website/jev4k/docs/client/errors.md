@@ -6,8 +6,7 @@ icon: lucide/triangle-alert
 
 ## Retries
 
-Failed requests are retried automatically. `RetryPolicy`'s defaults match TypeSafe's official Python and JS
-SDKs:
+Failed requests are retried automatically. `RetryPolicy`'s defaults match TypeSafe's official JS SDK:
 
 | Setting                  | Default           | Meaning                                                              |
 |--------------------------|-------------------|----------------------------------------------------------------------|
@@ -20,6 +19,10 @@ SDKs:
 | `jitter`                 | 0.25              | subtract up to this fraction of each delay at random                 |
 | `respectRetryAfter`      | `true`            | honor `retry-after-ms` / `Retry-After` (seconds or an HTTP date)     |
 | `maxRetryAfter`          | 60 s              | ignore server hints longer than this and use backoff instead         |
+
+The Python SDK shares these retries, backoff, jitter and statuses, but doesn't cap server hints, and it also gives
+each call a 30 s budget in total. jev4k has no total budget: `timeout` applies to each attempt, so a call that
+retries on long server hints can take a couple of minutes.
 
 `RetryPolicy.NONE` turns retries off. The [Configuration](configuration.md#retry-policies) page shows common
 variations.

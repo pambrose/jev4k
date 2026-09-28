@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 69 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 77 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -93,11 +93,11 @@ Java interop and public API
 - [x] [#43](#issue-43) `JevApiException` isn't Java-serializable with a JSON body, nor is `JevRateLimitException`
   with a retry hint
 - [x] [#44](#issue-44) `BlockingJev` can only be built by `JevClient`, so blocking code can't wrap a fake `JevApi`
-- [ ] [#45](#issue-45) The docs say Java has "no route" to enum Choices, but the `@PublishedApi` members are callable
+- [x] [#45](#issue-45) The docs say Java has "no route" to enum Choices, but the `@PublishedApi` members are callable
 - [x] [#46](#issue-46) `@PublishedApi` on `ValueJson` does nothing, and puts an internal `Json` into both ABI dumps
 - [x] [#47](#issue-47) The testing docs show only a fixed-QuestionSet mock, which fails for per-call handles
 - [x] [#48](#issue-48) `jevResult(String)` skips the client's body-level validation, contrary to its docs
-- [ ] [#49](#issue-49) `RetryPolicy`'s docs say the defaults match both SDKs; Python also has a 30 s total budget
+- [x] [#49](#issue-49) `RetryPolicy`'s docs say the defaults match both SDKs; Python also has a 30 s total budget
 
 Tests
 
@@ -130,9 +130,9 @@ Release and documentation
 - [x] [#70](#issue-70) The release checklist's intro and its Dokka line reference are stale
 - [x] [#71](#issue-71) The release notes say JVM error handling "works unchanged elsewhere"; Linux and Windows
   retry every bare `IllegalStateException`
-- [ ] [#72](#issue-72) The docs say jev4k writes nothing to stderr; without an SLF4J provider a warning appears
-- [ ] [#73](#issue-73) The development page says `.env` reaches every test task; it reaches only the JVM ones
-- [ ] [#74](#issue-74) "Node.js only" is true of the tests, but the js/wasmJs artifacts also run in a browser
+- [x] [#72](#issue-72) The docs say jev4k writes nothing to stderr; without an SLF4J provider a warning appears
+- [x] [#73](#issue-73) The development page says `.env` reaches every test task; it reaches only the JVM ones
+- [x] [#74](#issue-74) "Node.js only" is true of the tests, but the js/wasmJs artifacts also run in a browser
 
 Website examples
 
@@ -146,10 +146,10 @@ Website examples
 
 ### Nit
 
-- [ ] [#82](#issue-82) `JavaInterop.java`'s comment overstates what it pins
+- [x] [#82](#issue-82) `JavaInterop.java`'s comment overstates what it pins
 - [x] [#83](#issue-83) `BlockingJevTest` matches the `QuestionSet` with `any()`
-- [ ] [#84](#issue-84) CLAUDE.md says every type name follows the JS SDK; only the question types do
-- [ ] [#85](#issue-85) README testing section: a missing space and a doubled lead-in colon
+- [x] [#84](#issue-84) CLAUDE.md says every type name follows the JS SDK; only the question types do
+- [x] [#85](#issue-85) README testing section: a missing space and a doubled lead-in colon
 
 ## Plan: order of fixing
 
@@ -1168,6 +1168,10 @@ Document it, and update the ABI dumps.
 
 **Low** · Docs · small · `README.md:500`, `website/jev4k/docs/getting-started/installation.md:148`, `CLAUDE.md`
 
+**Fixed.** The README, the Installation page and CLAUDE.md now say Java can see `enumChoiceRef`, `QueryBuilder.add` and
+`JevResult.enumChoiceOf`, because inline code needs them public, but that they aren't supported API, so build a
+`ChoiceQuestion`.
+
 **What's wrong.** The README, the Installation page and CLAUDE.md say `enumChoiceRef` is internal, so Java can't
 reach enum Choices. But `@PublishedApi` members compile to public, unmangled methods that javac can call, and IDEs
 offer them: `enumChoiceRef`, `QueryBuilder.add` and `JevResult.enumChoiceOf`.
@@ -1231,6 +1235,9 @@ for `"not json"` and `"[]"`.
 
 **Low** · Docs · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevConfig.kt:25`, `README.md:416`,
 `website/jev4k/docs/client/errors.md:9`
+
+**Fixed.** The KDoc, the README and the errors page say the defaults match the JS SDK, and that Python shares the
+retries, backoff, jitter and statuses but doesn't cap hints and adds a 30 s budget per call, which jev4k lacks.
 
 **What's wrong.** The defaults match the JS SDK only. Python adds a 30 s total budget per call and doesn't cap
 retry hints. jev4k has no total budget, since its timeout applies per attempt, so a call can take about 150 s with
@@ -1600,6 +1607,9 @@ The JVM rethrows the same exception, so shared tests built on MockEngine behave 
 
 **Low** · Docs · small · `README.md:453`, `website/jev4k/docs/getting-started/installation.md:117`
 
+**Fixed.** Both pages now say jev4k never logs but Ktor uses SLF4J, which prints a three-line warning to stderr without
+a binding (reproduced by building a client on the bare runtime classpath), and suggest `slf4j-nop`.
+
 **What's wrong.** jev4k itself never logs. But Ktor's plugins initialize SLF4J on the JVM, and with no provider
 SLF4J prints a three-line warning to stderr when the first `JevClient` is built. `make example` shows it.
 
@@ -1612,6 +1622,8 @@ the warning.
 
 **Low** · Docs · small · `website/jev4k/docs/guides/development.md:44`, `.env.example:8`
 
+**Fixed.** The development page and `.env.example` say `.env` reaches the JVM test and example tasks only.
+
 **What's wrong.** The envvar plugin configures only `Test` and `JavaExec` tasks, which are JVM-only. The js, wasmJs
 and native test tasks see only the shell's environment.
 
@@ -1623,6 +1635,10 @@ and native test tasks see only the shell's environment.
 
 **Low** · Docs · small · `build.gradle.kts:151`, `README.md:108`,
 `website/jev4k/docs/getting-started/installation.md:39`
+
+**Fixed.** The README, the Installation page, the release notes and the build comment say the js and wasmJs artifacts
+are built and tested for Node.js, would still load in a browser, and that a browser app should call a backend. No
+browser check was added.
 
 **What's wrong.** `nodejs()` shapes only jev4k's own test and run tasks. The published js and wasmJs artifacts carry
 no Node-only attribute, so they load in a browser, and nothing refuses a browser the way the JS SDK does.
@@ -1735,6 +1751,9 @@ content checks also run on empty fields, which invites false TRUE answers, and a
 
 **Nit** · Docs · small · `src/jvmTest/java/website/JavaInterop.java:10`
 
+**Fixed.** The comment lists what the file pins (the overloads it calls, `BlockingJev`'s `@Throws`, the millisecond
+members) and says the ABI dump guards the rest; CLAUDE.md matches.
+
 The comment says the file stops compiling if an `@JvmOverloads` or `@JvmSynthetic` annotation is lost. Only
 `QueryBuilder.noul`'s `@JvmOverloads` is actually pinned; the ABI dump guards the rest, as CLAUDE.md says. Reword
 the comment to match, or add calls that pin the other overloads.
@@ -1756,6 +1775,9 @@ The test never checks that the inline block's questions are forwarded. Use
 
 **Nit** · Docs · small · `CLAUDE.md:24`
 
+**Fixed.** CLAUDE.md says the question types follow the JS SDK, the answer types and views the Python SDK, and
+`ModelInfo`/`ModelList` are jev4k's own.
+
 Only the question types follow the JS SDK. The answer types and the `nouls`/`choices`/`scores` views follow Python,
 and `ModelInfo` is jev4k's own name. Say so.
 
@@ -1764,6 +1786,9 @@ and `ModelInfo` is jev4k's own name. Say so.
 #### 85. README testing section formatting
 
 **Nit** · Docs · small · `README.md:568`, `README.md:550`
+
+**Fixed.** Both fixed: the space in "as `JevClient { … }`", and the paragraph above the builders' one ends with a
+period.
 
 - **README.md:568.** Add the missing space: "as `JevClient { … }`".
 - **README.md:550.** End it with a period, so only the paragraph directly above the code block ends with a colon.

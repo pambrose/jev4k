@@ -42,7 +42,8 @@ To run a single test class:
   tests also need `TYPESAFE_API_KEY`, and `make live-tests` refuses to start without it; the probes that run on
   every platform send an invalid key and a 1 ms timeout, so they spend no tokens.
 - **`.env` supplies the key.** Copy `.env.example` to `.env` (gitignored) and set `TYPESAFE_API_KEY`. Gradle
-  loads it into every test and example task, so nothing needs exporting in your shell.
+  loads it into the JVM test and example tasks, so `make example` and the JVM smoke tests need nothing exported in
+  your shell. The js, wasmJs and native test tasks see only the shell's environment.
 
 ## An index for agents
 

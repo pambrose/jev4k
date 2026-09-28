@@ -90,10 +90,11 @@ configurations.all {
 | Windows  | WinHttp                 |
 | Node.js  | Js (`fetch`)            |
 
-A few things differ by platform. Blocking calls (`jev.blocking`) exist on the JVM only. The js and wasmJs targets
-run on Node.js, not in a browser, which would hand the API key to every visitor. On Linux, the Curl engine needs
-the system's CA certificates, and on iOS, App Transport Security blocks a plain `http://` base URL, such as a local
-Ollaya server, unless the app allows it.
+A few things differ by platform. Blocking calls (`jev.blocking`) exist on the JVM only. The js and wasmJs artifacts
+are built and tested for Node.js; they would also load in a browser, but a page would hand the API key to every
+visitor, so a browser app should call a backend of its own. On Linux, the Curl engine needs the system's CA
+certificates, and on iOS, App Transport Security blocks a plain `http://` base URL, such as a local Ollaya server,
+unless the app allows it.
 
 Every engine's way of reporting a failed connection is mapped to `JevConnectionException` and retried, so error
 handling written against the JVM client works unchanged elsewhere, with one difference. Curl and WinHttp report a

@@ -30,9 +30,10 @@ object JevDefaults {
 }
 
 /**
- * When and how failed requests are retried. The defaults match the official Python and JS SDKs:
- * two retries, 0.5 s backoff doubling to a 5 s cap with up to 25% subtracted as jitter, and
- * server `retry-after-ms` / `Retry-After` hints honored up to [maxRetryAfter][RetryPolicy.maxRetryAfter].
+ * When and how failed requests are retried. The defaults match the official JS SDK: two retries, 0.5 s backoff
+ * doubling to a 5 s cap with up to 25% subtracted as jitter, and server `retry-after-ms` / `Retry-After` hints
+ * honored up to [maxRetryAfter][RetryPolicy.maxRetryAfter]. The Python SDK shares the retries, backoff and statuses
+ * but doesn't cap hints, and adds a 30 s budget per call, which jev4k doesn't have: `timeout` applies per attempt.
  *
  * Java can't call the constructor or `copy`, whose `Duration` parameters Kotlin hides from it. It starts from
  * `new RetryPolicy()` and changes one setting at a time with the `with…` methods, which take milliseconds:

@@ -36,8 +36,9 @@ A few things differ by platform:
 
 - **Blocking calls are JVM-only.** `jev.blocking` has its methods on the JVM alone; everywhere else, call the
   suspend API.
-- **Node.js, not the browser.** The `js` and `wasmJs` targets run on Node.js. There is no browser target, because a
-  page would hand the API key to every visitor.
+- **Node.js, not the browser.** The `js` and `wasmJs` artifacts are built and tested for Node.js. Nothing stops them
+  loading in a browser, but a page would hand the API key to every visitor, so a browser app should call a backend
+  of your own instead.
 - **Linux needs CA certificates.** The Curl engine checks the server's certificate against the system's CA bundle
   (the `ca-certificates` package on Debian and Ubuntu). Without one, every request fails with a
   `JevConnectionException`.
@@ -116,9 +117,10 @@ framework, no logging backend.
 
 ### Logging
 
-jev4k never logs. It writes nothing to stdout or stderr, installs no Ktor `Logging` plugin, and
-ships no SLF4J binding, so it can't interfere with your logging setup. `slf4j-api` reaches the classpath through
-Ktor, not jev4k; supply your own binding if you want Ktor's own output.
+jev4k never logs: it writes nothing to stdout or stderr itself, installs no Ktor `Logging` plugin, and ships no
+SLF4J binding, so it can't interfere with your logging setup. Ktor does use SLF4J on the JVM, though, and `slf4j-api`
+reaches the classpath through it. With no binding, SLF4J prints a three-line "No SLF4J providers were found" warning
+to stderr when the first `JevClient` is built. Add your application's binding, or `slf4j-nop` to silence it.
 
 ### Using a different Ktor engine
 
@@ -161,9 +163,10 @@ four things are out of reach from Java:
 - **Typed `JevQuery` objects** can't be declared. One declared in Kotlin can still be passed to `ask`.
 - **`@Serializable` states.** A state must be a `String` or a `JsonElement`; the reified `query`, `ask` and
   `jsonEntry` overloads are hidden rather than compiling into a runtime failure.
-- **Enum Choices through the DSL.** `QueryBuilder.choice<E>()` is reified and `enumChoiceRef` is `internal`, so
-  there's no route to one. Build a `ChoiceQuestion` with the option keys you want and add it with
-  `QueryBuilder.question(id, question)` instead.
+- **Enum Choices through the DSL.** `QueryBuilder.choice<E>()` is reified. Java can see the functions it calls
+  (`enumChoiceRef`, `QueryBuilder.add`, `JevResult.enumChoiceOf`), because inline code needs them public in the
+  bytecode, but they're internal to jev4k and can change without notice. Build a `ChoiceQuestion` with the option
+  keys you want and add it with `QueryBuilder.question(id, question)` instead.
 - **`JevResult.enumChoice<E>(id)`** is reified too. Read that answer with `result.choice(id)`, which is keyed by
   option string.
 

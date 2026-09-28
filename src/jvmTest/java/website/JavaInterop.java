@@ -21,8 +21,10 @@ import kotlin.Unit;
 /*
  * The Java example for the documentation site. Like the Kotlin examples in src/jvmTest/kotlin/website, it is
  * compiled with the test sources so it can't drift from the API, but it is not a test and nothing runs it.
- * It also pins the Java-visible surface: if an @JvmOverloads or @Throws annotation is lost, or a millisecond
- * member for a Duration setting disappears, this stops compiling.
+ * It also pins part of the Java-visible surface: it stops compiling if an overload it calls disappears (the
+ * two-argument QueryBuilder.noul, BlockingJev.query without a model, jevResult, jevApiException), if BlockingJev
+ * loses its @Throws (javac then rejects the catch of InterruptedException), or if a millisecond member for a
+ * Duration setting goes. The ABI dump in api/ guards everything else.
  */
 public final class JavaInterop {
     private JavaInterop() {

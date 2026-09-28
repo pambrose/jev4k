@@ -106,7 +106,8 @@ The whole API is common code; only the HTTP engine underneath changes from platf
 
 Blocking calls (`jev.blocking`) exist on the JVM only. On Linux, the Curl engine needs the system's CA certificates
 (`ca-certificates`). On iOS, App Transport Security blocks a plain `http://` `baseUrl` unless the app allows it. The
-js and wasmJs targets run on Node.js, not in a browser, which would hand the API key to every visitor.
+js and wasmJs artifacts are built and tested for Node.js. They would also load in a browser, but don't use them
+there: the page would hand the API key to every visitor. A browser app should call a backend of your own instead.
 
 ## Quick start
 
@@ -435,7 +436,7 @@ For an Ollaya server on another host, such as `http://ollaya:11435` in Docker, a
 
 ### Retries and timeouts
 
-`RetryPolicy`'s defaults match TypeSafe's official Python and JS SDKs:
+`RetryPolicy`'s defaults match TypeSafe's official JS SDK:
 
 | Setting                                     | Default                                                              |
 |---------------------------------------------|----------------------------------------------------------------------|
@@ -445,7 +446,9 @@ For an Ollaya server on another host, such as `http://ollaya:11435` in Docker, a
 | `initialBackoff` / `maxBackoff` / `jitter`  | 0.5 s, doubling up to 5 s, minus up to 25% jitter                    |
 | `respectRetryAfter` / `maxRetryAfter`       | Honor `retry-after-ms` / `Retry-After` (seconds or date), up to 60 s |
 
-`RetryPolicy.NONE` disables retries.
+`RetryPolicy.NONE` disables retries. The Python SDK shares these retries, backoff, jitter and statuses, but doesn't cap
+server hints, and it also gives each call a 30 s budget in total. jev4k has no total budget: `timeout` applies to each
+attempt, so a call that retries on long server hints can take a couple of minutes.
 
 Redirects are never followed: a 3xx is a `JevApiException`, since following one would send your headers, and on
 Node.js the request body, to whatever host it names. A response declaring a body over 16 MiB is refused before the
@@ -476,9 +479,10 @@ framework, no logging backend.
 
 ### Logging
 
-jev4k never logs. It writes nothing to stdout or stderr, installs no Ktor `Logging` plugin, and ships
-no SLF4J binding, so it can't interfere with your logging setup. `slf4j-api` reaches the classpath through Ktor,
-not jev4k; supply your own binding if you want Ktor's own output.
+jev4k never logs: it writes nothing to stdout or stderr itself, installs no Ktor `Logging` plugin, and ships no
+SLF4J binding, so it can't interfere with your logging setup. Ktor does use SLF4J on the JVM, though, and `slf4j-api`
+reaches the classpath through it. With no binding, SLF4J prints a three-line "No SLF4J providers were found" warning
+to stderr when the first `JevClient` is built. Add your application's binding, or `slf4j-nop` to silence it.
 
 ### Your own engine
 
@@ -538,9 +542,10 @@ four things are out of reach from Java:
 - **Typed `JevQuery` objects** can't be declared. One declared in Kotlin can still be passed to `ask`.
 - **`@Serializable` states.** A state must be a `String` or a `JsonElement`; the reified `query`, `ask` and
   `jsonEntry` overloads are hidden rather than compiling into a runtime failure.
-- **Enum Choices through the DSL.** `QueryBuilder.choice<E>()` is reified and `enumChoiceRef` is `internal`, so
-  there's no route to one. Build a `ChoiceQuestion` with the option keys you want and add it with
-  `QueryBuilder.question(id, question)` instead.
+- **Enum Choices through the DSL.** `QueryBuilder.choice<E>()` is reified. Java can see the functions it calls
+  (`enumChoiceRef`, `QueryBuilder.add`, `JevResult.enumChoiceOf`), because inline code needs them public in the
+  bytecode, but they're internal to jev4k and can change without notice. Build a `ChoiceQuestion` with the option
+  keys you want and add it with `QueryBuilder.question(id, question)` instead.
 - **`JevResult.enumChoice<E>(id)`** is reified too. Read that answer with `result.choice(id)`, which is keyed by
   option string.
 
@@ -596,7 +601,7 @@ request, reading a Noul as a Choice, or reading a Choice with an enum that lacks
 ## Testing code that uses jev4k
 
 Depend on the `JevApi` interface rather than `JevClient`. `query` and `ask` are extension functions over
-`JevApi.evaluate`, so a mock of that one method covers them all:
+`JevApi.evaluate`, so a mock of that one method covers them all.
 
 Build the result the mock returns with `jevResult`, which runs a response body through the same mapping the
 client uses, so a recorded response replays exactly as it arrived. `jevApiException` does the same for the
@@ -622,8 +627,8 @@ coEvery { jev.evaluate(any(), any(), any()) } answers { jevResult(body, secondAr
 ```
 
 A mock of `JevApi` needs `evaluate(any(), any(), any(), any())` stubbed as well when the code under test passes
-`JevCallOptions` or uses `withOptions`; a fake that implements only the three-argument `evaluate` needs nothing more.
-To exercise the real client without the network, pass a Ktor `MockEngine` as`JevClient { engine = MockEngine { ... } }`.
+`JevCallOptions` or uses `withOptions`; a fake that implements only the three-argument `evaluate` needs nothing more. To
+exercise the real client without the network, pass a Ktor `MockEngine` as `JevClient { engine = MockEngine { ... } }`.
 This project's own tests do both.
 
 ## Writing good questions

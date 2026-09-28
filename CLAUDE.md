@@ -21,9 +21,10 @@ the legacy preview API shape (`/preview/evaluation`, `document`, `prompts`); `je
 
 ## Architecture
 
-Type names follow TypeSafe's JS SDK. A question definition is a `Question`, one of `NoulQuestion`, `ChoiceQuestion` or
-`ScoreQuestion`, which hold only what is asked: instructions and criteria. A `QuestionRef<A>` is the handle code holds.
-It pairs an id with a `Question` (`ref.question`) and a decoder for the typed answer.
+The question types' names follow TypeSafe's JS SDK; the answer types and the `nouls`/`choices`/`scores` views follow the
+Python SDK, and `ModelInfo`/`ModelList` are jev4k's own. A question definition is a `Question`, one of `NoulQuestion`,
+`ChoiceQuestion` or `ScoreQuestion`, which hold only what is asked: instructions and criteria. A `QuestionRef<A>` is the
+handle code holds. It pairs an id with a `Question` (`ref.question`) and a decoder for the typed answer.
 
 There are two DSL layers over one core model. Both produce a validated `QuestionSet`, and
 `JevApi.evaluate(state, questionSet, model)` is the only call that sends questions to the network. `JevApi.models()`
@@ -208,10 +209,12 @@ without them keep compiling.
     - To show a directive literally in a page, prefix it with `;`.
     - Never write marker text such as `--8<-- [start:x]` in page prose. The snippets extension deletes any line
       containing one, so the rest of that sentence disappears.
-- **The Java example** lives in `src/jvmTest/java/website/JavaInterop.java` and is compiled by `compileJvmTestJava`,
-  so it doubles as a guard on the Java-visible surface: its two-argument `qb.noul(...)` call stops compiling if
-  `@JvmOverloads` is dropped. It doesn't guard `@JvmSynthetic`, because kotlinc marks reified inline functions synthetic
-  on its own. `zensical.toml`'s snippet `base_path` includes that folder.
+- **The Java example** lives in `src/jvmTest/java/website/JavaInterop.java` and is compiled by `compileJvmTestJava`, so
+  it doubles as a guard on part of the Java-visible surface: the overloads it calls (the two-argument `qb.noul(...)`,
+  `BlockingJev.query` without a model, `jevResult` and `jevApiException`), `BlockingJev`'s `@Throws` (it catches
+  `InterruptedException`) and the millisecond members. The ABI dump in `api/` guards the rest. It doesn't guard
+  `@JvmSynthetic`, because kotlinc marks reified inline functions synthetic on its own. `zensical.toml`'s snippet
+  `base_path` includes that folder.
 - **Example files are compiled and linted like any test source, but they aren't tests.** Keep Kotest and MockK out of
   them.
     - Top-level names share one package, so they must be unique across files, and only one `main` is allowed.
@@ -341,9 +344,11 @@ without them keep compiling.
   `ask` with `@Serializable` state on `JevApi` and `BlockingJev`, `QueryBuilder.choice<E>()`, `JevQuery.choice<E>()`,
   `JevResult.enumChoice<E>()`, `jsonEntry()`). That annotation is a marker for readers, not load-bearing: kotlinc
   already emits every reified inline function as `ACC_SYNTHETIC`, so javac can't resolve one either way. Keep it on any
-  new reified member so the set stays uniform. Because Java can reach neither `QueryBuilder.choice<E>()` nor the
-  `internal` `enumChoiceRef`, a Java caller can only get an enum-backed Choice by building a `ChoiceQuestion` and
-  passing it to `QueryBuilder.question(id, question)`; the README and the Installation page say so.
+  new reified member so the set stays uniform. `QueryBuilder.choice<E>()` is out of Java's reach, and the
+  `@PublishedApi` functions it calls (`enumChoiceRef`, `QueryBuilder.add`, `JevResult.enumChoiceOf`) compile to
+  public, callable methods but aren't supported API, so a Java caller gets an enum-backed Choice by building a
+  `ChoiceQuestion` and passing it to `QueryBuilder.question(id, question)`; the README and the Installation page say
+  so.
   Kotlin's inline `Duration` mangles every member that takes or returns one, and makes `RetryPolicy`'s constructor
   and `copy` synthetic, so each `Duration` setting has a millisecond twin for Java: `JevConfigBuilder.timeoutMillis`,
   `JevCallOptionsBuilder.timeoutMillis`, `JevDefaults.TIMEOUT_MILLIS`, `RetryPolicy.with…` (one per setting) and

@@ -153,8 +153,9 @@ kotlin {
         }
     }
 
-    // Node.js only. TypeSafe's own JS SDK refuses to run in a browser by default, because the page would hand
-    // the API key to every visitor.
+    // Built and tested for Node.js only: nodejs() shapes jev4k's own test and run tasks. The published artifacts
+    // carry no Node-only attribute and would load in a browser, which the docs warn against, since the page would
+    // hand the API key to every visitor (TypeSafe's own JS SDK refuses a browser by default).
     js { nodejs() }
     wasmJs { nodejs() }
 
