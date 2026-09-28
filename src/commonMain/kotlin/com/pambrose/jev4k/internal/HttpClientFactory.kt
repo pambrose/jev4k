@@ -8,14 +8,11 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpRequestRetryConfig
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.HttpTimeoutConfig
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.contentnegotiation.ContentTypeMergeStrategy
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.http.Headers
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentLength
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.pipeline.PipelinePhase
 import kotlinx.coroutines.cancel
 import kotlin.time.Duration
@@ -71,13 +68,6 @@ internal object HttpClientFactory {
         // gateway header would reach the other host, and on Node fetch would re-send the POST body there too. Set
         // here, it applies to a supplied engine as well, and fetch then uses redirect: "manual".
         followRedirects = false
-
-        // SkipIfPresent: every request already carries Accept (JevClient.setHeaders), so ContentNegotiation mustn't
-        // add application/json beside a caller's own Accept.
-        install(ContentNegotiation) {
-            json(JevJson)
-            acceptHeaderMergeStrategy = ContentTypeMergeStrategy.SkipIfPresent
-        }
 
         // HttpRequestRetry must be installed before HttpTimeout. Installed after it, the timeout wraps the
         // whole retry loop: one expiry cancels every later attempt before it reaches the server.

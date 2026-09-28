@@ -315,12 +315,23 @@ class ClientTest : StringSpec() {
             noRetry.delays.shouldBeEmpty()
         }
 
-        "the request body is sent as JSON text" {
+        // Pinned byte for byte: compact JSON in declaration order, a Content-Type with no charset parameter, and a
+        // single Accept. It is what the Ktor ContentNegotiation plugin sent before jev4k encoded the body itself.
+        "the request is sent as compact JSON text, application/json, with one Accept header" {
             val jev = triageJev()
             jev.client.ask(Triage, state = PAYOUT_TICKET)
-            val body = jev.requests.single().body.shouldBeInstanceOf<TextContent>()
-            body.contentType.withoutParameters() shouldBe ContentType.Application.Json
-            json(body.text).jsonObject.keys shouldBe setOf("state", "model", "questions")
+            val request = jev.requests.single()
+            val body = request.body.shouldBeInstanceOf<TextContent>()
+            body.contentType.toString() shouldBe "application/json"
+            body.text shouldBe
+                """{"state":"Help! My payouts have been failing for 3 days.","model":"jev-latest","questions":""" +
+                """{"urgent":{"type":"noul","instructions":"Does this convey urgency?","criteria":""" +
+                """{"true":"Explicitly time-sensitive","false":"No urgency expressed"}},"department":""" +
+                """{"type":"choice","instructions":"Which team should handle this?","criteria":""" +
+                """{"billing":"Payments, invoicing, refunds","technical":"Bugs, outages, integrations",""" +
+                """"sales":"Pricing, upgrades, new accounts"}},"frustration":{"type":"score",""" +
+                """"instructions":"How frustrated is the customer?","criteria":["Calm","Frustrated","Very angry"]}}}"""
+            request.headers.getAll(HttpHeaders.Accept) shouldBe listOf("application/json")
         }
 
         // An embedding app may hand the same Ktor engine to several clients; closing ours must not shut theirs down.

@@ -110,10 +110,9 @@ jev4k is a library meant to be embedded in an application, so it keeps out of th
 
 ### What it puts on your classpath.
 
-On the JVM, four `compile` dependencies (`ktor-client-core`,
-`kotlinx-serialization-json`, `kotlinx-coroutines-core`, `kotlin-stdlib`) and three `runtime` ones (`ktor-client-cio`,
-`ktor-client-content-negotiation`, `ktor-serialization-kotlinx-json`). Nothing else: no test
-framework, no logging backend.
+On the JVM, four `compile` dependencies (`ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core`,
+`kotlin-stdlib`) and one `runtime` one, the CIO engine (`ktor-client-cio`). Nothing else: no test framework, no logging
+backend, and no content-negotiation plugin, since jev4k encodes its request body itself.
 
 ### Logging
 

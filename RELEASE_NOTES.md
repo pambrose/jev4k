@@ -3,7 +3,7 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
-## v0.2.0 — unreleased
+## v0.2.0 — 2026-09-28
 
 > [!WARNING]
 > **Breaking change: the Maven coordinates have moved.** The group is now `com.pambrose.jev4k`, so every build
@@ -11,7 +11,8 @@ Narrative notes for each jev4k release, newest first. The itemized list of chang
 > `com.pambrose.jev4k:jev4k-jvm:0.2.0`. 0.1.0 stays at `com.pambrose:jev4k`, and nothing newer will be published
 > there.
 >
-> **Most code needs nothing else.** The client behaves as before, with the same dependencies and Java 17 bytecode.
+> **Most code needs nothing else.** The client behaves as before, on Java 17 bytecode, with two fewer runtime
+> dependencies (`ktor-client-content-negotiation` and `ktor-serialization-kotlinx-json`).
 > Since every build has to change anyway, 0.2.0 also makes a few small API changes, each of which affects only some
 > code:
 >

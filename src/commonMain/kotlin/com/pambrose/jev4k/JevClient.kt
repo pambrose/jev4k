@@ -31,7 +31,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
+import io.ktor.http.content.TextContent
 import io.ktor.http.isSuccess
 import io.ktor.util.network.UnresolvedAddressException
 import io.ktor.util.toMap
@@ -90,14 +90,12 @@ class JevClient(
         val resolvedModel = model.setting() ?: config.defaultModel
         val request = SystemOneRequest(state, resolvedModel, questions.toWire())
         return send(HttpMethod.Post, SYSTEM_ONE_PATH, options, {
-            contentType(ContentType.Application.Json)
             // Encoded here, inside the call, so a state that can't be encoded still becomes a JevValidationException.
-            if (options.extraBody.isEmpty()) {
-                setBody(request)
-            } else {
-                val fields = JevJson.encodeToJsonElement(SystemOneRequest.serializer(), request).jsonObject
-                setBody(JsonObject(fields + options.extraBody))
-            }
+            // jev4k encodes the body itself, extra fields and all, rather than installing Ktor's ContentNegotiation
+            // plugin for this one object; responses are read as raw text anyway.
+            val fields = JevJson.encodeToJsonElement(SystemOneRequest.serializer(), request).jsonObject
+            val text = JevJson.encodeToString(JsonObject.serializer(), JsonObject(fields + options.extraBody))
+            setBody(TextContent(text, ContentType.Application.Json))
         }) { body, response -> mapSystemOne(body, resolvedModel, questions, response) }
     }
 

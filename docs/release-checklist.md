@@ -25,7 +25,7 @@ Verified 2026-09-20.
 | `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                   |
 | `gradle.properties` version           | `0.2.0`, the next release number (the multiplatform move)   |
 | `gradle.properties` group             | `com.pambrose.jev4k` from 0.2.0 (0.1.0 was `com.pambrose`)  |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.1.0 dated 2026-09-20; 0.2.0 sections marked unreleased    |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.1.0 dated 2026-09-20; 0.2.0 dated 2026-09-28              |
 
 ## Before the first release, once
 

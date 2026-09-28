@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-## [0.2.0] — unreleased
+## [0.2.0] - 2026-09-28
 
 jev4k is now a Kotlin Multiplatform library, published under the new group `com.pambrose.jev4k`. The other platforms
 are new, and the JVM API grows. Since every build has to change its coordinates anyway, 0.2.0 also carries a few
@@ -80,8 +80,9 @@ small breaking changes, listed first under Changed.
   common-utils' do. `com.pambrose.jev4k:jev4k` is the multiplatform root module: Gradle builds depend on it and get
   the right artifact for each target, and Maven builds depend on `com.pambrose.jev4k:jev4k-jvm`. 0.1.0 stays at
   `com.pambrose:jev4k`, and nothing newer is published there.
-- The `jev4k-jvm` POM lists the same seven dependencies as 0.1.0's, and the published metadata still carries
-  `org.gradle.jvm.version = 17`.
+- The `jev4k-jvm` POM lists five dependencies, two fewer than 0.1.0's: `ktor-client-content-negotiation` and
+  `ktor-serialization-kotlinx-json` are gone, because jev4k now encodes its one request body itself. The request is
+  byte for byte the same. The published metadata still carries `org.gradle.jvm.version = 17`.
 - `JevClient.blocking` has its methods on the JVM only. On the other platforms `BlockingJev` has no members:
   Kotlin/JS and Kotlin/Wasm can't block a thread, and Kotlin/Native callers can wrap the suspend calls in
   `runBlocking` themselves.

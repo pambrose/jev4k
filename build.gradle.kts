@@ -189,9 +189,6 @@ kotlin {
                 api(libs.ktor.client.core)
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
-
-                implementation(libs.ktor.client.content.negotiation)
-                implementation(libs.ktor.serialization.kotlinx.json)
             }
         }
         // One default engine per platform. CIO can't do HTTPS on Kotlin/Native (Ktor has no native TLS), so the

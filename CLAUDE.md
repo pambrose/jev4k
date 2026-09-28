@@ -79,8 +79,11 @@ without them keep compiling.
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.
       A `Retry-After` HTTP-date, which the Python SDK also reads, counts from the config's internal `now` clock.
     - `followRedirects = false`: a 3xx becomes a `JevApiException`, since Ktor strips only `Authorization` on a
-      cross-host redirect and fetch would re-send the POST body. `ContentNegotiation` uses the `SkipIfPresent`
-      Accept merge strategy, so a caller's `Accept` isn't joined by a second `application/json`.
+      cross-host redirect and fetch would re-send the POST body.
+    - No `ContentNegotiation` plugin: `evaluate` encodes the request with `JevJson` into a `TextContent` (merging
+      `extraBody`), inside the request block so an encoding failure still becomes `JevValidationException`, and
+      responses are read raw. So the only `Accept` is `setHeaders`' (or the caller's), and `jev4k-jvm` needs only
+      CIO at runtime. `ClientTest` pins the request bytes the plugin used to produce.
     - `HttpClientFactory.limitBodySize` inserts a receive-pipeline phase ahead of `Before`, where Ktor's `SaveBody`
       reads the whole body into memory, and refuses a declared `Content-Length` over `MAX_RESPONSE_BYTES` (16 MiB)
       with an internal `OversizedResponseException`, which `execute` maps by status. A chunked body isn't capped;
@@ -360,13 +363,14 @@ without them keep compiling.
 - The JVM jar's manifest carries `Implementation-Version` and
   `Automatic-Module-Name: com.pambrose.jev4k`, which pins the JPMS module name for consumers instead of letting it
   derive from the jar's file name. The README and the site's Installation page document what an embedding app inherits:
-  seven POM dependencies (in `jev4k-jvm`'s POM), no logging binding, and how to drop CIO when supplying another
-  engine.
+  five POM dependencies (in `jev4k-jvm`'s POM: four compile, CIO at runtime), no logging binding, and how to drop
+  CIO when supplying another engine.
 - KGP's ABI validation (`abiValidation()`) guards the public API. `api/jev4k.api` is the JVM surface, Java callers
   included, and `api/jev4k.klib.api` covers the other targets. `checkKotlinAbi` runs under `check`;
   `make abi-update` (`updateKotlinAbi`) rewrites the dumps after an intended change and must run on a Mac, since a
-  host that can't compile a target keeps that target's old declarations. The JVM dump was taken before the
-  multiplatform move and still matches it.
+  host that can't compile a target keeps that target's old declarations. The JVM dump matched 0.1.0's through the
+  multiplatform move; 0.2.0's API changes since (`ModelList`, `JevCallOptions`, the millisecond members and the rest,
+  listed in the changelog) were recorded with `make abi-update`.
 - Coverage uses Kover (`org.jetbrains.kotlinx.kover`).
     - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs
       `build koverVerify koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js,

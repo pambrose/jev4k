@@ -769,8 +769,10 @@ reported as "timed out after 30s", which points the reader at the wrong setting.
 
 **Low** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/HttpClientFactory.kt:66`
 
-**Fixed.** `ContentNegotiation` uses `ContentTypeMergeStrategy.SkipIfPresent`, since every request already carries
-`Accept`. ClientTest checks `headers.getAll(Accept)` with and without a configured one.
+**Fixed.** At first `ContentNegotiation` was given `ContentTypeMergeStrategy.SkipIfPresent`. Later the plugin was
+removed altogether: its only remaining job was encoding the request body, which `evaluate` now does itself, so nothing
+adds a second `Accept` and `jev4k-jvm` drops two runtime dependencies. ClientTest checks `headers.getAll(Accept)` with
+and without a configured one, and pins the request's bytes.
 
 **What's wrong.** The comment says a configured `Accept` replaces jev4k's. `ContentNegotiation` then appends
 `application/json` to any other value, so the request carries two. A gateway that is strict about `Accept` could
