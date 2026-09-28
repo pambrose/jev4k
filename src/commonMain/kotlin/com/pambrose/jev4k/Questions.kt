@@ -1,11 +1,9 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.JevJson
-import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
+import com.pambrose.jev4k.internal.sendProblem
 import com.pambrose.jev4k.internal.WireQuestion
 import com.pambrose.jev4k.internal.enumTypeName
-import com.pambrose.jev4k.internal.hasNonFiniteNumber
-import com.pambrose.jev4k.internal.nestsTooDeep
 import com.pambrose.jev4k.internal.toWire
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
@@ -75,8 +73,8 @@ class QuestionRef<out A : Answer> internal constructor(
      */
     internal val problems: List<String> = emptyList(),
     /**
-     * False when a builder lambda failed partway, so [question] holds only what was added before it did. Its shape
-     * (option and level counts) is then not checked, since a count would only echo the failure.
+     * False for a stand-in for a question that couldn't be built ([failedQuestionRef]). Only its [problems] are
+     * reported; checking the stand-in's own question would just add noise.
      */
     internal val complete: Boolean = true,
 ) {
@@ -162,12 +160,7 @@ private fun validate(
 ): List<String> =
     buildList {
         if (question.instructions.isEmptyEntry()) add("question '$id': $INSTRUCTIONS_REQUIRED")
-        for ((name, entry) in question.entries()) {
-            when {
-                entry.nestsTooDeep() -> add("question '$id': $name is nested more than $MAX_JSON_DEPTH levels deep")
-                entry.hasNonFiniteNumber() -> add("question '$id': $name holds NaN or an infinity, which JSON lacks")
-            }
-        }
+        for ((name, entry) in question.entries()) entry.sendProblem(name)?.let { add("question '$id': $it") }
         when (question) {
             is NoulQuestion -> {
                 // Noul criteria are optional; nothing else to check.
@@ -201,28 +194,22 @@ private fun Question.entries(): List<Pair<String, JsonElement>> =
         }
 
 /**
- * Runs a builder lambda and returns the problems of a [JevValidationException] it threw, from `entry()` or
- * `jsonOf()` say, instead of letting it escape. Inside a [JevQuery] object it would escape the class initializer as an
- * `ExceptionInInitializerError`; returned, it is reported with the question's other problems when the set is
- * validated.
+ * A stand-in for a question whose building threw a [JevValidationException], carrying its [problems] to the set's
+ * validation. It is never sent: a set holding it doesn't validate.
  */
-private inline fun problemsFrom(block: () -> Unit): List<String> =
-    try {
-        block()
-        emptyList()
-    } catch (e: JevValidationException) {
-        e.problems
-    }
+internal fun failedQuestionRef(
+    id: String,
+    problems: List<String>,
+): QuestionRef<Nothing> =
+    QuestionRef(id, NoulQuestion(JsonNull), { error("question '$id' could not be built") }, problems, complete = false)
 
 internal fun noulRef(
     id: String,
     instructions: JsonElement,
     criteria: (NoulBuilder.() -> Unit)?,
 ): QuestionRef<NoulAnswer> {
-    val builder = NoulBuilder()
-    val problems = problemsFrom { criteria?.invoke(builder) }
-    val question = NoulQuestion(instructions, builder.trueEntry, builder.falseEntry)
-    return QuestionRef(id, question, ::decodeNoul, problems, complete = problems.isEmpty())
+    val builder = NoulBuilder().apply { criteria?.invoke(this) }
+    return QuestionRef(id, NoulQuestion(instructions, builder.trueEntry, builder.falseEntry), ::decodeNoul)
 }
 
 internal fun choiceRef(
@@ -230,14 +217,12 @@ internal fun choiceRef(
     instructions: JsonElement,
     options: ChoiceBuilder.() -> Unit,
 ): QuestionRef<ChoiceAnswer<String>> {
-    val builder = ChoiceBuilder()
-    val problems = problemsFrom { builder.apply(options) }
+    val builder = ChoiceBuilder().apply(options)
     return QuestionRef(
         id = id,
         question = ChoiceQuestion(instructions, builder.options.toMap()),
         decode = ::decodeChoice,
-        problems = problems + builder.duplicates.map { "duplicate Choice option '$it'" },
-        complete = problems.isEmpty(),
+        problems = builder.duplicates.map { "duplicate Choice option '$it'" },
     )
 }
 
@@ -245,12 +230,8 @@ internal fun scoreRef(
     id: String,
     instructions: JsonElement,
     levels: ScoreBuilder.() -> Unit,
-): QuestionRef<ScoreAnswer> {
-    val builder = ScoreBuilder()
-    val problems = problemsFrom { builder.apply(levels) }
-    val question = ScoreQuestion(instructions, builder.levels.toList())
-    return QuestionRef(id, question, ::decodeScore, problems, complete = problems.isEmpty())
-}
+): QuestionRef<ScoreAnswer> =
+    QuestionRef(id, ScoreQuestion(instructions, ScoreBuilder().apply(levels).levels.toList()), ::decodeScore)
 
 @PublishedApi
 internal fun <E : Enum<E>> enumChoiceRef(

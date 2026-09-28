@@ -678,7 +678,7 @@ The runnable example is [`TriageExample.kt`](src/jvmTest/kotlin/com/pambrose/jev
 unit tests use Kotest, MockK, and Ktor's `MockEngine`, and most of them run on every platform. One timeout test drives
 the real CIO engine against a loopback socket, and one test per platform dials a loopback port nothing listens on, so
 no traffic ever leaves the machine. Live tests run only when `JEV4K_LIVE=1`, which `make live-tests` sets; the JVM
-smoke tests also need `TYPESAFE_API_KEY`, and `make live-tests` refuses to start without it.
+smoke tests also need `TYPESAFE_API_KEY`, and fail, naming it, when it's missing.
 
 ## Thanks to TypeSafe
 

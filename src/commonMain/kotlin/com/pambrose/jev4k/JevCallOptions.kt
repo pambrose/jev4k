@@ -1,7 +1,6 @@
 package com.pambrose.jev4k
 
-import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
-import com.pambrose.jev4k.internal.nestsTooDeep
+import com.pambrose.jev4k.internal.sendProblem
 import kotlinx.serialization.json.JsonElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -92,7 +91,7 @@ class JevCallOptionsBuilder {
             headers.forEach { (name, value) -> headerProblem(name, value)?.let(::add) }
             extraBody.forEach { (name, value) ->
                 if (name in REQUEST_FIELDS) add("extraBody can't set '$name'; pass it as an argument")
-                if (value.nestsTooDeep()) add("extraBody '$name' is nested more than $MAX_JSON_DEPTH levels deep")
+                value.sendProblem("extraBody '$name'")?.let(::add)
             }
         }
         if (problems.isNotEmpty()) throw JevConfigException("Invalid call options: ${problems.joinToString("; ")}")

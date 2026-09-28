@@ -12,24 +12,25 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeBlank
 import kotlin.reflect.KClass
 
-/** True only with a key and an explicit opt-in, so a live run is never something that just happens. */
-internal fun liveApiEnabled(): Boolean = !System.getenv("TYPESAFE_API_KEY").isNullOrBlank() && liveOptIn()
-
+/**
+ * The opt-in alone decides, not the key too: a live run without a key then fails, each test naming the missing
+ * `TYPESAFE_API_KEY`, instead of passing without having made a single real call.
+ */
 class LiveApiCondition : Condition {
-    override fun evaluate(kclass: KClass<out Spec>): Boolean = liveApiEnabled()
+    override fun evaluate(kclass: KClass<out Spec>): Boolean = liveOptIn()
 }
 
 /**
- * Real calls to the TypeSafe API. Runs only when `TYPESAFE_API_KEY` is set and `JEV4K_LIVE=1`
- * (`make live-tests` sets the latter), so ordinary test runs never spend tokens. Jev isn't fully
- * deterministic, so these check shapes and ranges rather than exact values.
+ * Real calls to the TypeSafe API. Runs only with `JEV4K_LIVE=1` (`make live-tests` sets it), so ordinary test runs
+ * never spend tokens, and needs `TYPESAFE_API_KEY`. Jev isn't fully deterministic, so these check shapes and ranges
+ * rather than exact values.
  *
  * The gate is on the spec, not on each test: `.env` supplies a real key to every test task, so a test added
  * here without the per-test gate would otherwise spend tokens on every `make tests`.
  */
 @EnabledIf(LiveApiCondition::class)
 class LiveSmokeTest : StringSpec() {
-    private val live = liveApiEnabled()
+    private val live = liveOptIn()
 
     /** Belt and braces: the spec-level [EnabledIf] already covers this, and forgetting it is now harmless. */
     private fun String.liveTest(test: suspend TestScope.() -> Unit) = config(enabledIf = { live }, test = test)

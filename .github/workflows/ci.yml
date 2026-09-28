@@ -54,12 +54,13 @@ jobs:
                 run: ./gradlew --continue build koverVerify koverXmlReport koverLog
 
             # linuxArm64 is published but has no Gradle test task, and this runner can't execute its binary. QEMU lets
-            # Docker run it, so the same make target that tests it locally tests it here (and linuxX64 once more).
+            # Docker run it, so the same make target that tests it locally tests it here; linuxX64's tests already ran
+            # in the step above.
             -   uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
                 with:
                     platforms: arm64
-            -   name: Run the linuxX64 and linuxArm64 tests in Docker
-                run: make docker-linux-tests
+            -   name: Run the linuxArm64 tests in Docker
+                run: make docker-linux-tests LINUX_TEST_TARGETS=linuxArm64:arm64
 
             -   name: Upload test reports on failure
                 if: failure()

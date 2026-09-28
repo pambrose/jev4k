@@ -461,9 +461,10 @@ class ClientTest : StringSpec() {
         "a state jev4k can't encode fails as a validation error, not a serialization error" {
             val jev = triageJev()
             shouldThrow<JevValidationException> { jev.client.ask(Triage, state = jsonOf(Double.NaN)) }
-            // A hand-built JsonElement skips jsonOf, so this one fails while the body is being written.
+            // A hand-built JsonElement skips jsonOf; evaluate's own check of the state catches it instead.
             val nonFinite = buildJsonObject { put("score", JsonPrimitive(Double.POSITIVE_INFINITY)) }
             shouldThrow<JevValidationException> { jev.client.ask(Triage, state = nonFinite) }
+                .problems.single() shouldBe "state holds NaN or an infinity, which JSON lacks"
             jev.requests.shouldBeEmpty()
         }
 

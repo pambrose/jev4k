@@ -960,10 +960,11 @@ Alternatively, narrow the KDoc. Add an EntriesTest case either way.
 
 **Low** · Validation · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevQuery.kt:38`
 
-**Fixed.** `noulRef`, `choiceRef` and `scoreRef` catch a `JevValidationException` from the builder lambda and carry its
-problems on the `QuestionRef`, marking the question incomplete so a knock-on option or level count isn't reported. An
-argument evaluated before the builder runs, such as `noul(entry(...))`, still throws from the initializer; the
-`JevQuery` KDoc and CLAUDE.md say so.
+**Fixed.** `QuestionProvider.provideDelegate` catches a `JevValidationException` thrown while a question is built, from
+a builder lambda or an enum option's `JevOption.entry`, and registers a stand-in `QuestionRef` carrying its problems,
+whose own question isn't checked, so no knock-on count is reported. An inline `questions {}` builder throws at once,
+since it runs in the caller's code. An argument evaluated before the builder runs, such as `noul(entry(...))`, still
+throws from the initializer; the `JevQuery` KDoc and CLAUDE.md say so.
 
 **What's wrong.** The codebase defers definition errors so they can't escape an `object`'s static initializer:
 duplicate options, for instance, are recorded rather than thrown. `entry()`, `jsonOf()` and `jsonEntry()` still
@@ -1278,9 +1279,10 @@ platform ran nothing.
 
 **Low** · Tests · small · `src/commonTest/kotlin/com/pambrose/jev4k/TestSupport.kt:89`
 
-**Fixed.** `build.gradle.kts` sets `JEV4K_ENV_PROBE` on every `Test`, `KotlinJsTest` and `KotlinNativeTest`, plus
-`SIMCTL_CHILD_JEV4K_ENV_PROBE` on simulator tasks (KGP doesn't add the prefix), and `docker-linux-tests` passes it with
-`-e`. `PlatformEnvTest` asserts `platformGetenv` returns it, and null for an unset name.
+**Fixed.** `PlatformEnvTest` asserts that `platformGetenv` returns `PATH`, which every test process has (checked on the
+iOS and tvOS simulators, macOS, Node.js, Docker Linux, and the JVM; Windows looks it up whatever its case), and null for
+an unset name. A variable set for the purpose on every test task was tried first, but needed each task type, a
+`SIMCTL_CHILD_` special case and a Docker flag to agree.
 
 **What's wrong.** Every test stubs `env`. On js, wasmJs and native, the only real call is `liveOptIn()`, and in
 ordinary runs that returns null whether or not the lookup works.
@@ -1381,7 +1383,9 @@ assertion that catches a wrong plugin order. So a loaded runner can fail the tes
 
 **Low** · Tests · small · `Makefile:235`
 
-**Fixed.** `live-tests` fails at once without a key, using the same check as `all-tests`.
+**Fixed.** `LiveSmokeTest` is gated on `JEV4K_LIVE=1` alone, so a live run without a key fails, each test naming the
+missing key, instead of skipping. That covers a direct `JEV4K_LIVE=1 ./gradlew jvmTest` as well as `make live-tests`,
+with no Makefile guard to keep in step with how `.env` is parsed.
 
 **What's wrong.** `live-tests` never checks for `TYPESAFE_API_KEY`. Without it, LiveSmokeTest skips every test and
 LiveProbeTest, which uses a fake key, passes. The build succeeds without a single real call.
@@ -1432,8 +1436,9 @@ the omission.
 
 **Low** · CI · medium · `.github/workflows/ci.yml:19`, `docs/release-checklist.md:59`
 
-**Fixed.** The CI `build` job sets up QEMU (`docker/setup-qemu-action`, pinned) and runs `make docker-linux-tests`, so
-linuxArm64's tests run on every push and PR. The release checklist gives it a checkbox of its own.
+**Fixed.** The CI `build` job sets up QEMU (`docker/setup-qemu-action`, pinned) and runs `make docker-linux-tests
+LINUX_TEST_TARGETS=linuxArm64:arm64`, so linuxArm64's tests run on every push and PR without repeating linuxX64's. The
+release checklist gives it a checkbox of its own.
 
 **What's wrong.** linuxArm64 has no Gradle test task. Only the local `make docker-linux-tests` runs it, and the
 release checklist mentions that in passing inside another checkbox.
@@ -1464,7 +1469,8 @@ docs say `make build` compiles every target.
 **Low** · Build · small · `build.gradle.kts:219`
 
 **Fixed.** `build.gradle.kts` disables the test KSP, compile and link tasks of iosX64 unless the host is an Intel Mac,
-and of mingwX64 unless it is Windows. The Linux ones stay for `docker-linux-tests`.
+of mingwX64 unless it is Windows, and of the tvOS and watchOS simulators when there's no device for them, in one block.
+The Linux ones stay for `docker-linux-tests`.
 
 **What's wrong.** Disabling a test task doesn't stop its link task. So `check` links debug test binaries (and
 compiles their test klibs) that never run:

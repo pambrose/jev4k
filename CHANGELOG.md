@@ -137,7 +137,8 @@ small breaking changes, listed first under Changed.
   fix it, instead of only that the question isn't part of the request. That is what a mock returning a result built
   for a fixed set hits when the code under test builds its questions per call; the testing docs now show
   `answers { jevResult(body, secondArg()) }` for it.
-- `make live-tests` fails at once without `TYPESAFE_API_KEY`, instead of passing without making a real call.
+- A live run (`make live-tests`) without `TYPESAFE_API_KEY` fails, each smoke test naming the missing key, instead of
+  passing without making a real call.
 - A `null` answer is treated as absent, failing only when it is read, instead of failing the whole response.
 - A response number that isn't finite (an unquoted `NaN`, or `1e999`), or a Score level key outside the question's
   levels, is a `JevResponseValidationException` with its field path, instead of surfacing later from `band()`,
@@ -147,8 +148,9 @@ small breaking changes, listed first under Changed.
 - A question entry holding NaN or an infinity is reported by validation, naming the question and the entry, so
   `QuestionSet.toJson()` can't fail with a raw kotlinx exception.
 - `jsonOf` and `entry` convert primitive arrays (`IntArray`, `DoubleArray` and the rest), as their docs promised.
-- A `JevValidationException` from inside a builder lambda, from `entry()` say, no longer escapes a `JevQuery`
-  object's initializer as an `ExceptionInInitializerError`; it is reported when the questions are first used.
+- A `JevValidationException` thrown while a `JevQuery` question is built, from `entry()` in a builder lambda or in an
+  enum option's `JevOption.entry` say, no longer escapes the object's initializer as an
+  `ExceptionInInitializerError`; it is reported when the questions are first used.
 - A `JevQuery` whose `questions` is read during initialization no longer loses the questions declared after that
   read.
 - `QuestionSet.ids` reads the set's own copy of its questions, not the caller's list.

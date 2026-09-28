@@ -210,8 +210,8 @@ class JevConfigBuilder {
 internal fun timeoutProblem(timeout: Duration): String? =
     "timeout must be at least 1 millisecond (was $timeout)".takeIf { timeout.inWholeMilliseconds < 1 }
 
-/** A string setting as given, trimmed, or null when it is unset or blank. */
-private fun String?.setting(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
+/** A string setting as given, trimmed, or null when it is unset or blank. A per-call model follows the same rule. */
+internal fun String?.setting(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
 
 private fun Char.isControlCharacter(): Boolean = this < ' ' || this == '\u007F'
 

@@ -17,7 +17,7 @@ internal const val MAX_JSON_DEPTH = 128
 
 /** True when this element nests more than [MAX_JSON_DEPTH] objects or arrays deep. */
 internal fun JsonElement.nestsTooDeep(): Boolean {
-    // Iterative, with an explicit stack, so that checking can't overflow either.
+    // Iterative, with an explicit stack, so that checking can't overflow either. Only containers are pushed.
     val pending = ArrayDeque<Pair<JsonElement, Int>>()
     pending.addLast(this to 1)
     while (pending.isNotEmpty()) {
@@ -28,7 +28,7 @@ internal fun JsonElement.nestsTooDeep(): Boolean {
             else -> continue
         }
         if (depth > MAX_JSON_DEPTH) return true
-        children.forEach { pending.addLast(it to depth + 1) }
+        children.forEach { if (it is JsonObject || it is JsonArray) pending.addLast(it to depth + 1) }
     }
     return false
 }
@@ -68,3 +68,15 @@ internal fun JsonElement.hasNonFiniteNumber(): Boolean {
     }
     return false
 }
+
+/**
+ * What stops this element being sent, naming it [what] in the message, or null: nesting past [MAX_JSON_DEPTH], or a
+ * number JSON can't represent. Every JSON value jev4k sends is checked here: the state, question entries and extra
+ * body fields.
+ */
+internal fun JsonElement.sendProblem(what: String): String? =
+    when {
+        nestsTooDeep() -> "$what is nested more than $MAX_JSON_DEPTH levels deep"
+        hasNonFiniteNumber() -> "$what holds NaN or an infinity, which JSON lacks"
+        else -> null
+    }

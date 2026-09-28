@@ -1,8 +1,8 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.HttpClientFactory
+import com.pambrose.jev4k.internal.sendProblem
 import com.pambrose.jev4k.internal.JevJson
-import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
 import com.pambrose.jev4k.internal.MAX_RESPONSE_BYTES
 import com.pambrose.jev4k.internal.OversizedResponseException
 import com.pambrose.jev4k.internal.ResponseInfo
@@ -15,7 +15,6 @@ import com.pambrose.jev4k.internal.limitTo
 import com.pambrose.jev4k.internal.mapModels
 import com.pambrose.jev4k.internal.mapSystemOne
 import com.pambrose.jev4k.internal.parseObject
-import com.pambrose.jev4k.internal.nestsTooDeep
 import com.pambrose.jev4k.internal.retryHint
 import com.pambrose.jev4k.internal.toWire
 import io.ktor.client.network.sockets.ConnectTimeoutException
@@ -29,6 +28,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
@@ -87,8 +87,7 @@ class JevClient(
         options: JevCallOptions,
     ): JevResult {
         stateProblem(state)?.let { throw JevValidationException(listOf(it)) }
-        // A blank model is treated as unset, as the builder treats a blank defaultModel.
-        val resolvedModel = model?.trim()?.takeIf { it.isNotEmpty() } ?: config.defaultModel
+        val resolvedModel = model.setting() ?: config.defaultModel
         val request = SystemOneRequest(state, resolvedModel, questions.toWire())
         return send(HttpMethod.Post, SYSTEM_ONE_PATH, options, {
             contentType(ContentType.Application.Json)
@@ -104,14 +103,12 @@ class JevClient(
 
     /** What is wrong with [state], if anything. The API takes a string, an object or an array, as the SDKs type it. */
     private fun stateProblem(state: JsonElement): String? {
-        val bare = (state as? JsonPrimitive)?.takeUnless { it.isString || it is JsonNull }
-        val kind = if (bare?.booleanOrNull != null) "a boolean" else "a number"
-        return when {
-            state is JsonNull -> "state must not be null"
-            bare != null -> "state must be a string, a JSON object or a JSON array, not $kind"
-            state.nestsTooDeep() -> "state is nested more than $MAX_JSON_DEPTH levels deep"
-            else -> null
+        if (state is JsonNull) return "state must not be null"
+        if (state is JsonPrimitive && !state.isString) {
+            val kind = if (state.booleanOrNull != null) "a boolean" else "a number"
+            return "state must be a string, a JSON object or a JSON array, not $kind"
         }
+        return state.sendProblem("state")
     }
 
     override suspend fun models(): ModelList = models(NoCallOptions)
@@ -146,10 +143,7 @@ class JevClient(
         // engine's decoder already does, so every platform reads the same text.
         val text = response.readRawBytes().decodeToString().removePrefix("\uFEFF")
         val status = response.status.value
-        if (!response.status.isSuccess()) {
-            val hint = retryHint(response.headers, config.now())
-            throw apiException(status, text, response.headers.toMap(), requestId, endpoint, hint)
-        }
+        if (!response.status.isSuccess()) throw apiError(status, text, response.headers, endpoint)
         val info = ResponseInfo(text, status, response.headers, requestId, endpoint)
         return parse(info.parseObject(), info)
     }
@@ -211,14 +205,30 @@ class JevClient(
         e: OversizedResponseException,
         endpoint: String,
     ): JevApiException {
-        val requestId = e.headers[JevDefaults.REQUEST_ID_HEADER]
-        val headers = e.headers.toMap()
         val note = "body of ${e.contentLength} bytes not read, over the $MAX_RESPONSE_BYTES-byte limit"
-        return if (e.status in 200..299) {
-            JevResponseValidationException(note, null, null, requestId, endpoint, e.status, headers, e)
-        } else {
-            apiException(e.status, null, headers, requestId, endpoint, retryHint(e.headers, config.now()), note)
-        }
+        if (!e.status.isSuccess()) return apiError(e.status.value, null, e.headers, endpoint, note)
+        return JevResponseValidationException(
+            detail = note,
+            fieldPath = null,
+            body = null,
+            requestId = e.headers[JevDefaults.REQUEST_ID_HEADER],
+            endpoint = endpoint,
+            status = e.status.value,
+            headers = e.headers.toMap(),
+            cause = e,
+        )
+    }
+
+    /** The exception for a non-2xx response after retries: [body] as read, or null, with [note] saying why. */
+    private fun apiError(
+        status: Int,
+        body: String?,
+        headers: Headers,
+        endpoint: String,
+        note: String? = null,
+    ): JevApiException {
+        val requestId = headers[JevDefaults.REQUEST_ID_HEADER]
+        return apiException(status, body, headers.toMap(), requestId, endpoint, retryHint(headers, config.now()), note)
     }
 
     /**

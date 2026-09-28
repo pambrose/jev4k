@@ -36,10 +36,10 @@ interface JevOption {
  * ```
  *
  * Questions are validated the first time [questions] is used, so an invalid definition fails on first use, with a
- * [JevValidationException], rather than from the object's initializer. That covers a problem found inside a builder
- * lambda too, such as an unsupported value passed to `entry()` in a Choice's options. An argument is evaluated before
- * the builder runs, though, so a failing `entry()` or `jsonEntry()` passed as the instructions still throws from the
- * initializer.
+ * [JevValidationException], rather than from the object's initializer. That covers a problem found while a question is
+ * built too, such as an unsupported value passed to `entry()` in a Choice's options or in an enum option's
+ * [JevOption.entry]. An argument is evaluated before the builder runs, though, so a failing `entry()` or
+ * `jsonEntry()` passed as the instructions still throws from the initializer.
  *
  * [questions] can be read at any time. A read before every property is initialized, from an `init` block or a base
  * class, sees only the questions declared so far; the next read includes the rest.
@@ -128,5 +128,17 @@ class QuestionProvider<out A : Answer> internal constructor(
     override fun provideDelegate(
         thisRef: JevQuery,
         property: KProperty<*>,
-    ): QuestionRef<A> = create(id ?: property.name).also(thisRef::register)
+    ): QuestionRef<A> {
+        val questionId = id ?: property.name
+        // Building runs the builder lambda, and for an enum Choice each constant's JevOption.entry, so entry() or
+        // jsonOf() can throw here. From a JevQuery object's initializer that would escape as an
+        // ExceptionInInitializerError; a stand-in carries it to the set's validation instead.
+        val ref =
+            try {
+                create(questionId)
+            } catch (e: JevValidationException) {
+                failedQuestionRef(questionId, e.problems)
+            }
+        return ref.also(thisRef::register)
+    }
 }

@@ -83,13 +83,15 @@ val valueChecks =
     )
 
 // An empty field has no content to check, only whether leaving it empty was right.
-val absenceCheck =
-    "absence_wrong" to
-        FieldCheck(
-            "The `extracted_field` is empty. Does the source text contain the information this field describes?",
-            "A value was wrongly omitted",
-            "Returning nothing is correct",
-        )
+val absenceChecks =
+    mapOf(
+        "absence_wrong" to
+            FieldCheck(
+                "The `extracted_field` is empty. Does the source text contain the information this field describes?",
+                "A value was wrongly omitted",
+                "Returning nothing is correct",
+            ),
+    )
 
 // Verify a cheap model's extraction field by field; escalate only when a check fires.
 suspend fun needsEscalation(
@@ -102,7 +104,7 @@ suspend fun needsEscalation(
     val result =
         jev.query(state = sourceText) {
             for ((field, value) in extracted) {
-                val checks = if (value.isBlank()) mapOf(absenceCheck) else valueChecks
+                val checks = if (value.isBlank()) absenceChecks else valueChecks
                 for ((name, check) in checks) {
                     val instructions = entry("field" to field, "extracted_field" to value, "question" to check.question)
                     noul("$field::$name", instructions) {

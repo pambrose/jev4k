@@ -39,7 +39,7 @@ To run a single test class:
   that dials a loopback port nothing listens on, to check how that platform's default engine reports a refused
   connection.
 - **Live tests are opt-in.** They run only when `JEV4K_LIVE=1`, which `make live-tests` sets. The JVM smoke
-  tests also need `TYPESAFE_API_KEY`, and `make live-tests` refuses to start without it; the probes that run on
+  tests also need `TYPESAFE_API_KEY`, and fail, naming it, when it's missing; the probes that run on
   every platform send an invalid key and a 1 ms timeout, so they spend no tokens.
 - **`.env` supplies the key.** Copy `.env.example` to `.env` (gitignored) and set `TYPESAFE_API_KEY`. Gradle
   loads it into the JVM test and example tasks, so `make example` and the JVM smoke tests need nothing exported in

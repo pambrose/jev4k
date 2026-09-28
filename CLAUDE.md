@@ -39,9 +39,11 @@ without them keep compiling.
   built on first read, so an invalid definition fails on first use, and rebuilt if more questions have registered
   since (a read from an `init` block or a base class would otherwise freeze a partial set). Definition errors are
   carried on the `QuestionRef` rather than thrown, so they can't escape an `object`'s initializer: duplicate options,
-  and a `JevValidationException` from inside a builder lambda (`entry()`, `jsonOf()`), which also marks the question
-  incomplete so its option or level count isn't checked. An argument such as `noul(entry(...))` is evaluated before
-  the builder runs, so that one still throws from the initializer. `choice<E>()` builds options from an enum. The
+  and a `JevValidationException` thrown while a question is built (`entry()` or `jsonOf()` in a builder lambda, or
+  an enum option's `JevOption.entry`), which `QuestionProvider.provideDelegate` catches, registering a
+  `failedQuestionRef` stand-in whose question isn't checked. An inline `questions {}` builder throws at once, since it
+  runs in the caller's own code. An argument such as `noul(entry(...))` is evaluated before the builder runs, so that
+  one still throws from the initializer. `choice<E>()` builds options from an enum. The
   option key is the constant's name unless `JevOption.optionKey` overrides it, and `JevOption.entry` becomes the
   description.
 - **Answers** (`JevResult.kt`, `Answers.kt`). `result[handle]` decodes through the handle's `decode` function, and also
@@ -64,7 +66,7 @@ without them keep compiling.
     - Absent answers fail when they are read, not when the response is parsed, and a `null` answer counts as absent.
     - Numbers must be finite (an unquoted `NaN` and `1e999` both parse), and a Score level key must lie within the
       question's levels, or be non-negative for an answer nobody asked for.
-    - Every `JevResponseValidationException` from a 2xx body is built by `ResponseInfo.invalid`, which carries the
+    - Every `JevResponseValidationException` from a 2xx body is thrown by `ResponseInfo.fail`, which carries the
       body's text as received, the status and the headers. `send` builds the `ResponseInfo`, and `JevResult` keeps
       it for failures at read time.
     - JSON nested more than `MAX_JSON_DEPTH` (128, `internal/JsonDepth.kt`) levels is refused before
@@ -439,14 +441,15 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
       point. The plugin only does that for test tasks the host can run, so `build.gradle.kts` adds the processor to
       `kspLinuxX64Test` and `kspLinuxArm64Test` itself; without that, a Linux test binary linked on a Mac holds no
       specs, and linuxArm64 (which has no test task) none anywhere.
-    - `make docker-linux-tests` links both Linux test binaries and runs each in a `buildpack-deps:noble-curl`
+    - `make docker-linux-tests` links the Linux test binaries named in `LINUX_TEST_TARGETS` (both, by default; CI
+      passes only linuxArm64's, since its build job has run linuxX64's) and runs each in a `buildpack-deps:noble-curl`
       container of its own architecture (Ubuntu plus `ca-certificates`). A Kotest native binary exits 0 even when
       a test fails, since Gradle reads the verdict from its TeamCity messages, so the target fails on a
       `##teamcity[testFailed` line or a missing Kotest `Specs:` summary. Full logs go to `build/docker-linux-tests/`.
     - KGP runs a simulator test in the first available device of its platform. Xcode creates iOS devices by
       default but installs no tvOS or watchOS runtime, so `build.gradle.kts` reads `xcrun simctl list devices
-      available --json` and disables `tvosSimulatorArm64Test`/`watchosSimulatorArm64Test` (and their link tasks)
-      when that platform has no device. The listing goes through a `ValueSource` that returns only the set of
+      available --json` and disables `tvosSimulatorArm64Test`/`watchosSimulatorArm64Test` (and their KSP, compile and
+      link tasks, in the same block that skips iosX64's and mingwX64's) when that platform has no device. The listing goes through a `ValueSource` that returns only the set of
       platforms with a device: the configuration cache re-checks that set on every build, so adding a device (a
       runtime from Xcode → Settings → Components, then `xcrun simctl create` if it made none) enables the tests on
       the next build, while the listing's sizes and timestamps, which change on every simulator run, don't discard
@@ -466,13 +469,12 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
   engine against a dead loopback port.
 - MockK is used where a dependency is mocked: `ConsumerTest` mocks `JevApi` to show how application code is tested
   without HTTP.
-- `LiveSmokeTest` (JVM) makes real API calls and runs only when `TYPESAFE_API_KEY` is set and `JEV4K_LIVE=1`
-  (`make live-tests` sets it), so ordinary runs never spend tokens. `make live-tests` fails at once without a key,
-  since the probes would otherwise pass with no real call made.
-- `PlatformEnvTest` (common) is the one test that doesn't stub the environment: it checks `platformGetenv` against
-  `JEV4K_ENV_PROBE=present`, which `build.gradle.kts` sets on every `Test`, `KotlinJsTest` and `KotlinNativeTest`
-  (and as `SIMCTL_CHILD_JEV4K_ENV_PROBE` on simulator tasks, since KGP doesn't add the prefix) and
-  `docker-linux-tests` passes to its containers. Running a test binary some other way needs it set by hand.
+- `LiveSmokeTest` (JVM) makes real API calls and runs only when `JEV4K_LIVE=1` (`make live-tests` sets it), so
+  ordinary runs never spend tokens. The opt-in alone gates it, not the key too: without `TYPESAFE_API_KEY` a live run
+  fails, each test naming the missing key, instead of passing with no real call made.
+- `PlatformEnvTest` (common) is the one test that doesn't stub the environment: it checks that `platformGetenv`
+  reads `PATH`, which every process has (a simulator test spawned by `simctl` and a Docker container included; the
+  Windows lookup ignores case), and returns null for a name that isn't set.
 - A result answers only the handles of the set it was built for. A MockK mock of code that builds its questions per
   call returns `answers { jevResult(body, secondArg()) }`; `JevResult.get` names that case when a handle's id is
   in the request but the handle isn't. `jevResult(String)` checks the body with the client's own

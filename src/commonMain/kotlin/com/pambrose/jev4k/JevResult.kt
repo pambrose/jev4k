@@ -113,19 +113,14 @@ class JevResult internal constructor(
         id: String,
         decode: (Answer) -> T,
     ): T {
-        val answer = answers[id] ?: throw invalid("answers.$id", "no answer returned for question '$id'")
+        val path = "answers.$id"
+        val answer = answers[id] ?: response.fail(path, "no answer returned for question '$id'")
         return try {
             decode(answer)
         } catch (e: AnswerDecodingException) {
-            throw invalid("answers.$id", "question '$id': ${e.message}", e)
+            response.fail(path, "question '$id': ${e.message}", e)
         }
     }
-
-    private fun invalid(
-        fieldPath: String,
-        detail: String,
-        cause: Throwable? = null,
-    ) = response.invalid(detail, fieldPath, cause)
 
     override fun toString(): String = "JevResult(model=$model, requestId=$requestId, usage=$usage, answers=$answers)"
 }

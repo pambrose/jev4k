@@ -13,6 +13,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentTypeMergeStrategy
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.http.Headers
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentLength
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.pipeline.PipelinePhase
@@ -27,7 +28,7 @@ internal const val MAX_RESPONSE_BYTES = 16L * 1024 * 1024
 
 /** A response refused before its body was read, because its declared length is over [MAX_RESPONSE_BYTES]. */
 internal class OversizedResponseException(
-    val status: Int,
+    val status: HttpStatusCode,
     val headers: Headers,
     val contentLength: Long,
 ) : RuntimeException("Response body of $contentLength bytes is over the $MAX_RESPONSE_BYTES-byte limit")
@@ -57,7 +58,7 @@ internal object HttpClientFactory {
             val length = response.contentLength()
             if (length != null && length > MAX_RESPONSE_BYTES) {
                 response.cancel()
-                throw OversizedResponseException(response.status.value, response.headers, length)
+                throw OversizedResponseException(response.status, response.headers, length)
             }
         }
     }

@@ -17,11 +17,15 @@ internal class ResponseInfo(
     val requestId: String?,
     val endpoint: String,
 ) {
-    fun invalid(
+    /** Throws the [JevResponseValidationException] for a problem at [fieldPath], or with the body as a whole. */
+    fun fail(
+        fieldPath: String?,
         detail: String,
-        fieldPath: String? = null,
         cause: Throwable? = null,
-    ) = JevResponseValidationException(detail, fieldPath, text, requestId, endpoint, status, headers.toMap(), cause)
+    ): Nothing {
+        val headerMap = headers.toMap()
+        throw JevResponseValidationException(detail, fieldPath, text, requestId, endpoint, status, headerMap, cause)
+    }
 }
 
 /**
@@ -30,12 +34,11 @@ internal class ResponseInfo(
  */
 internal fun ResponseInfo.parseObject(): JsonObject {
     // Checked before parsing: kotlinx.serialization parses by recursion, so a deep enough body overflows it.
-    val tooDeep = text.nestsTooDeep()
+    if (text.nestsTooDeep()) fail(null, "body is nested more than $MAX_JSON_DEPTH levels deep")
     val body = try {
-        if (tooDeep) null else JevJson.parseToJsonElement(text)
+        JevJson.parseToJsonElement(text)
     } catch (e: SerializationException) {
-        throw invalid("body is not JSON", cause = e)
+        fail(null, "body is not JSON", e)
     }
-    val problem = if (tooDeep) "body is nested more than $MAX_JSON_DEPTH levels deep" else "expected a JSON object"
-    return body as? JsonObject ?: throw invalid(problem)
+    return body as? JsonObject ?: fail(null, "expected a JSON object")
 }

@@ -12,6 +12,7 @@ import io.kotest.assertions.withClue
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonElement
 
 private class DuplicateIdQuery : JevQuery() {
     val a by noul("First question?", id = "same")
@@ -39,6 +40,17 @@ private object ClashingEnumQuery : JevQuery() {
 
 private object BadEntryQuery : JevQuery() {
     val pick by choice("Which?") { "a" means entry("when" to Any()) }
+}
+
+private enum class BadEntryOption : JevOption {
+    ONLY,
+    ;
+
+    override val entry: JsonElement get() = entry("when" to Any())
+}
+
+private object BadEnumQuery : JevQuery() {
+    val pick by choice<BadEntryOption>("Which?")
 }
 
 class ValidationTest : StringSpec() {
@@ -164,16 +176,23 @@ class ValidationTest : StringSpec() {
                 )
         }
 
-        "an entry() that fails inside a builder lambda is reported with the question's other problems" {
+        // An inline builder runs in the caller's own code, not a class initializer, so it can throw at once.
+        "an entry() that fails in an inline builder lambda throws a JevValidationException at once" {
             problemsOf {
                 choice("c", "Which?") { "a" means entry("when" to Any()) }
-            }.single() shouldContain "question 'c': Can't convert a value of type Any to JSON"
+            }.single() shouldContain "Can't convert a value of type Any to JSON"
         }
 
         // Thrown from the lambda, it would escape the object's initializer as an ExceptionInInitializerError.
         "a JevQuery whose builder lambda fails in entry() initializes cleanly and fails on first use" {
             shouldNotThrowAny { BadEntryQuery.hashCode() }
             shouldThrow<JevValidationException> { BadEntryQuery.questions }
+                .problems.single() shouldContain "question 'pick': Can't convert a value of type Any"
+        }
+
+        "a JevQuery whose enum option's entry fails initializes cleanly and fails on first use" {
+            shouldNotThrowAny { BadEnumQuery.hashCode() }
+            shouldThrow<JevValidationException> { BadEnumQuery.questions }
                 .problems.single() shouldContain "question 'pick': Can't convert a value of type Any"
         }
     }

@@ -3,7 +3,6 @@ package com.pambrose.jev4k.internal
 import com.pambrose.jev4k.Answer
 import com.pambrose.jev4k.ChoiceAnswer
 import com.pambrose.jev4k.ChoiceQuestion
-import com.pambrose.jev4k.JevResponseValidationException
 import com.pambrose.jev4k.JevResult
 import com.pambrose.jev4k.ModelInfo
 import com.pambrose.jev4k.ModelList
@@ -83,7 +82,7 @@ private class BodyReader(
     fun fail(
         path: String,
         detail: String,
-    ): Nothing = throw response.invalid(detail, path)
+    ): Nothing = response.fail(path, detail)
 
     fun answer(
         id: String,

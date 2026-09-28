@@ -67,7 +67,7 @@ internal fun <T : AutoCloseable> TestConfiguration.closeAfterSpec(closeable: T):
 }
 
 /** What every test client shares: a fake key, no environment, and each retry delay recorded in [delays], not slept. */
-internal fun JevConfigBuilder.testDefaults(delays: MutableList<Long>) {
+internal fun JevConfigBuilder.testDefaults(delays: MutableList<Long> = mutableListOf()) {
     apiKey = "test-key"
     env = { null }
     retryDelay = { delays += it }

@@ -16,6 +16,18 @@ import io.kotest.matchers.string.shouldContain
  * connection.
  */
 class ClientJvmTest : StringSpec() {
+    /** A client on the real CIO engine, pointed at a server on this machine. */
+    private fun localClient(
+        port: Int,
+        scheme: String = "http",
+        delays: MutableList<Long> = mutableListOf(),
+        configure: JevConfigBuilder.() -> Unit = {},
+    ) = JevClient {
+        testDefaults(delays)
+        baseUrl = "$scheme://127.0.0.1:$port"
+        configure()
+    }
+
     init {
         "the blocking wrapper mirrors the suspend API" {
             val jev = triageJev()
@@ -44,18 +56,11 @@ class ClientJvmTest : StringSpec() {
         // before its request is written, and the count stays exact.
         "a slow response times out, and timeouts are retried (real CIO engine)" {
             RawServer(MODELS_RESPONSE).use { warm ->
-                JevClient {
-                    testDefaults(mutableListOf())
-                    baseUrl = "http://127.0.0.1:${warm.port}"
-                }.use { it.models() }
+                localClient(warm.port).use { it.models() }
             }
             SilentServer().use { server ->
                 val delays = mutableListOf<Long>()
-                JevClient {
-                    testDefaults(delays)
-                    baseUrl = "http://127.0.0.1:${server.port}"
-                    timeout = 1.seconds
-                }.use { client ->
+                localClient(server.port, delays = delays) { timeout = 1.seconds }.use { client ->
                     shouldThrow<JevTimeoutException> { client.ask(Triage, state = PAYOUT_TICKET) }
                 }
                 server.awaitRequests(3) shouldBe 3
@@ -67,11 +72,7 @@ class ClientJvmTest : StringSpec() {
         // CertificateException, which isn't an IOException. It used to escape as is; it is a connection error now.
         "a server certificate the JDK doesn't trust is a JevConnectionException (real CIO engine)" {
             RawServer(MODELS_RESPONSE, RawServer.selfSignedTlsSocket()).use { server ->
-                JevClient {
-                    testDefaults(mutableListOf())
-                    baseUrl = "https://127.0.0.1:${server.port}"
-                    retry = RetryPolicy.NONE
-                }.use { client ->
+                localClient(server.port, scheme = "https") { retry = RetryPolicy.NONE }.use { client ->
                     val e = shouldThrow<JevConnectionException> { client.models() }
                     e.causes().any { it is CertificateException } shouldBe true
                 }
@@ -86,10 +87,7 @@ class ClientJvmTest : StringSpec() {
             val truncated = "${MODELS_HEAD_200}Content-Length: 100\r\n\r\n{\"models\":[".encodeToByteArray()
             RawServer(truncated).use { server ->
                 val delays = mutableListOf<Long>()
-                JevClient {
-                    testDefaults(delays)
-                    baseUrl = "http://127.0.0.1:${server.port}"
-                }.use { client ->
+                localClient(server.port, delays = delays).use { client ->
                     val e = shouldThrow<JevConnectionException> { client.models() }
                     e.causes().any { it.message.orEmpty().startsWith("Content-Length mismatch") } shouldBe true
                 }
@@ -102,10 +100,7 @@ class ClientJvmTest : StringSpec() {
         "a declared body over the size limit is refused before CIO reads it (real CIO engine)" {
             val oversized = "${MODELS_HEAD_200}Content-Length: 104857600\r\n\r\n{}".encodeToByteArray()
             RawServer(oversized).use { server ->
-                JevClient {
-                    testDefaults(mutableListOf())
-                    baseUrl = "http://127.0.0.1:${server.port}"
-                }.use { client ->
+                localClient(server.port).use { client ->
                     shouldThrow<JevResponseValidationException> { client.models() }
                         .message shouldContain "body of 104857600 bytes not read"
                 }
@@ -115,11 +110,7 @@ class ClientJvmTest : StringSpec() {
 
         "a response CIO can't parse is a JevConnectionException (real CIO engine)" {
             RawServer("NOT HTTP AT ALL\r\n\r\n".encodeToByteArray()).use { server ->
-                JevClient {
-                    testDefaults(mutableListOf())
-                    baseUrl = "http://127.0.0.1:${server.port}"
-                    retry = RetryPolicy.NONE
-                }.use { client ->
+                localClient(server.port) { retry = RetryPolicy.NONE }.use { client ->
                     val e = shouldThrow<JevConnectionException> { client.models() }
                     e.causes().any { it is ParserException } shouldBe true
                 }

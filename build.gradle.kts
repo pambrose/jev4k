@@ -21,17 +21,12 @@ import org.gradle.process.ExecOperations
 import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTargetWithSimulatorTests
 import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
-import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
-import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest
-import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin
 import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension
 import org.jetbrains.kotlin.gradle.targets.web.yarn.BaseYarnRootExtension
-import org.jetbrains.kotlin.konan.target.Family
 import org.jetbrains.kotlin.konan.target.HostManager
 import org.jetbrains.kotlin.konan.target.KonanTarget
 import org.jmailen.gradle.kotlinter.tasks.ConfigurableKtLintTask
@@ -218,34 +213,25 @@ kotlin {
         }
     }
 
-    // Xcode installs the iOS simulator by default, but not the tvOS or watchOS ones. KGP runs a simulator test in
-    // the first available device of its platform, so these tests run wherever such a device exists and are
-    // disabled elsewhere, rather than failing for want of one. Installing a runtime (Xcode → Settings → Components)
-    // usually creates devices; `xcrun simctl create` adds one when it doesn't.
-    targets.withType<KotlinNativeTargetWithSimulatorTests>()
-        .matching { it.konanTarget.family == Family.WATCHOS || it.konanTarget.family == Family.TVOS }
-        .configureEach {
-            if (konanTarget.family.name.lowercase() !in simulatorPlatformsWithDevices) {
-                tasks.named("${name}Test") { enabled = false }
-                // Disabling the test task alone still links its test binary under check and allTests.
-                binaries.withType<TestExecutable>().configureEach { linkTaskProvider.configure { enabled = false } }
-            }
-        }
-
-    // Test binaries this host can build but never run: iosX64's needs an Intel Mac, mingwX64's needs Windows. KGP
-    // skips their test tasks, but check would still process, compile and link them. The Linux ones stay, since
-    // `make docker-linux-tests` runs them in containers.
+    // Test binaries this host can build but never run: iosX64's needs an Intel Mac, mingwX64's needs Windows, and a
+    // tvOS or watchOS simulator's needs a device for its platform. Xcode installs the iOS simulator by default but not
+    // the tvOS or watchOS ones, and KGP runs a simulator test in the first available device; installing a runtime
+    // (Xcode → Settings → Components) usually creates devices, and `xcrun simctl create` adds one when it doesn't.
+    // Disabling a test task alone still builds its binary under check, so its KSP, compile and link tasks go too. The
+    // Linux binaries stay, since `make docker-linux-tests` runs them in containers.
     val unrunnableTestTargets = buildSet {
         if (HostManager.host != KonanTarget.MACOS_X64) add("iosX64")
         if (!HostManager.hostIsMingw) add("mingwX64")
+        if ("tvos" !in simulatorPlatformsWithDevices) add("tvosSimulatorArm64")
+        if ("watchos" !in simulatorPlatformsWithDevices) add("watchosSimulatorArm64")
     }
     targets.withType<KotlinNativeTarget>()
         .matching { it.name in unrunnableTestTargets }
         .configureEach {
             val target = name.replaceFirstChar(Char::uppercase)
-            binaries.withType<TestExecutable>().configureEach { linkTaskProvider.configure { enabled = false } }
+            tasks.named { it == "${name}Test" || it == "kspTestKotlin$target" }.configureEach { enabled = false }
             compilations.named("test") { compileTaskProvider.configure { enabled = false } }
-            tasks.named { it == "kspTestKotlin$target" }.configureEach { enabled = false }
+            binaries.withType<TestExecutable>().configureEach { linkTaskProvider.configure { enabled = false } }
         }
 }
 
@@ -443,8 +429,8 @@ kover {
 
             verify {
                 // Not onCheck: koverVerify can't tell a real regression from "no tests ran", so it would fail every
-                // build that skips the tests, such as `build -x jvmTest`. CI runs it explicitly alongside the tests, and `make coverage-verify` runs
-                // it locally.
+                // build that skips the tests, such as `build -x jvmTest`. CI runs it explicitly alongside the tests,
+                // and `make coverage-verify` runs it locally.
                 onCheck = false
                 rule("Line coverage floor") {
                     minBound(minLineCoveragePct, CoverageUnit.LINE, AggregationType.COVERED_PERCENTAGE)
@@ -476,18 +462,6 @@ tasks.named<Test>("jvmTest") {
         events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
         exceptionFormat = TestExceptionFormat.FULL
     }
-}
-
-// PlatformEnvTest checks that platformGetenv really reads the environment, on every platform, so every test task
-// sets this variable; the Makefile's docker-linux-tests passes it to its containers too. simctl hands a simulator
-// test only the variables prefixed SIMCTL_CHILD_, with the prefix removed, and KGP doesn't add it.
-val envProbeName = "JEV4K_ENV_PROBE"
-val envProbeValue = "present"
-tasks.withType<Test>().configureEach { environment(envProbeName, envProbeValue) }
-tasks.withType<KotlinJsTest>().configureEach { environment(envProbeName, envProbeValue) }
-tasks.withType<KotlinNativeTest>().configureEach {
-    environment(envProbeName, envProbeValue)
-    if (this is KotlinNativeSimulatorTest) environment("SIMCTL_CHILD_$envProbeName", envProbeValue)
 }
 
 // Gradle fails a test task that discovers no tests, so a target whose test binary lost its specs (after a Kotest,

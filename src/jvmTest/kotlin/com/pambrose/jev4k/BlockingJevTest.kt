@@ -106,7 +106,7 @@ class BlockingJevTest : StringSpec() {
             api.blocking().ask(Triage, "text state")
             coVerify(exactly = 1) { api.evaluate(JsonPrimitive("text state"), Triage.questions, null) }
 
-            JevClient { testDefaults(mutableListOf()) }.use { client ->
+            JevClient { testDefaults() }.use { client ->
                 client.blocking() shouldBeSameInstanceAs client.blocking
             }
         }

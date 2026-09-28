@@ -109,8 +109,10 @@ class CallOptionsTest : StringSpec() {
                     extraBody["state"] = JsonPrimitive("elsewhere")
                     extraBody["questions"] = JsonNull
                     extraBody["deep"] = nestedArrays(MAX_JSON_DEPTH + 1)
+                    extraBody["nan"] = JsonPrimitive(Double.NaN)
                 }
             }
+            e.message shouldContain "extraBody 'nan' holds NaN or an infinity"
             e.message shouldContain "timeout must be at least 1 millisecond"
             e.message shouldContain "header 'X-Secret' has a control character"
             e.message shouldContain "extraBody can't set 'state'"

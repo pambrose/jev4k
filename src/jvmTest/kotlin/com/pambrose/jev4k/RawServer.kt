@@ -1,7 +1,6 @@
 package com.pambrose.jev4k
 
 import java.io.File
-import java.io.IOException
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
@@ -41,7 +40,8 @@ internal class RawServer(
         client.use {
             // A client that gives up, after a failed handshake say, makes the read or write throw; that's expected.
             runCatching {
-                readRequestHead(it)
+                // The head ends at the first empty line. A connection closed before it throws, and isn't counted.
+                it.getInputStream().bufferedReader().lineSequence().first(String::isEmpty)
                 answered.incrementAndGet()
                 it.getOutputStream().apply {
                     write(response)
@@ -49,21 +49,6 @@ internal class RawServer(
                 }
             }
         }
-
-    private fun readRequestHead(client: Socket) {
-        val input = client.getInputStream()
-        val end = "\r\n\r\n"
-        var matched = 0
-        while (matched < end.length) {
-            val byte = input.read()
-            if (byte < 0) throw IOException("The connection closed before the request head ended")
-            matched = when (byte.toChar()) {
-                end[matched] -> matched + 1
-                end[0] -> 1
-                else -> 0
-            }
-        }
-    }
 
     override fun close() = socket.close()
 

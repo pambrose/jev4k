@@ -95,14 +95,19 @@ endif
 LINUX_TEST_IMAGE := buildpack-deps:noble-curl
 LINUX_TEST_LOGS := build/docker-linux-tests
 
+# The targets to run, as target:architecture pairs. CI's build job has already run linuxX64's tests, so it passes
+# LINUX_TEST_TARGETS=linuxArm64:arm64.
+LINUX_TEST_TARGETS ?= linuxX64:amd64 linuxArm64:arm64
+LINUX_TEST_LINKS = $(foreach pair,$(LINUX_TEST_TARGETS),linkDebugTest$(subst linux,Linux,$(firstword $(subst :, ,$(pair)))))
+
 docker-linux-tests: _require-docker  ## Run the linuxX64 and linuxArm64 tests in Docker containers
-	$(GRADLE) linkDebugTestLinuxX64 linkDebugTestLinuxArm64
+	$(GRADLE) $(LINUX_TEST_LINKS)
 	@mkdir -p $(LINUX_TEST_LOGS)
 	@status=0; \
-	for pair in linuxX64:amd64 linuxArm64:arm64; do \
+	for pair in $(LINUX_TEST_TARGETS); do \
 		target=$${pair%%:*}; arch=$${pair##*:}; log=$(LINUX_TEST_LOGS)/$$target.log; \
 		echo "== $$target on linux/$$arch ($(LINUX_TEST_IMAGE))"; \
-		docker run --rm --platform linux/$$arch -e JEV4K_LIVE -e JEV4K_ENV_PROBE=present \
+		docker run --rm --platform linux/$$arch -e JEV4K_LIVE \
 			-v "$(CURDIR)/build/bin/$$target/debugTest:/tests:ro" $(LINUX_TEST_IMAGE) /tests/test.kexe > $$log 2>&1; \
 		code=$$?; \
 		grep -v -E '^(##teamcity|\[(=+|-+| +PASSED +)\])' $$log; \
@@ -234,12 +239,7 @@ example:  ## Run the Triage example against the live API (needs TYPESAFE_API_KEY
 # suite, which is harmless. The simulators only see variables prefixed SIMCTL_CHILD_, so their probes stay skipped:
 # a test binary spawned by simctl can't validate any TLS certificate, so they would fail there regardless.
 LIVE_PROBE_TESTS = $(foreach task,$(1),$(task) --rerun --tests "com.pambrose.jev4k.LiveProbeTest")
-# Without a key LiveSmokeTest skips every test and the probes, which use a fake key, pass, so the run would succeed
-# without one real call; the recipe refuses to start instead.
 live-tests:  ## Run the live API tests: the JVM smoke tests (needs TYPESAFE_API_KEY) and each platform's probes
-	@if [ -z "$$TYPESAFE_API_KEY" ] && ! grep -qs '^TYPESAFE_API_KEY=..*' .env; then \
-		echo "live-tests needs TYPESAFE_API_KEY, in the environment or .env"; exit 1; \
-	fi
 	JEV4K_LIVE=1 $(GRADLE) jvmTest --rerun --tests "com.pambrose.jev4k.LiveSmokeTest" \
 		--tests "com.pambrose.jev4k.LiveProbeTest" $(call LIVE_PROBE_TESTS,$(JS_TESTS) $(NATIVE_TESTS))
 
