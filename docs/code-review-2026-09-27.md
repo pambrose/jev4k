@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 61 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 69 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -114,15 +114,15 @@ Build and CI
 
 - [x] [#58](#issue-58) Branch protection requires only `build`, so the JDK matrix and native jobs never block a merge
 - [x] [#59](#issue-59) CI's Apple row omits the tvOS and watchOS simulator tests
-- [ ] [#60](#issue-60) linuxArm64 is published, but no CI job runs its tests
+- [x] [#60](#issue-60) linuxArm64 is published, but no CI job runs its tests
 - [x] [#61](#issue-61) `make build` never compiles `jvmTest`, so the website examples and the Java guard go unchecked
-- [ ] [#62](#issue-62) `check` links test binaries the host can never run (iosX64, mingwX64)
-- [ ] [#63](#issue-63) javac compiles the Java example against JDK 25's library instead of `--release 17`
-- [ ] [#64](#issue-64) The JDK 21 gate on `-XX:+EnableDynamicAgentLoading` rests on a false premise
-- [ ] [#65](#issue-65) A CI comment says coverage is uploaded when tests fail; a `jvmTest` failure skips it
-- [ ] [#66](#issue-66) A CI comment says every master commit is built; queued runs are replaced
-- [ ] [#67](#issue-67) The Kover comment says `build -x allTests` skips the tests; it doesn't
-- [ ] [#68](#issue-68) `dependabot.yml` leaves out `website/uv.lock` without saying why
+- [x] [#62](#issue-62) `check` links test binaries the host can never run (iosX64, mingwX64)
+- [x] [#63](#issue-63) javac compiles the Java example against JDK 25's library instead of `--release 17`
+- [x] [#64](#issue-64) The JDK 21 gate on `-XX:+EnableDynamicAgentLoading` rests on a false premise
+- [x] [#65](#issue-65) A CI comment says coverage is uploaded when tests fail; a `jvmTest` failure skips it
+- [x] [#66](#issue-66) A CI comment says every master commit is built; queued runs are replaced
+- [x] [#67](#issue-67) The Kover comment says `build -x allTests` skips the tests; it doesn't
+- [x] [#68](#issue-68) `dependabot.yml` leaves out `website/uv.lock` without saying why
 
 Release and documentation
 
@@ -1421,6 +1421,9 @@ the omission.
 
 **Low** · CI · medium · `.github/workflows/ci.yml:19`, `docs/release-checklist.md:59`
 
+**Fixed.** The CI `build` job sets up QEMU (`docker/setup-qemu-action`, pinned) and runs `make docker-linux-tests`, so
+linuxArm64's tests run on every push and PR. The release checklist gives it a checkbox of its own.
+
 **What's wrong.** linuxArm64 has no Gradle test task. Only the local `make docker-linux-tests` runs it, and the
 release checklist mentions that in passing inside another checkbox.
 
@@ -1449,6 +1452,9 @@ docs say `make build` compiles every target.
 
 **Low** · Build · small · `build.gradle.kts:219`
 
+**Fixed.** `build.gradle.kts` disables the test KSP, compile and link tasks of iosX64 unless the host is an Intel Mac,
+and of mingwX64 unless it is Windows. The Linux ones stay for `docker-linux-tests`.
+
 **What's wrong.** Disabling a test task doesn't stop its link task. So `check` links debug test binaries (and
 compiles their test klibs) that never run:
 - iosX64 on Apple Silicon;
@@ -1463,6 +1469,8 @@ the two Linux links, which `make docker-linux-tests` needs.
 
 **Low** · Build · small · `build.gradle.kts:241`
 
+**Fixed.** `tasks.withType<JavaCompile>()` sets `options.release` from the catalog's `jvm-target`.
+
 **What's wrong.** Kotlin gets `-Xjdk-release=17`, but javac only gets source and target 17. So `JavaInterop.java`
 compiles against JDK 25's library, and a JDK 21+ API would slip through.
 
@@ -1473,6 +1481,9 @@ compiles against JDK 25's library, and a JDK 21+ API would slip through.
 #### 64. The JDK 21 gate on `-XX:+EnableDynamicAgentLoading` rests on a false premise
 
 **Low** · Build · small · `build.gradle.kts:448`, `CLAUDE.md`
+
+**Fixed.** The flag is passed on every JDK, and both comments now give the right reason: 21 added the warning, not the
+option. JDK 11 and 17 were checked again.
 
 **What's wrong.** The flag is passed only from JDK 21 on, "because the option arrived with JDK 21". But JDK 11 and
 17 accept it too (checked); only the warning is new in 21. CLAUDE.md repeats the false reason.
@@ -1485,6 +1496,8 @@ compiles against JDK 25's library, and a JDK 21+ API would slip through.
 
 **Low** · CI · small · `.github/workflows/ci.yml:48`
 
+**Fixed.** The comment now says a JVM test failure leaves no coverage report, since Kover's reports depend on `jvmTest`.
+
 **What's wrong.** The comment says `--continue` still uploads coverage when tests fail. Kover's report tasks depend
 on `jvmTest`, so a JVM test failure skips every report.
 
@@ -1495,6 +1508,9 @@ on `jvmTest`, so a JVM test failure skips every report.
 #### 66. A CI comment says every master commit is built
 
 **Low** · CI · small · `.github/workflows/ci.yml:10`
+
+**Fixed.** The comment now says a burst of master pushes can skip a queued middle commit, and that the latest is always
+built.
 
 **What's wrong.** GitHub keeps one pending run per concurrency group. A burst of pushes therefore cancels the queued
 run for the middle commit.
@@ -1507,6 +1523,8 @@ run for the middle commit.
 
 **Low** · Build · small · `build.gradle.kts:422`
 
+**Fixed.** The comment now says "a build that skips the tests, such as `build -x jvmTest`".
+
 **What's wrong.** `check` depends on each test task directly, so the tests still run. The Makefile gets this right.
 
 **Fix.** Use `build -x jvmTest` in the comment, or generic wording.
@@ -1516,6 +1534,9 @@ run for the middle commit.
 #### 68. `dependabot.yml` leaves out `website/uv.lock` without saying why
 
 **Low** · CI · small · `.github/dependabot.yml:4`
+
+**Fixed.** The header now says `website/uv.lock` is left out on purpose, managed with `make check-site` and `make
+upgrade-site`.
 
 **What's wrong.** The header explains why Gradle is left out, but not the docs site's lockfile. That file is
 managed with `make check-site` and `make upgrade-site`.

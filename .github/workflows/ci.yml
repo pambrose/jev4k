@@ -7,7 +7,8 @@ on:
     pull_request:
     workflow_dispatch:
 
-# Supersede a PR's earlier run when it is pushed to again; every master commit is still built.
+# Supersede a PR's earlier run when it is pushed to again. On master nothing is cancelled, but GitHub keeps only one
+# pending run per group, so a burst of pushes can skip a queued middle commit; the latest one is always built.
 concurrency:
     group: ci-${{ github.ref }}
     cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -16,8 +17,8 @@ permissions:
     contents: read
 
 jobs:
-    # Linux runs the jvm, js, wasmJs and linuxX64 tests. It can't run the Apple or Windows test executables, so the
-    # native job below covers those.
+    # Linux runs the jvm, js, wasmJs and linuxX64 tests, and linuxArm64's under QEMU. It can't run the Apple or
+    # Windows test executables, so the native job below covers those.
     build:
         runs-on: ubuntu-latest
         timeout-minutes: 60
@@ -45,11 +46,20 @@ jobs:
                     key: konan-${{ runner.os }}-${{ steps.kotlin.outputs.version }}
 
             # build runs check, which compiles every target this host supports and runs lintKotlin, detekt, the ABI
-            # check against api/, and the jvm, js, wasmJs and linuxX64 tests. --continue lets the Kover report tasks
-            # run even if some tests fail, so coverage is still uploaded. The live tests stay disabled: they need
-            # JEV4K_LIVE=1 (and LiveSmokeTest a TYPESAFE_API_KEY), and neither is set here.
+            # check against api/, and the jvm, js, wasmJs and linuxX64 tests. --continue lets independent tasks run
+            # after a failure, but Kover's reports depend on jvmTest, so a JVM test failure leaves no coverage to
+            # upload. The live tests stay disabled: they need JEV4K_LIVE=1 (and LiveSmokeTest a TYPESAFE_API_KEY),
+            # and neither is set here.
             -   name: Build, lint, check the ABI, run the tests, and generate the coverage report
                 run: ./gradlew --continue build koverVerify koverXmlReport koverLog
+
+            # linuxArm64 is published but has no Gradle test task, and this runner can't execute its binary. QEMU lets
+            # Docker run it, so the same make target that tests it locally tests it here (and linuxX64 once more).
+            -   uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+                with:
+                    platforms: arm64
+            -   name: Run the linuxX64 and linuxArm64 tests in Docker
+                run: make docker-linux-tests
 
             -   name: Upload test reports on failure
                 if: failure()

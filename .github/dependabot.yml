@@ -2,7 +2,8 @@
 # Dependabot rewrites the SHA and the trailing version comment together, so the pins keep receiving fixes.
 #
 # Gradle dependencies are deliberately not listed here: the version catalog is reviewed with `make versions`
-# (the ben-manes plugin), which reports updates without opening pull requests.
+# (the ben-manes plugin), which reports updates without opening pull requests. The docs site's website/uv.lock is
+# left out for the same reason: `make check-site` reports its updates and `make upgrade-site` applies them.
 version: 2
 updates:
     -   package-ecosystem: github-actions

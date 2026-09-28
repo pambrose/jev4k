@@ -65,7 +65,9 @@ Verified 2026-09-20.
 
 - [ ] `make tests` on a Mac — kotlinter, detekt, the ABI check, and the suite on the JVM, Node.js (js and wasmJs),
   macOS and the iOS simulator (and the tvOS and watchOS simulators where a device is installed), forced to re-run.
-  `make docker-linux-tests` runs linuxX64 and linuxArm64; the Windows tests run in CI (step 4).
+  The Windows tests run in CI (step 4).
+- [ ] `make docker-linux-tests` — linuxX64 and linuxArm64 in Docker. linuxArm64 has no Gradle test task, so this
+  and CI's QEMU step are the only places its tests run.
 - [ ] `make coverage-verify` — the line and branch floors in `build.gradle.kts`.
 - [ ] `cd website/jev4k && uv run zensical build --clean --strict` — must report "No issues found".
 - [ ] `make site-build` — the site plus Dokka KDocs under `/kdocs`.

@@ -94,9 +94,12 @@ small breaking changes, listed first under Changed.
   `jvm-tests`, `js-tests`, `native-tests`, `platform-tests` (every platform's tests, Docker Linux included),
   `abi-check` and `abi-update` are new. The Maven Central publishing targets require macOS, the only host that
   builds the Apple targets.
-- CI runs the jvm, js, wasmJs and linuxX64 tests on Linux, and adds a macOS job (macOS and the iOS, tvOS and
-  watchOS simulators) and a Windows job (`mingwX64`). A `ci-ok` job, required by branch protection, passes only when
+- CI runs the jvm, js, wasmJs and linuxX64 tests on Linux, and linuxArm64's under QEMU, and adds a macOS job
+  (macOS and the iOS, tvOS and watchOS simulators) and a Windows job (`mingwX64`). A `ci-ok` job, required by branch protection, passes only when
   every other job did, so the JDK matrix and the native jobs gate a merge.
+- `check` no longer builds test binaries the host can't run (iosX64's off an Intel Mac, mingwX64's off Windows).
+  javac compiles the Java example with `--release 17`, as kotlinc already had `-Xjdk-release=17`, and every JDK in the
+  test matrix gets `-XX:+EnableDynamicAgentLoading`.
 - The documentation site is built, in strict mode, on every pull request and `master` push, and deployed only when a
   release is published, so it never shows a version that isn't on Maven Central yet.
 

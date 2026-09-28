@@ -238,7 +238,9 @@ without them keep compiling.
       `jvmTest`.
     - Only a Mac compiles every target. Linux and Windows skip the Apple ones quietly
       (`kotlin.native.ignoreDisabledTargets=true`), and a Mac cross-compiles and links Linux and Windows binaries but
-      can't run them itself; `make docker-linux-tests` runs the Linux ones in containers.
+      can't run them itself; `make docker-linux-tests` runs the Linux ones in containers. Test binaries no host tool
+      can run here (iosX64's off an Intel Mac, mingwX64's off Windows) have their test KSP, compile and link tasks
+      disabled, so `check` doesn't build them; the Linux ones are kept for `docker-linux-tests`.
     - The User-Agent version is compiled in: a configuration-cache-safe `generateBuildInfo` task writes
       `internal const val JEV4K_VERSION` into `build/generated/buildinfo`, a `commonMain` source directory.
     - The JS toolchains' lockfiles live in `kotlin-js-store/` and are committed (`.gitignore` negates the global
@@ -274,7 +276,8 @@ without them keep compiling.
     - `jvm-target = "17"` is the floor consumers need. It drives the jvm target's `compilerOptions.jvmTarget`,
       `java.source/targetCompatibility` (javac, for `JavaInterop.java`, must agree with kotlinc) and Dokka's
       `jdkVersion`. `-Xjdk-release=17` is also passed, so compiling on 25 can't link against an API that's missing on
-      17 — `jvmTarget` alone would only set the class-file version.
+      17 — `jvmTarget` alone would only set the class-file version. javac gets `options.release = 17` for the same
+      reason.
     - The multiplatform plugin doesn't publish `org.gradle.jvm.version`, so `build.gradle.kts` sets it to 17 on
       `jvmApiElements` and `jvmRuntimeElements` itself. Without it Gradle can't warn a consumer on an older JDK.
     - jev4k is embedded in other applications, so don't raise the target without a reason: Java 25 bytecode makes the
@@ -360,8 +363,9 @@ without them keep compiling.
 - Coverage uses Kover (`org.jetbrains.kotlinx.kover`).
     - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs
       `build koverVerify koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js,
-      wasmJs and linuxX64 tests), then uploads `build/reports/kover/report.xml` to Codecov with the `unittests`
-      flag. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
+      wasmJs and linuxX64 tests), then `make docker-linux-tests` with QEMU (`docker/setup-qemu-action`), which is
+      the only place CI runs linuxArm64's tests, then uploads `build/reports/kover/report.xml` to Codecov with the
+      `unittests` flag. A JVM test failure leaves no report to upload, since Kover's reports depend on `jvmTest`. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
       a drop of more than 1% and reports patch coverage without gating on it.
     - A `native` matrix job runs the tests Linux can't: the macOS and iOS, tvOS and watchOS simulator tests on
       macos-latest (a tvOS or watchOS task is skipped when the runner has no device for it) and `mingwX64Test` on
@@ -372,9 +376,9 @@ without them keep compiling.
       cache, because Dokka, which resolves the native source sets, finishes first and would otherwise save a
       toolchain without the compiler's dependencies under the build job's key.
     - A `test` job in the same workflow runs `jvmTest` on JDK 17, 21 and 25. Tests otherwise run on the
-      toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints `jvmTest`'s `javaLauncher`;
-      `-XX:+EnableDynamicAgentLoading` is added only from 21 up, because an unrecognized `-XX` option stops JDK 17
-      from starting. `make test-jdk JDK=17` reproduces one row, `make all-tests` the whole set.
+      toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints `jvmTest`'s `javaLauncher`.
+      `-XX:+EnableDynamicAgentLoading` is passed on every JDK: 21 introduced the warning it silences, not the
+      option, which 11 and 17 accept. `make test-jdk JDK=17` reproduces one row, `make all-tests` the whole set.
     - The `kover {}` block sets line and branch floors (`minLineCoveragePct`, `minBranchCoveragePct`) a few points below
       the measured totals. `koverVerify` is deliberately not wired into `check`, because it would fail every build
       that skips the tests at 0%. Run it with `make coverage-verify`. Raise the floors when coverage has moved up and
@@ -474,4 +478,4 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
   fails the TLS probe: without `ca-certificates` Curl can't verify the certificate and reports a
   `JevConnectionException`. A test binary spawned by `simctl` on the iOS simulator can't validate any TLS
   certificate (`NSURLErrorDomain -1202`, even for apple.com), so its probes stay skipped.
-- Test JVMs run with `-XX:+EnableDynamicAgentLoading` for MockK on JDK 25.
+- Test JVMs run with `-XX:+EnableDynamicAgentLoading`, so MockK's agent loads without a warning on JDK 21 and later.

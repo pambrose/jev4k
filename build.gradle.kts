@@ -20,6 +20,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.process.ExecOperations
 import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTargetWithSimulatorTests
 import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension
 import org.jetbrains.kotlin.gradle.targets.web.yarn.BaseYarnRootExtension
 import org.jetbrains.kotlin.konan.target.Family
 import org.jetbrains.kotlin.konan.target.HostManager
+import org.jetbrains.kotlin.konan.target.KonanTarget
 import org.jmailen.gradle.kotlinter.tasks.ConfigurableKtLintTask
 
 plugins {
@@ -228,6 +230,22 @@ kotlin {
                 binaries.withType<TestExecutable>().configureEach { linkTaskProvider.configure { enabled = false } }
             }
         }
+
+    // Test binaries this host can build but never run: iosX64's needs an Intel Mac, mingwX64's needs Windows. KGP
+    // skips their test tasks, but check would still process, compile and link them. The Linux ones stay, since
+    // `make docker-linux-tests` runs them in containers.
+    val unrunnableTestTargets = buildSet {
+        if (HostManager.host != KonanTarget.MACOS_X64) add("iosX64")
+        if (!HostManager.hostIsMingw) add("mingwX64")
+    }
+    targets.withType<KotlinNativeTarget>()
+        .matching { it.name in unrunnableTestTargets }
+        .configureEach {
+            val target = name.replaceFirstChar(Char::uppercase)
+            binaries.withType<TestExecutable>().configureEach { linkTaskProvider.configure { enabled = false } }
+            compilations.named("test") { compileTaskProvider.configure { enabled = false } }
+            tasks.named { it == "kspTestKotlin$target" }.configureEach { enabled = false }
+        }
 }
 
 // The Kotest plugin wires its KSP processor, which generates a native test binary's entry point, only into test
@@ -240,11 +258,13 @@ dependencies {
 }
 
 // Java sources (the documentation's JavaInterop example in src/jvmTest/java) compile against the same floor.
-// KGP also checks that javac and kotlinc agree on the JVM target.
+// KGP also checks that javac and kotlinc agree on the JVM target. --release, like kotlinc's -Xjdk-release, holds
+// javac to the Java 17 API as well as its class-file version, so a newer JDK method can't slip in.
 java {
     sourceCompatibility = JavaVersion.toVersion(jvmTargetVersion)
     targetCompatibility = JavaVersion.toVersion(jvmTargetVersion)
 }
+tasks.withType<JavaCompile>().configureEach { options.release = jvmTargetVersion.toInt() }
 
 // The Kotlin JVM plugin publishes org.gradle.jvm.version from the bytecode target, but the multiplatform plugin
 // doesn't. Without it, Gradle can't tell a consumer on an older JDK that jev4k-jvm needs 17.
@@ -422,7 +442,7 @@ kover {
 
             verify {
                 // Not onCheck: koverVerify can't tell a real regression from "no tests ran", so it would fail every
-                // `build -x allTests`. CI runs it explicitly alongside the tests, and `make coverage-verify` runs
+                // build that skips the tests, such as `build -x jvmTest`. CI runs it explicitly alongside the tests, and `make coverage-verify` runs
                 // it locally.
                 onCheck = false
                 rule("Line coverage floor") {
@@ -448,11 +468,9 @@ tasks.named<Test>("jvmTest") {
             }
     }
 
-    // MockK attaches its agent at runtime; JDK 21+ warns unless dynamic loading is allowed. The option arrived
-    // with JDK 21, and an unrecognized -XX option stops an older JVM from starting at all, so 17 doesn't get it.
-    if (testJavaVersion.getOrElse(jvmToolchainVersion) >= 21) {
-        jvmArgs("-XX:+EnableDynamicAgentLoading")
-    }
+    // MockK attaches its agent at runtime, and JDK 21+ warns unless dynamic loading is allowed. Only the warning is
+    // new in 21: 11 and 17 already accept the option, so every JDK in the test matrix gets it.
+    jvmArgs("-XX:+EnableDynamicAgentLoading")
     testLogging {
         events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
         exceptionFormat = TestExceptionFormat.FULL
