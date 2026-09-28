@@ -50,10 +50,11 @@ There are two DSL layers over one core model. Both produce a validated `Question
     - An answer with no `type` is read as the type of question that was asked; an unknown type becomes `UnknownAnswer`.
     - Choice probabilities are reordered to the order the options were declared. Score keys `"0".."n"` become `Int`.
     - Absent answers fail when they are read, not when the response is parsed.
-    - JSON nested more than `MAX_JSON_DEPTH` (512, `internal/JsonDepth.kt`) levels is refused before
+    - JSON nested more than `MAX_JSON_DEPTH` (128, `internal/JsonDepth.kt`) levels is refused before
       kotlinx.serialization recurses into it: a state or question entry with `JevValidationException`, a response
       body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's `bodyJson`
-      is null. Both checks are iterative, so they can't overflow themselves.
+      is null. Both checks are iterative, so they can't overflow themselves. Windows sets the limit: its 1 MB
+      main-thread stack crashed the mingwX64 test binary encoding 512 levels, so the limit is 128.
 - **Client** (`JevClient.kt`, `internal/HttpClientFactory.kt`, `internal/Retry.kt`).
     - `HttpRequestRetry` reproduces the official SDKs' retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.

@@ -72,7 +72,7 @@ unchanged; the other platforms are new.
   `CancellationException` that looked like the caller's own cancellation.
 - A call cancelled because a sibling coroutine failed ends with its `CancellationException`, not a
   `JevConnectionException` made from the sibling's exception, and is no longer retried.
-- JSON nested more than 512 levels deep, in a state, a question entry or a response, is rejected with a
+- JSON nested more than 128 levels deep, in a state, a question entry or a response, is rejected with a
   `JevValidationException` or `JevResponseValidationException` instead of overflowing the stack.
 - With a caller-supplied engine, a `JevTimeoutException` from that engine's own connect or socket timeout names it
   instead of quoting `timeout`, which jev4k sets only as the request timeout for such an engine.

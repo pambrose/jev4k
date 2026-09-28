@@ -6,11 +6,12 @@ import kotlinx.serialization.json.JsonObject
 
 /**
  * How deeply jev4k lets JSON nest, sent or received. kotlinx.serialization encodes, parses and prints JSON by
- * recursing once per level, so a state or a response nested a few thousand levels deep overflows the stack: a
- * `StackOverflowError` on the JVM, a `RangeError` on Node.js, a crash on Kotlin/Native. The limit sits far below
- * that on every platform, and far above any real state or answer.
+ * recursing once per level, several frames deep, so deeply nested JSON overflows the stack: a `StackOverflowError` on
+ * the JVM, a `RangeError` on Node.js, a crash on Kotlin/Native. Windows is the tightest, with a 1 MB main-thread
+ * stack: encoding 512 levels crashed the mingwX64 test binary. 128 (serde_json's default) leaves a wide margin
+ * everywhere and is still far deeper than any real state or answer.
  */
-internal const val MAX_JSON_DEPTH = 512
+internal const val MAX_JSON_DEPTH = 128
 
 /** True when this element nests more than [MAX_JSON_DEPTH] objects or arrays deep. */
 internal fun JsonElement.nestsTooDeep(): Boolean {

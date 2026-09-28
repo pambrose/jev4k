@@ -393,9 +393,11 @@ The engines then differ:
 
 **Medium** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:60`, `:129`
 
-**Fixed.** A state or question entry nested more than 512 levels fails with `JevValidationException` before anything
+**Fixed.** A state or question entry nested more than 128 levels fails with `JevValidationException` before anything
 is sent. A response body that deep is refused before parsing with `JevResponseValidationException`, and an error
-body's `bodyJson` is null. Tests at and just over the limit run on every platform.
+body's `bodyJson` is null. The limit started at 512, but encoding 512 levels crashed the mingwX64 test binary, whose
+main thread has a 1 MB stack, so it is 128, serde_json's default. Tests at and just over the limit run on every
+platform.
 
 **What's wrong.** kotlinx.serialization encodes and parses JSON recursively. A state nested a couple of thousand
 levels deep (about 10 KB, such as forwarded user JSON) makes `evaluate()` fail with:
