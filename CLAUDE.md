@@ -72,6 +72,10 @@ There are two DSL layers over one core model. Both produce a validated `Question
   unchanged). Actual files carry a platform suffix (`Platform.jvm.kt`, `Engine.linux.kt`) so JVM facade names never
   clash. No engine gets a timeout of its own: `HttpTimeout` sets one on every request, and CIO, for one, ignores its
   `requestTimeout` whenever a request carries that capability.
+    - On the JVM, `defaultEngine` is a getter in its own `Engine.jvm.kt`. As a stored value next to `platformGetenv`
+      it would load CIO in the class initializer that every environment lookup runs, and a consumer who supplies an
+      engine and excludes `ktor-client-cio` (as the README suggests) couldn't build a client. `CioExclusionTest`
+      runs jev4k in a class loader that hides CIO to pin this.
     - Default engines: CIO on the JVM (`jvmMain`), Darwin (`appleMain`), Curl (`linuxMain`), WinHttp (`mingwMain`),
       and the Js engine bundled in `ktor-client-core` (`webMain`, shared by js and wasmJs). CIO can't be used
       natively: Ktor's native TLS fails with "TLS sessions are not supported on Native platform".
@@ -340,8 +344,8 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
 - Test classes are named `*Test`. Each is a Kotest `StringSpec()` with an `init {}` block.
     - Specs for common code go in `src/commonTest/kotlin/com/pambrose/jev4k/`, so they run on every platform the host
       supports. `src/jvmTest` keeps what needs the JVM: MockK specs, `BlockingJevTest`, `LiveSmokeTest`,
-      `ClientJvmTest` (the blocking wrapper and the real-CIO timeout case), `SilentServer`, the example, and the
-      website examples. A class name can't be in both, so a JVM-only remainder is named `…JvmTest`.
+      `ClientJvmTest` (the blocking wrapper and the real-CIO timeout case), `CioExclusionTest`, `SilentServer`, the
+      example, and the website examples. A class name can't be in both, so a JVM-only remainder is named `…JvmTest`.
     - Kotest runs the non-JVM targets through the `io.kotest` plugin and KSP, which generate each target's entry
       point. The plugin only does that for test tasks the host can run, so `build.gradle.kts` adds the processor to
       `kspLinuxX64Test` and `kspLinuxArm64Test` itself; without that, a Linux test binary linked on a Mac holds no
