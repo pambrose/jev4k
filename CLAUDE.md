@@ -35,12 +35,21 @@ without them keep compiling.
   functions return `QuestionRef<A>` handles, and `include(query)` merges a `JevQuery` into the same request.
 - **Typed layer** (`JevQuery.kt`). `object X : JevQuery() { val urgent by noul("...") }`. A `PropertyDelegateProvider`
   takes the id from the property name (or `id =`) and registers questions in declaration order. `JevQuery.questions` is
-  built lazily, so an invalid definition fails on first use. `choice<E>()` builds options from an enum. The option key
-  is the constant's name unless `JevOption.optionKey` overrides it, and `JevOption.entry` becomes the description.
+  built on first read, so an invalid definition fails on first use, and rebuilt if more questions have registered
+  since (a read from an `init` block or a base class would otherwise freeze a partial set). Definition errors are
+  carried on the `QuestionRef` rather than thrown, so they can't escape an `object`'s initializer: duplicate options,
+  and a `JevValidationException` from inside a builder lambda (`entry()`, `jsonOf()`), which also marks the question
+  incomplete so its option or level count isn't checked. An argument such as `noul(entry(...))` is evaluated before
+  the builder runs, so that one still throws from the initializer. `choice<E>()` builds options from an enum. The
+  option key is the constant's name unless `JevOption.optionKey` overrides it, and `JevOption.entry` becomes the
+  description.
 - **Answers** (`JevResult.kt`, `Answers.kt`). `result[handle]` decodes through the handle's `decode` function, and also
   checks that the handle belongs to the request. By-id accessors (`noul`/`choice`/`score`/`enumChoice`) check that the
   question type matches. Raw answers are stored string-keyed. Enum choices are mapped when read, and an unknown option
-  becomes `JevResponseValidationException`.
+  becomes `JevResponseValidationException`; `enumChoice<E>(id)` first requires E to cover every declared option,
+  since a mismatch is the caller's mistake (`IllegalArgumentException`). A string-keyed read returns an undeclared
+  option as sent, as both official SDKs do. `QueryBuilder.question(id, q)` copies the question's map or list and
+  picks the type-checking decoder for its subtype.
 - **Wire** (`internal/Wire.kt`).
     - Requests are `@Serializable` DTOs, and a sealed `WireQuestion` writes the `"type"` discriminator.
     - `JevJson` sets `encodeDefaults = false`, so unset optional fields (Noul criteria) are omitted. Explicit JSON
@@ -51,7 +60,12 @@ without them keep compiling.
     - Responses are parsed by hand from `JsonObject`, so every error has a field path such as `answers.<id>.noul`.
     - An answer with no `type` is read as the type of question that was asked; an unknown type becomes `UnknownAnswer`.
     - Choice probabilities are reordered to the order the options were declared. Score keys `"0".."n"` become `Int`.
-    - Absent answers fail when they are read, not when the response is parsed.
+    - Absent answers fail when they are read, not when the response is parsed, and a `null` answer counts as absent.
+    - Numbers must be finite (an unquoted `NaN` and `1e999` both parse), and a Score level key must lie within the
+      question's levels, or be non-negative for an answer nobody asked for.
+    - Every `JevResponseValidationException` from a 2xx body is built by `ResponseInfo.invalid`, which carries the
+      body's text as received, the status and the headers. `send` builds the `ResponseInfo`, and `JevResult` keeps
+      it for failures at read time.
     - JSON nested more than `MAX_JSON_DEPTH` (128, `internal/JsonDepth.kt`) levels is refused before
       kotlinx.serialization recurses into it: a state or question entry with `JevValidationException`, a response
       body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's `bodyJson`
@@ -138,7 +152,10 @@ without them keep compiling.
     - Common code can't use JVM-only APIs such as `Map.putIfAbsent`, and needs explicit `kotlin.jvm.JvmOverloads` /
       `kotlin.jvm.JvmSynthetic` imports (only the JVM imports `kotlin.jvm.*` by default).
 - **Validation** (`Questions.kt`). Every problem is collected into one `JevValidationException` before anything is sent:
-  at least one question, unique non-blank ids, non-empty instructions, 1..255 Choice options, 2..10 Score levels.
+  at least one question, unique non-blank ids, instructions that are non-blank text or a non-empty object or array,
+  1..255 Choice options, 2..10 Score levels, and no entry nested too deeply or holding NaN or an infinity (which
+  kotlinx.serialization refuses to encode). `evaluate` also rejects a null, number or boolean state; the API takes a
+  string, an object or an array.
 
 ## Documentation site
 

@@ -8,6 +8,10 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.serialization.json.JsonNull
+import io.kotest.assertions.withClue
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 private class DuplicateIdQuery : JevQuery() {
     val a by noul("First question?", id = "same")
@@ -31,6 +35,10 @@ private object DuplicateOptionQuery : JevQuery() {
 
 private object ClashingEnumQuery : JevQuery() {
     val pick by choice<Clash>("Which?")
+}
+
+private object BadEntryQuery : JevQuery() {
+    val pick by choice("Which?") { "a" means entry("when" to Any()) }
 }
 
 class ValidationTest : StringSpec() {
@@ -130,6 +138,43 @@ class ValidationTest : StringSpec() {
                     "question 'deep': instructions is nested more than $MAX_JSON_DEPTH levels deep",
                     "question 'pick': option 'a' is nested more than $MAX_JSON_DEPTH levels deep",
                 )
+        }
+
+        "instructions that can't state a question are rejected: a number, a boolean, an empty object or array" {
+            val empties = listOf(JsonPrimitive(42), JsonPrimitive(true), JsonObject(emptyMap()), JsonArray(emptyList()))
+            for (bad in empties) {
+                withClue(bad.toString()) {
+                    problemsOf { noul("a", bad) }.single() shouldContain "instructions must be non-blank text"
+                }
+            }
+        }
+
+        "a question entry holding NaN or an infinity is reported, naming the question and the entry" {
+            val problems = problemsOf {
+                score("s", "How much?") {
+                    level("Low")
+                    level(JsonPrimitive(Double.NaN))
+                }
+                choice("c", "Which?") { "a" means entry("weight" to JsonPrimitive(Double.POSITIVE_INFINITY)) }
+            }
+            problems shouldBe
+                listOf(
+                    "question 's': level 1 holds NaN or an infinity, which JSON lacks",
+                    "question 'c': option 'a' holds NaN or an infinity, which JSON lacks",
+                )
+        }
+
+        "an entry() that fails inside a builder lambda is reported with the question's other problems" {
+            problemsOf {
+                choice("c", "Which?") { "a" means entry("when" to Any()) }
+            }.single() shouldContain "question 'c': Can't convert a value of type Any to JSON"
+        }
+
+        // Thrown from the lambda, it would escape the object's initializer as an ExceptionInInitializerError.
+        "a JevQuery whose builder lambda fails in entry() initializes cleanly and fails on first use" {
+            shouldNotThrowAny { BadEntryQuery.hashCode() }
+            shouldThrow<JevValidationException> { BadEntryQuery.questions }
+                .problems.single() shouldContain "question 'pick': Can't convert a value of type Any"
         }
     }
 }

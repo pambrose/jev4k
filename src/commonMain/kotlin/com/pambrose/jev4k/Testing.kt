@@ -1,8 +1,11 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.JevJson
+import com.pambrose.jev4k.internal.ResponseInfo
 import com.pambrose.jev4k.internal.mapSystemOne
 import com.pambrose.jev4k.internal.retryHint
+import io.ktor.http.Headers
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -34,7 +37,7 @@ fun jevResult(
     questions: QuestionSet,
     model: String = JevDefaults.MODEL,
     requestId: String? = null,
-): JevResult = mapSystemOne(body, model, questions, requestId, TEST_ENDPOINT)
+): JevResult = mapSystemOne(body, model, questions, testResponse(body.toString(), requestId))
 
 /** The same, from the response body as JSON text. */
 @JvmOverloads
@@ -43,7 +46,15 @@ fun jevResult(
     questions: QuestionSet,
     model: String = JevDefaults.MODEL,
     requestId: String? = null,
-): JevResult = jevResult(JevJson.parseToJsonElement(body).jsonObject, questions, model, requestId)
+): JevResult {
+    val json = JevJson.parseToJsonElement(body).jsonObject
+    return mapSystemOne(json, model, questions, testResponse(body, requestId))
+}
+
+private fun testResponse(
+    text: String,
+    requestId: String?,
+) = ResponseInfo(text, HttpStatusCode.OK.value, Headers.Empty, requestId, TEST_ENDPOINT)
 
 /**
  * The [JevApiException] subclass the client raises for HTTP [status], for testing a caller's error handling:

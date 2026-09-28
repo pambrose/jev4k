@@ -35,7 +35,14 @@ interface JevOption {
  * result[Triage.department].choice
  * ```
  *
- * Questions are validated the first time [questions] is used, so an invalid definition fails on first use.
+ * Questions are validated the first time [questions] is used, so an invalid definition fails on first use, with a
+ * [JevValidationException], rather than from the object's initializer. That covers a problem found inside a builder
+ * lambda too, such as an unsupported value passed to `entry()` in a Choice's options. An argument is evaluated before
+ * the builder runs, though, so a failing `entry()` or `jsonEntry()` passed as the instructions still throws from the
+ * initializer.
+ *
+ * [questions] can be read at any time. A read before every property is initialized, from an `init` block or a base
+ * class, sees only the questions declared so far; the next read includes the rest.
  *
  * The builders take the instructions first and an optional `id` second, the reverse of the inline [QueryBuilder]'s
  * `(id, instructions)`. Both are strings, so pass `id` by name (`noul("Is this urgent?", id = "urgent")`): a
@@ -44,9 +51,13 @@ interface JevOption {
  */
 abstract class JevQuery {
     private val registered = mutableListOf<QuestionRef<*>>()
+    private var built: QuestionSet? = null
 
     /** The declared questions, in declaration order (base-class questions first). */
-    val questions: QuestionSet by lazy { QuestionSet(registered) }
+    val questions: QuestionSet
+        // Rebuilt when questions have registered since the last read, which only happens during initialization.
+        // Once that is over the set never changes, and a race between two first reads just builds it twice.
+        get() = built?.takeIf { it.size == registered.size } ?: QuestionSet(registered).also { built = it }
 
     internal fun register(question: QuestionRef<*>) {
         registered += question

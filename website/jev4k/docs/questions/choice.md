@@ -50,6 +50,10 @@ The runner-up often matters as much as the winner:
 runner-up at 0.44 is far less decisive than 0.45 with the rest scattered thinly. See
 [Confidence & Thresholds](../results/confidence.md).
 
+A string-keyed Choice returns the option the server chose as it was sent, even one the question didn't declare, as
+both official SDKs do. An [enum-backed Choice](../queries/enums.md) can't hold an undeclared option, so reading one
+throws a `JevResponseValidationException` instead.
+
 ## Speculative questions
 
 Ask the follow-up Choices you *might* need in the same request, and let code read only the relevant one:

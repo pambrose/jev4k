@@ -28,15 +28,16 @@ the decision needs to compare the parts.
 
 ## @Serializable values
 
-Any `@Serializable` value works as state. Fields that equal their defaults are still sent, so the model sees
-them:
+Any `@Serializable` value that encodes to a JSON object, array or string works as state. Fields that equal their
+defaults are still sent, so the model sees them:
 
 ```kotlin
 --8<-- "StateExamples.kt:serializable"
 ```
 
 `Order("A-104")` is sent as `{"id":"A-104","status":"open","items":[]}`. A value that isn't `@Serializable`
-is rejected with a `JevValidationException` that says so.
+is rejected with a `JevValidationException` that says so, and so is a bare number or boolean, which the API doesn't
+take as a state: wrap it in an object that names it.
 
 ## Pointing questions at fields
 

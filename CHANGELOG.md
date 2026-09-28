@@ -60,6 +60,14 @@ small breaking changes, listed first under Changed.
 - **Breaking, for positional calls:** `jevApiException` takes `headers` before `retryAfter`, so Java can pass
   headers, and reads a rate-limit hint from the headers when `retryAfter` isn't given. Calls that name their
   arguments are unaffected.
+- A number or boolean state is rejected with a `JevValidationException` before anything is sent; the API takes a
+  string, an object or an array. Instructions must be non-blank text or a non-empty object or array, so a number, a
+  boolean, `{}` and `[]` are rejected like a blank string.
+- `enumChoice<E>(id)` requires E to have a constant for every option the question declared, and throws
+  `IllegalArgumentException` if it doesn't. Before, reading with the wrong enum failed as a
+  `JevResponseValidationException`, blaming the server, or could return another enum's constant.
+- A string-keyed Choice read returns an option the question didn't declare as the server sent it, as both official
+  SDKs do. That was already the behavior; it is now documented and tested.
 - New subtypes of the sealed `Answer` and `Question` types may be added in a minor release, when TypeSafe adds a kind
   of question. A `when` over either that must keep compiling across upgrades should end in an `else` branch.
 - **Breaking: Maven coordinates.** The group is now `com.pambrose.jev4k`, so every artifact sits under one group, as
@@ -111,6 +119,22 @@ small breaking changes, listed first under Changed.
   `JevValidationException` or `JevResponseValidationException` instead of overflowing the stack.
 - With a caller-supplied engine, a `JevTimeoutException` from that engine's own connect or socket timeout names it
   instead of quoting `timeout`, which jev4k sets only as the request timeout for such an engine.
+- A `null` answer is treated as absent, failing only when it is read, instead of failing the whole response.
+- A response number that isn't finite (an unquoted `NaN`, or `1e999`), or a Score level key outside the question's
+  levels, is a `JevResponseValidationException` with its field path, instead of surfacing later from `band()`,
+  `isTrue()` or `nearestLevel`.
+- A `JevResponseValidationException` for a malformed 2xx body carries the body as received, its status and its
+  headers, not the parsed JSON written out again with a status of 200 and no headers.
+- A question entry holding NaN or an infinity is reported by validation, naming the question and the entry, so
+  `QuestionSet.toJson()` can't fail with a raw kotlinx exception.
+- `jsonOf` and `entry` convert primitive arrays (`IntArray`, `DoubleArray` and the rest), as their docs promised.
+- A `JevValidationException` from inside a builder lambda, from `entry()` say, no longer escapes a `JevQuery`
+  object's initializer as an `ExceptionInInitializerError`; it is reported when the questions are first used.
+- A `JevQuery` whose `questions` is read during initialization no longer loses the questions declared after that
+  read.
+- `QuestionSet.ids` reads the set's own copy of its questions, not the caller's list.
+- `QueryBuilder.question(id, question)` copies the question's options or levels, so changing the caller's map or list
+  later changes nothing, and its handle checks the answer's type as every other handle does.
 - `JevApiException` and `JevRateLimitException` are Java-serializable, as a `Throwable` is expected to be: serializing
   one with a JSON body, or a rate-limit error with a hint, threw `NotSerializableException`. `bodyJson` is now parsed
   on each read rather than cached.

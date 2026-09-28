@@ -3,6 +3,8 @@ package com.pambrose.jev4k.internal
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.doubleOrNull
 
 /**
  * How deeply jev4k lets JSON nest, sent or received. kotlinx.serialization encodes, parses and prints JSON by
@@ -45,6 +47,23 @@ internal fun String.nestsTooDeep(): Boolean {
             c == '"' -> inString = true
             c == '[' || c == '{' -> if (++depth > MAX_JSON_DEPTH) return true
             c == ']' || c == '}' -> depth--
+        }
+    }
+    return false
+}
+
+/**
+ * True when this element holds a number JSON can't represent, NaN or an infinity. kotlinx.serialization refuses to
+ * encode one, so it is reported where the element is checked rather than when the request is written.
+ */
+internal fun JsonElement.hasNonFiniteNumber(): Boolean {
+    val pending = ArrayDeque<JsonElement>()
+    pending.addLast(this)
+    while (pending.isNotEmpty()) {
+        when (val element = pending.removeLast()) {
+            is JsonObject -> pending.addAll(element.values)
+            is JsonArray -> pending.addAll(element)
+            is JsonPrimitive -> if (!element.isString && element.doubleOrNull?.isFinite() == false) return true
         }
     }
     return false

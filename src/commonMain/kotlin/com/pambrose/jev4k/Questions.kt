@@ -4,10 +4,12 @@ import com.pambrose.jev4k.internal.JevJson
 import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
 import com.pambrose.jev4k.internal.WireQuestion
 import com.pambrose.jev4k.internal.enumTypeName
+import com.pambrose.jev4k.internal.hasNonFiniteNumber
 import com.pambrose.jev4k.internal.nestsTooDeep
 import com.pambrose.jev4k.internal.toWire
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -72,6 +74,11 @@ class QuestionRef<out A : Answer> internal constructor(
      * that is wrong with it, instead of from a class initializer.
      */
     internal val problems: List<String> = emptyList(),
+    /**
+     * False when a builder lambda failed partway, so [question] holds only what was added before it did. Its shape
+     * (option and level counts) is then not checked, since a count would only echo the failure.
+     */
+    internal val complete: Boolean = true,
 ) {
     operator fun getValue(
         thisRef: Any?,
@@ -96,7 +103,8 @@ class QuestionSet internal constructor(
     // validation has already rejected duplicate ids by the time this map is built.
     private val byId: Map<String, QuestionRef<*>> = this.questions.associateBy { it.id }
 
-    val ids: List<String> by lazy { questions.map { it.id } }
+    // this.questions, the copy: a bare `questions` here would read the constructor parameter, the caller's list.
+    val ids: List<String> = this.questions.map { it.id }
 
     val size: Int get() = questions.size
 
@@ -119,13 +127,20 @@ internal val Question.typeName: String
         is ScoreQuestion -> "score"
     }
 
-/** Null, or a blank string. */
+/** Anything that can't state a question: null, a number or boolean, a blank string, an empty object or array. */
 private fun JsonElement.isEmptyEntry(): Boolean =
-    this is JsonNull || (this is JsonPrimitive && isString && content.isBlank())
+    when (this) {
+        // JsonNull is a JsonPrimitive that isn't a string.
+        is JsonPrimitive -> !isString || content.isBlank()
+
+        is JsonObject -> isEmpty()
+
+        is JsonArray -> isEmpty()
+    }
 
 private const val INSTRUCTIONS_REQUIRED =
-    "instructions must not be empty; question ids are never sent to the model, so the instructions must state " +
-        "the full question"
+    "instructions must be non-blank text or a non-empty JSON object or array; question ids are never sent to the " +
+        "model, so the instructions must state the full question"
 
 internal fun validate(questions: List<QuestionRef<*>>): List<String> =
     buildList {
@@ -137,7 +152,7 @@ internal fun validate(questions: List<QuestionRef<*>>): List<String> =
                 !seen.add(ref.id) -> add("Duplicate question id '${ref.id}'")
             }
             ref.problems.forEach { add("question '${ref.id}': $it") }
-            addAll(validate(ref.id, ref.question))
+            if (ref.complete) addAll(validate(ref.id, ref.question))
         }
     }
 
@@ -148,7 +163,10 @@ private fun validate(
     buildList {
         if (question.instructions.isEmptyEntry()) add("question '$id': $INSTRUCTIONS_REQUIRED")
         for ((name, entry) in question.entries()) {
-            if (entry.nestsTooDeep()) add("question '$id': $name is nested more than $MAX_JSON_DEPTH levels deep")
+            when {
+                entry.nestsTooDeep() -> add("question '$id': $name is nested more than $MAX_JSON_DEPTH levels deep")
+                entry.hasNonFiniteNumber() -> add("question '$id': $name holds NaN or an infinity, which JSON lacks")
+            }
         }
         when (question) {
             is NoulQuestion -> {
@@ -182,13 +200,29 @@ private fun Question.entries(): List<Pair<String, JsonElement>> =
             is ScoreQuestion -> levels.mapIndexed { index, entry -> "level $index" to entry }
         }
 
+/**
+ * Runs a builder lambda and returns the problems of a [JevValidationException] it threw, from `entry()` or
+ * `jsonOf()` say, instead of letting it escape. Inside a [JevQuery] object it would escape the class initializer as an
+ * `ExceptionInInitializerError`; returned, it is reported with the question's other problems when the set is
+ * validated.
+ */
+private inline fun problemsFrom(block: () -> Unit): List<String> =
+    try {
+        block()
+        emptyList()
+    } catch (e: JevValidationException) {
+        e.problems
+    }
+
 internal fun noulRef(
     id: String,
     instructions: JsonElement,
     criteria: (NoulBuilder.() -> Unit)?,
 ): QuestionRef<NoulAnswer> {
-    val builder = NoulBuilder().apply { criteria?.invoke(this) }
-    return QuestionRef(id, NoulQuestion(instructions, builder.trueEntry, builder.falseEntry), ::decodeNoul)
+    val builder = NoulBuilder()
+    val problems = problemsFrom { criteria?.invoke(builder) }
+    val question = NoulQuestion(instructions, builder.trueEntry, builder.falseEntry)
+    return QuestionRef(id, question, ::decodeNoul, problems, complete = problems.isEmpty())
 }
 
 internal fun choiceRef(
@@ -196,12 +230,14 @@ internal fun choiceRef(
     instructions: JsonElement,
     options: ChoiceBuilder.() -> Unit,
 ): QuestionRef<ChoiceAnswer<String>> {
-    val builder = ChoiceBuilder().apply(options)
+    val builder = ChoiceBuilder()
+    val problems = problemsFrom { builder.apply(options) }
     return QuestionRef(
         id = id,
         question = ChoiceQuestion(instructions, builder.options.toMap()),
         decode = ::decodeChoice,
-        problems = builder.duplicates.map { "duplicate Choice option '$it'" },
+        problems = problems + builder.duplicates.map { "duplicate Choice option '$it'" },
+        complete = problems.isEmpty(),
     )
 }
 
@@ -209,8 +245,12 @@ internal fun scoreRef(
     id: String,
     instructions: JsonElement,
     levels: ScoreBuilder.() -> Unit,
-): QuestionRef<ScoreAnswer> =
-    QuestionRef(id, ScoreQuestion(instructions, ScoreBuilder().apply(levels).levels.toList()), ::decodeScore)
+): QuestionRef<ScoreAnswer> {
+    val builder = ScoreBuilder()
+    val problems = problemsFrom { builder.apply(levels) }
+    val question = ScoreQuestion(instructions, builder.levels.toList())
+    return QuestionRef(id, question, ::decodeScore, problems, complete = problems.isEmpty())
+}
 
 @PublishedApi
 internal fun <E : Enum<E>> enumChoiceRef(

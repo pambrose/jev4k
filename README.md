@@ -586,7 +586,8 @@ Header names in `JevApiException.headers` are lowercased, so `e.headers["retry-a
 server spelled it and whichever engine read it.
 
 Misusing a result is a programming error, not a `JevException`: asking for an id or handle that wasn't in the
-request, or reading a Noul as a Choice, throws `IllegalArgumentException`.
+request, reading a Noul as a Choice, or reading a Choice with an enum that lacks one of its options throws
+`IllegalArgumentException`.
 
 ## Testing code that uses jev4k
 

@@ -66,5 +66,7 @@ Enums don't have to implement `JevOption`; without it, options are sent undescri
 --8<-- "EnumChoiceExamples.kt:inline"
 ```
 
-If the server ever returns an option the enum doesn't define, reading the answer throws a
+The enum must have a constant for every option the question declared. Reading with one that doesn't, the wrong
+enum, say, is a mistake in the calling code, so it throws `IllegalArgumentException` naming the missing options. If
+the server returns an option the question never declared, reading the answer throws a
 `JevResponseValidationException`.

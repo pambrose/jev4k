@@ -1,5 +1,7 @@
 package com.pambrose.jev4k
 
+import com.pambrose.jev4k.internal.ResponseInfo
+import com.pambrose.jev4k.internal.enumTypeName
 import kotlinx.serialization.json.JsonObject
 import kotlin.enums.enumEntries
 import kotlin.jvm.JvmSynthetic
@@ -16,28 +18,45 @@ class JevResult internal constructor(
     /** The model name that was sent, possibly an alias such as `jev-latest`. */
     val requestedModel: String,
     val usage: Usage,
-    /** The `x-typesafe-request-id` response header. */
-    val requestId: String?,
     val questions: QuestionSet,
     /** Every answer by question id, choices keyed by option string. */
     val answers: Map<String, Answer>,
     /** The response body as received. */
     val raw: JsonObject,
-    private val endpoint: String,
+    private val response: ResponseInfo,
 ) {
+    /** The `x-typesafe-request-id` response header. */
+    val requestId: String? get() = response.requestId
+
     operator fun <A : Answer> get(ref: QuestionRef<A>): A {
         require(ref in questions) { "Question '${ref.id}' is not part of this request" }
         return decodeAnswer(ref.id, ref.decode)
     }
 
-    fun noul(id: String): NoulAnswer = decodeAnswer(requireQuestion<NoulQuestion>(id, "noul"), ::decodeNoul)
+    fun noul(id: String): NoulAnswer {
+        requireQuestion<NoulQuestion>(id, "noul")
+        return decodeAnswer(id, ::decodeNoul)
+    }
 
-    fun choice(id: String): ChoiceAnswer<String> =
-        decodeAnswer(requireQuestion<ChoiceQuestion>(id, "choice"), ::decodeChoice)
+    /**
+     * Reads a Choice by id, keyed by option string. The chosen option is returned as the server sent it, even one the
+     * question didn't declare, as both official SDKs do; [enumChoice] rejects one, since it has no constant for it.
+     */
+    fun choice(id: String): ChoiceAnswer<String> {
+        requireQuestion<ChoiceQuestion>(id, "choice")
+        return decodeAnswer(id, ::decodeChoice)
+    }
 
-    fun score(id: String): ScoreAnswer = decodeAnswer(requireQuestion<ScoreQuestion>(id, "score"), ::decodeScore)
+    fun score(id: String): ScoreAnswer {
+        requireQuestion<ScoreQuestion>(id, "score")
+        return decodeAnswer(id, ::decodeScore)
+    }
 
-    /** Reads a Choice by id as constants of [E]. */
+    /**
+     * Reads a Choice by id as constants of [E]. [E] must have a constant for every option the question declared,
+     * else this is a mistake in the calling code, reported as [IllegalArgumentException]. An option the server
+     * returns that the question never declared is a [JevResponseValidationException].
+     */
     @JvmSynthetic
     inline fun <reified E : Enum<E>> enumChoice(id: String): ChoiceAnswer<E> = enumChoiceOf(id, enumEntries<E>())
 
@@ -47,7 +66,13 @@ class JevResult internal constructor(
         constants: List<E>,
     ): ChoiceAnswer<E> {
         val byKey = constants.associateBy(::enumOptionKey)
-        return decodeAnswer(requireQuestion<ChoiceQuestion>(id, "choice")) { decodeEnumChoice(it, byKey) }
+        val declared = requireQuestion<ChoiceQuestion>(id, "choice").options.keys
+        require(byKey.keys.containsAll(declared)) {
+            val enumName = constants.firstOrNull()?.enumTypeName() ?: "the enum"
+            "Question '$id' declares options $declared, but $enumName has no constant for " +
+                "${declared - byKey.keys} (its option keys: ${byKey.keys})"
+        }
+        return decodeAnswer(id) { decodeEnumChoice(it, byKey) }
     }
 
     val nouls: Map<String, NoulAnswer> get() = answersOf<NoulAnswer>()
@@ -62,16 +87,17 @@ class JevResult internal constructor(
         answers.mapNotNull { (id, answer) -> (answer as? T)?.let { id to it } }.toMap()
 
     /**
-     * Checks that `id` was asked and that it is a [Q], and returns it. [Question] is sealed, so the shape is
-     * checked by the compiler; [label] only names the expected type in the failure message.
+     * Checks that `id` was asked and that it is a [Q], and returns that question. [Question] is sealed, so the shape
+     * is checked by the compiler; [label] only names the expected type in the failure message.
      */
     private inline fun <reified Q : Question> requireQuestion(
         id: String,
         label: String,
-    ): String {
+    ): Q {
         val ref = requireNotNull(questions[id]) { "No question '$id' in this request (ids: ${questions.ids})" }
-        require(ref.question is Q) { "Question '$id' is a ${ref.question.typeName}, not a $label" }
-        return id
+        val question = ref.question
+        require(question is Q) { "Question '$id' is a ${question.typeName}, not a $label" }
+        return question
     }
 
     private fun <T> decodeAnswer(
@@ -90,7 +116,7 @@ class JevResult internal constructor(
         fieldPath: String,
         detail: String,
         cause: Throwable? = null,
-    ) = JevResponseValidationException(detail, fieldPath, raw.toString(), requestId, endpoint, cause = cause)
+    ) = response.invalid(detail, fieldPath, cause)
 
     override fun toString(): String = "JevResult(model=$model, requestId=$requestId, usage=$usage, answers=$answers)"
 }

@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 36 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 49 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -32,7 +32,7 @@ Every issue has a number. Tick its box when it's fixed, and update the count bel
   exception on every call
 - [x] [#10](#issue-10) **Config.** A `baseUrl` with trailing whitespace or a bad port passes validation, then every
   call throws `URLParserException`
-- [ ] [#11](#issue-11) **Results.** `enumChoice<E>(id)` doesn't check E against the declared options, so a caller
+- [x] [#11](#issue-11) **Results.** `enumChoice<E>(id)` doesn't check E against the declared options, so a caller
   mistake is blamed on the server
 - [x] [#12](#issue-12) **Java interop.** Java can't reach any `Duration`-typed API (timeout, `RetryPolicy`,
   `retryAfter`), yet the docs say "everything else is callable"
@@ -48,9 +48,9 @@ Every issue has a number. Tick its box when it's fixed, and update the count bel
 
 Client and HTTP
 
-- [ ] [#17](#issue-17) A `null` answer fails the whole response instead of failing lazily on read
-- [ ] [#18](#issue-18) The response mapper accepts NaN/Infinity and out-of-range Score level keys
-- [ ] [#19](#issue-19) `JevResponseValidationException` from mapping drops the headers and holds re-serialized JSON,
+- [x] [#17](#issue-17) A `null` answer fails the whole response instead of failing lazily on read
+- [x] [#18](#issue-18) The response mapper accepts NaN/Infinity and out-of-range Score level keys
+- [x] [#19](#issue-19) `JevResponseValidationException` from mapping drops the headers and holds re-serialized JSON,
   not the raw body
 - [x] [#20](#issue-20) `models()` discards the `x-typesafe-request-id` of a successful call
 - [x] [#21](#issue-21) A blank per-call model is sent as `"model": ""`
@@ -70,19 +70,19 @@ Configuration and validation
   and queries are corrupted
 - [x] [#29](#issue-29) Plain `http://` is accepted for any host, so a mistyped URL sends the key in cleartext
 - [x] [#30](#issue-30) `RetryPolicy.retryStatuses` aliases the caller's set, so a built client can change later
-- [ ] [#31](#issue-31) A number or boolean state, and empty `{}`/`[]` instructions, pass local validation
-- [ ] [#32](#issue-32) `QuestionSet.toJson()` throws a raw kotlinx exception for a non-finite number
-- [ ] [#33](#issue-33) `jsonOf` rejects primitive arrays (`IntArray`, `DoubleArray`), though its KDoc promises arrays
-- [ ] [#34](#issue-34) `entry()`/`jsonOf()` errors escape a `JevQuery` object's initializer as
+- [x] [#31](#issue-31) A number or boolean state, and empty `{}`/`[]` instructions, pass local validation
+- [x] [#32](#issue-32) `QuestionSet.toJson()` throws a raw kotlinx exception for a non-finite number
+- [x] [#33](#issue-33) `jsonOf` rejects primitive arrays (`IntArray`, `DoubleArray`), though its KDoc promises arrays
+- [x] [#34](#issue-34) `entry()`/`jsonOf()` errors escape a `JevQuery` object's initializer as
   `ExceptionInInitializerError`
 
 DSL and results
 
-- [ ] [#35](#issue-35) A `JevQuery` silently drops questions declared after `questions` was first read
-- [ ] [#36](#issue-36) `QuestionSet.ids` reads the caller's live list instead of the defensive copy
-- [ ] [#37](#issue-37) `QueryBuilder.question(id, q)` uses an identity decoder, so reads never check the answer type
-- [ ] [#38](#issue-38) `QueryBuilder.question()` keeps the caller's `Map`/`List` by reference after validation
-- [ ] [#39](#issue-39) A string-keyed Choice returns an undeclared option as is, while the enum path rejects it
+- [x] [#35](#issue-35) A `JevQuery` silently drops questions declared after `questions` was first read
+- [x] [#36](#issue-36) `QuestionSet.ids` reads the caller's live list instead of the defensive copy
+- [x] [#37](#issue-37) `QueryBuilder.question(id, q)` uses an identity decoder, so reads never check the answer type
+- [x] [#38](#issue-38) `QueryBuilder.question()` keeps the caller's `Map`/`List` by reference after validation
+- [x] [#39](#issue-39) A string-keyed Choice returns an undeclared option as is, while the enum path rejects it
 - [x] [#40](#issue-40) Inline and typed builders take id and instructions in opposite order, so a swapped call
   compiles
 - [x] [#41](#issue-41) No stated policy for adding subtypes to the sealed `Answer` and `Question` types
@@ -475,6 +475,11 @@ non-numeric or out-of-range port fails as well. `JevClient()` builds without com
 
 **Medium** · Results · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevResult.kt:49`
 
+**Fixed.** `enumChoiceOf` gets the declared `ChoiceQuestion` from `requireQuestion` and requires E to cover every
+declared option, naming the question, the missing options and E's keys. An option the server invents is still a
+`JevResponseValidationException`. `enums.md`, the README and the errors page say so, and `DslTest` covers a wrong enum,
+a subset enum and a superset one.
+
 **What's wrong.** `enumChoiceOf` checks only that the id is a Choice. It never compares E's option keys with the
 options the question declared. Two failure modes follow:
 - **The wrong enum.** For example, options declared as `"technical"` read with an enum whose key is `TECHNICAL`.
@@ -630,6 +635,9 @@ passes for long documents.
 
 **Low** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/ResponseMapper.kt:95`
 
+**Fixed.** `mapSystemOne` drops `null` answers before mapping, so one fails when read, as a missing key does, and the
+others still map.
+
 **What's wrong.** `mapSystemOne` maps every requested id present in `answers`, including keys whose value is JSON
 `null`. `BodyReader.answer` then rejects the non-object. Everywhere else the mapper treats `null` as absent, and an
 absent answer fails only when it's read. So `{"answers":{"a":null,"b":{…}}}` loses the valid answer to `b`.
@@ -642,6 +650,10 @@ ResponseMappingTest case.
 #### 18. The response mapper accepts NaN/Infinity and out-of-range Score level keys
 
 **Low** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/ResponseMapper.kt:156`, `:177`
+
+**Fixed.** `number()` requires a finite value, and `byLevel` refuses a level outside the question's levels (or a
+negative one when the levels are unknown), each with its field path. There are still no range or sum checks on
+probabilities.
 
 **What's wrong.** `number()` accepts `NaN` and `Infinity`: an unquoted `NaN` parses, and so does `1e999`. Score
 probability and legend keys aren't checked against the declared levels either. The failures surface later, in the
@@ -660,6 +672,10 @@ accessors:
 
 **Low** · Client · medium · `src/commonMain/kotlin/com/pambrose/jev4k/internal/ResponseMapper.kt:87`,
 `src/commonMain/kotlin/com/pambrose/jev4k/JevResult.kt:93`
+
+**Fixed.** `send` builds an internal `ResponseInfo` (text, status, headers, request id, endpoint), which `parseObject`,
+the mappers and `JevResult` use for every `JevResponseValidationException`. `ResponseMappingTest` and `ClientTest` check
+the raw body, the status and the headers.
 
 **What's wrong.** For a malformed 2xx body, `BodyReader.fail` and `JevResult.invalid` build the exception from:
 - the parsed JSON serialized again (`body.toString()`), not the raw body;
@@ -872,6 +888,9 @@ built client's behavior, which contradicts "a `JevClient` is immutable once buil
 **Low** · Validation · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:60`,
 `src/commonMain/kotlin/com/pambrose/jev4k/Questions.kt:118`
 
+**Fixed.** `evaluate` rejects a number or boolean state, naming the allowed shapes, and instructions must be non-blank
+text or a non-empty object or array. `state.md` is reworded.
+
 **What's wrong.**
 - **State.** The API types it as string, object or array, and both SDKs leave out bare numbers and booleans. But
   only `JsonNull` is rejected locally, so `ask(q, state = order.id)` with a `Long` gets sent. The docs overstate
@@ -890,6 +909,9 @@ built client's behavior, which contradicts "a `JevClient` is immutable once buil
 
 **Low** · Validation · small · `src/commonMain/kotlin/com/pambrose/jev4k/Questions.kt:106`
 
+**Fixed.** `validate()` reports an entry holding NaN or an infinity, naming the question and the entry, so `toJson()`
+can't meet one.
+
 **What's wrong.** The `JsonElement` overloads accept NaN, for example `level(JsonPrimitive(Double.NaN))`, and
 `validate()` doesn't look inside entries. `evaluate()` maps the resulting encoding failure to
 `JevValidationException`. But `toJson()`, which is documented for logging, throws kotlinx's `JsonEncodingException`
@@ -904,6 +926,9 @@ flag non-finite numbers in `validate()`, naming the question and the field.
 
 **Low** · Validation · small · `src/commonMain/kotlin/com/pambrose/jev4k/Entries.kt:71`
 
+**Fixed.** `jsonOf` converts every primitive array except `CharArray`, element by element through `jsonOf`, so a NaN is
+still caught. The KDoc names them.
+
 **What's wrong.** The KDoc lists arrays among the supported inputs, but only `Array<*>` and `Iterable<*>` match.
 `IntArray`, `DoubleArray` and the other primitive arrays throw `JevValidationException`, and so does `entry(...)`.
 
@@ -915,6 +940,11 @@ Alternatively, narrow the KDoc. Add an EntriesTest case either way.
 #### 34. `entry()`/`jsonOf()` errors escape a `JevQuery` object's initializer
 
 **Low** · Validation · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevQuery.kt:38`
+
+**Fixed.** `noulRef`, `choiceRef` and `scoreRef` catch a `JevValidationException` from the builder lambda and carry its
+problems on the `QuestionRef`, marking the question incomplete so a knock-on option or level count isn't reported. An
+argument evaluated before the builder runs, such as `noul(entry(...))`, still throws from the initializer; the
+`JevQuery` KDoc and CLAUDE.md say so.
 
 **What's wrong.** The codebase defers definition errors so they can't escape an `object`'s static initializer:
 duplicate options, for instance, are recorded rather than thrown. `entry()`, `jsonOf()` and `jsonEntry()` still
@@ -937,6 +967,10 @@ It is never a `JevException`. The KDoc and CLAUDE.md say an invalid definition f
 
 **Low** · DSL · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevQuery.kt:44`
 
+**Fixed.** `questions` is rebuilt when more questions have registered since it was built, so a read during
+initialization no longer loses the later ones. The KDoc explains it, and `DslTest` reads the set partway through a
+class.
+
 **What's wrong.** `questions` is a lazy snapshot of the registered questions. Reading it during initialization
 freezes the set: from an `init` block or a property initializer partway down the class, or from a base class's
 `init`. Questions declared after that point are registered but never sent. Reading one of them later fails with
@@ -954,6 +988,8 @@ Add a test and a KDoc sentence.
 
 **Low** · DSL · small · `src/commonMain/kotlin/com/pambrose/jev4k/Questions.kt:94`
 
+**Fixed.** `ids` is built from `this.questions`, the copy, and the test grows the source list after building the set.
+
 **What's wrong.** In `val ids by lazy { questions.map { it.id } }`, `questions` resolves to the constructor
 parameter, not the defensive copy (confirmed in the bytecode). If the source list grows before `ids` is first read,
 `ids` disagrees with the size and iteration, and error messages contradict themselves. That can happen through #35,
@@ -966,6 +1002,9 @@ or through a leaked `QueryBuilder`.
 #### 37. `QueryBuilder.question(id, q)` never checks the answer type
 
 **Low** · DSL · small · `src/commonMain/kotlin/com/pambrose/jev4k/Builders.kt:157`
+
+**Fixed.** `question()` picks `decodeNoul`, `decodeChoice` or `decodeScore` from the sealed subtype, so a mismatched
+answer is a `JevResponseValidationException` with its field path.
 
 **What's wrong.** Every other handle factory uses a type-checking decoder, but `question(id, question)` uses
 `{ it }`. So `result[handle]` returns whatever the server sent: a `NoulAnswer` for a Choice question, or an
@@ -981,6 +1020,8 @@ DslTest case. Typed overloads are optional.
 
 **Low** · DSL · small · `src/commonMain/kotlin/com/pambrose/jev4k/Builders.kt:157`
 
+**Fixed.** `question()` stores a copy of the options map or the levels list.
+
 **What's wrong.** `ChoiceQuestion` and `ScoreQuestion` store the collection the caller gives them, and
 `question()` passes it straight into the `QuestionSet`, which validates only once. Mutating the map afterwards
 changes what is sent: an emptied map goes out as `"criteria":{}` and comes back as a 422. This mostly affects Java,
@@ -993,6 +1034,9 @@ because the README's enum-Choice workaround uses this path.
 #### 39. A string-keyed Choice returns an undeclared option as is
 
 **Low** · Results · small · `src/commonMain/kotlin/com/pambrose/jev4k/Answers.kt:131`
+
+**Fixed.** Leniency is the policy, matching both official SDKs: the `JevResult.choice` KDoc and the Choice page say an
+undeclared option is returned as sent, and `ResponseMappingTest` pins it.
 
 **What's wrong.** String-keyed Choice reads return whatever `choice` the server sent, even one that isn't a declared
 option. Enum-backed reads reject it. The official SDKs don't check either, so this is a policy gap: the behavior is

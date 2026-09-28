@@ -75,5 +75,21 @@ class EntriesTest : StringSpec() {
             val e = shouldThrow<JevValidationException> { jsonEntry(StringBuilder("x")) }
             e.message shouldContain "@Serializable"
         }
+
+        "jsonOf converts primitive arrays element by element" {
+            jsonOf(intArrayOf(1, 2)) shouldBe json("[1,2]")
+            jsonOf(longArrayOf(3L)) shouldBe json("[3]")
+            jsonOf(shortArrayOf(4)) shouldBe json("[4]")
+            jsonOf(byteArrayOf(5)) shouldBe json("[5]")
+            jsonOf(doubleArrayOf(1.5)) shouldBe json("[1.5]")
+            jsonOf(floatArrayOf(2.5f)) shouldBe json("[2.5]")
+            jsonOf(booleanArrayOf(true, false)) shouldBe json("[true,false]")
+            entry("scores" to intArrayOf(7, 9)) shouldBe json("""{"scores":[7,9]}""")
+        }
+
+        "a NaN in a primitive array is caught like any other" {
+            shouldThrow<JevValidationException> { jsonOf(doubleArrayOf(1.0, Double.NaN)) }
+                .message shouldContain "NaN"
+        }
     }
 }

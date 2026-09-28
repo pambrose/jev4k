@@ -38,7 +38,8 @@ fun rubric(
 
 /**
  * Converts plain Kotlin values (null, strings, numbers, booleans, enums, maps with string keys,
- * iterables, arrays, and JSON elements) to JSON. Use [jsonEntry] for `@Serializable` values.
+ * iterables, arrays, primitive arrays such as `IntArray`, and JSON elements) to JSON. Use [jsonEntry] for
+ * `@Serializable` values.
  */
 fun jsonOf(value: Any?): JsonElement =
     when (value) {
@@ -69,6 +70,21 @@ fun jsonOf(value: Any?): JsonElement =
         is Iterable<*> -> JsonArray(value.map(::jsonOf))
 
         is Array<*> -> JsonArray(value.map(::jsonOf))
+
+        // Each element goes through jsonOf, so a NaN in a DoubleArray is caught as it is anywhere else.
+        is IntArray -> JsonArray(value.map(::jsonOf))
+
+        is LongArray -> JsonArray(value.map(::jsonOf))
+
+        is ShortArray -> JsonArray(value.map(::jsonOf))
+
+        is ByteArray -> JsonArray(value.map(::jsonOf))
+
+        is DoubleArray -> JsonArray(value.map(::jsonOf))
+
+        is FloatArray -> JsonArray(value.map(::jsonOf))
+
+        is BooleanArray -> JsonArray(value.map(::jsonOf))
 
         else -> unsupported(value, "value")
     }

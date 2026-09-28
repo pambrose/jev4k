@@ -610,5 +610,24 @@ class ClientTest : StringSpec() {
                 call.isCancelled shouldBe true
             }
         }
+
+        // The API takes a string, an object or an array. A number would otherwise go out as ask(q, state = order.id).
+        "a number or boolean state is rejected before anything is sent" {
+            val jev = triageJev()
+            shouldThrow<JevValidationException> { jev.client.evaluate(JsonPrimitive(42), Triage.questions) }
+                .problems.single() shouldBe "state must be a string, a JSON object or a JSON array, not a number"
+            shouldThrow<JevValidationException> { jev.client.ask(Triage, state = true) }
+                .problems.single() shouldContain "not a boolean"
+            jev.requests.shouldBeEmpty()
+        }
+
+        "a malformed success body is reported with its real status and headers" {
+            val body = """{"answers":{"urgent":{"noul":"high"}}}"""
+            val jev = testJev { respondJson(body, HttpStatusCode.Created, mapOf("X-Trace" to "t")) }
+            val e = shouldThrow<JevResponseValidationException> { jev.client.ask(Triage, state = PAYOUT_TICKET) }
+            e.status shouldBe 201
+            e.headers["x-trace"] shouldBe listOf("t")
+            e.body shouldBe body
+        }
     }
 }

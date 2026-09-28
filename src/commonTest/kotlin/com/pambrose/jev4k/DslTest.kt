@@ -9,6 +9,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonElement
 
 private enum class Plan : JevOption {
     FREE {
@@ -30,6 +31,29 @@ private open class BaseQuery : JevQuery() {
 
 private class ChildQuery : BaseQuery() {
     val second by noul("Is this the second question?", id = "second_q")
+}
+
+private enum class TwoDepts(
+    override val optionKey: String,
+) : JevOption {
+    BILLING("billing"),
+    TECHNICAL("technical"),
+}
+
+private enum class MoreDepts(
+    override val optionKey: String,
+) : JevOption {
+    BILLING("billing"),
+    TECHNICAL("technical"),
+    SALES("sales"),
+    LEGAL("legal"),
+}
+
+/** Reads its questions partway through initialization, as an init block or a base class might. */
+private class EarlyRead : JevQuery() {
+    val first by noul("Is this the first question?")
+    val seenDuringInit = questions.size
+    val second by noul("Is this the second question?")
 }
 
 class DslTest : StringSpec() {
@@ -151,6 +175,54 @@ class DslTest : StringSpec() {
             shouldThrow<JevValidationException> {
                 questions { question("scope", ScoreQuestion(JsonPrimitive("How big?"), listOf(JsonPrimitive("only")))) }
             }.problems.single() shouldContain "2..10 levels (got 1)"
+        }
+
+        "enumChoice with an enum lacking a declared option is a caller mistake, not a response error" {
+            val set = questions { choice("dept", "Which team?") { options("billing", "technical", "sales") } }
+            val r = jevResult("""{"answers":{"dept":{"choice":"technical","confidence":0.9}}}""", set)
+            r.enumChoice<Dept>("dept").choice shouldBe Dept.TECHNICAL
+            r.enumChoice<MoreDepts>("dept").choice shouldBe MoreDepts.TECHNICAL
+
+            val wrongKeys = shouldThrow<IllegalArgumentException> { r.enumChoice<Color>("dept") }
+            wrongKeys.message shouldContain "Question 'dept' declares options [billing, technical, sales]"
+            wrongKeys.message shouldContain "(its option keys: [RED, GREEN])"
+            shouldThrow<IllegalArgumentException> { r.enumChoice<TwoDepts>("dept") }.message shouldContain "[sales]"
+        }
+
+        "a JevQuery read during initialization still sends the questions declared after the read" {
+            val query = EarlyRead()
+            query.seenDuringInit shouldBe 1
+            query.questions.ids shouldBe listOf("first", "second")
+            query.questions shouldBeSameInstanceAs query.questions
+        }
+
+        "a QuestionSet's ids come from its own copy of the list" {
+            val source = mutableListOf<QuestionRef<*>>(noulRef("a", JsonPrimitive("A?"), null))
+            val set = QuestionSet(source)
+            source += noulRef("b", JsonPrimitive("B?"), null)
+            set.ids shouldBe listOf("a")
+            set.size shouldBe 1
+        }
+
+        "a question added directly is read back with a check of its type" {
+            lateinit var handle: QuestionRef<Answer>
+            val set = questions { handle = question("urgent", NoulQuestion(JsonPrimitive("Is this urgent?"))) }
+            jevResult("""{"answers":{"urgent":{"type":"noul","noul":0.8}}}""", set)[handle] shouldBe NoulAnswer(0.8)
+            val wrongType = jevResult("""{"answers":{"urgent":{"type":"score","score":1,"confidence":1}}}""", set)
+            shouldThrow<JevResponseValidationException> { wrongType[handle] }.fieldPath shouldBe "answers.urgent"
+        }
+
+        "a question added directly keeps a copy of its options and levels" {
+            val options = linkedMapOf<String, JsonElement>("a" to JsonNull, "b" to JsonNull)
+            val levels = mutableListOf<JsonElement>(JsonPrimitive("Low"), JsonPrimitive("High"))
+            val set = questions {
+                question("pick", ChoiceQuestion(JsonPrimitive("Which?"), options))
+                question("rate", ScoreQuestion(JsonPrimitive("How much?"), levels))
+            }
+            options.clear()
+            levels.clear()
+            (set["pick"]?.question as ChoiceQuestion).options.keys shouldBe setOf("a", "b")
+            (set["rate"]?.question as ScoreQuestion).levels shouldBe listOf(JsonPrimitive("Low"), JsonPrimitive("High"))
         }
     }
 }

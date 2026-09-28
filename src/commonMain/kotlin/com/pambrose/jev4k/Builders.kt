@@ -150,11 +150,23 @@ class QueryBuilder internal constructor() {
         levels: ScoreBuilder.() -> Unit,
     ): QuestionRef<ScoreAnswer> = add(scoreRef(id, instructions, levels))
 
-    /** Adds a [Question] built directly, e.g. one generated programmatically. */
+    /**
+     * Adds a [Question] built directly, e.g. one generated programmatically. Its option map or level list is copied,
+     * so changing the original afterwards changes nothing. Reading the handle checks that the answer is of the
+     * question's type, as the typed builders' handles do.
+     */
     fun question(
         id: String,
         question: Question,
-    ): QuestionRef<Answer> = add(QuestionRef(id, question, decode = { it }))
+    ): QuestionRef<Answer> {
+        val (copy, decode) =
+            when (question) {
+                is NoulQuestion -> question to ::decodeNoul
+                is ChoiceQuestion -> question.copy(options = question.options.toMap()) to ::decodeChoice
+                is ScoreQuestion -> question.copy(levels = question.levels.toList()) to ::decodeScore
+            }
+        return add(QuestionRef(id, copy, decode))
+    }
 
     /** Adds every question of [query], keeping its handles, so typed and ad-hoc questions share one request. */
     fun include(query: JevQuery) {

@@ -25,17 +25,18 @@ import kotlinx.serialization.json.longOrNull
 
 /**
  * Turns a `/v1/systemone` body into a [JevResult]. Known answers missing required fields fail here,
- * with a field path; answers that are absent fail later, when read.
+ * with a field path; answers that are absent, or null, fail later, when read.
  */
 internal fun mapSystemOne(
     body: JsonObject,
     requestedModel: String,
     questions: QuestionSet,
-    requestId: String?,
-    endpoint: String,
+    response: ResponseInfo,
 ): JevResult {
-    val reader = BodyReader(body, requestId, endpoint)
-    val answersJson = reader.optionalObject(body, "answers", "answers") ?: JsonObject(emptyMap())
+    val reader = BodyReader(response)
+    // A null answer is treated as absent, as null is everywhere else, so it fails only when it is read and doesn't
+    // take the other answers down with it.
+    val answersJson = reader.optionalObject(body, "answers", "answers").orEmpty().filterValues { it != JsonNull }
     // Declared questions first, in request order, then anything extra the server sent.
     val ids = questions.ids.filter { it in answersJson } + answersJson.keys.filter { questions[it] == null }
     val answers = ids.associateWith { reader.answer(it, answersJson.getValue(it), questions[it]?.question) }
@@ -50,21 +51,19 @@ internal fun mapSystemOne(
             inputTokens = usage?.get("input_tokens").asLongOrNull(),
             outputTokens = usage?.get("output_tokens").asLongOrNull(),
         ),
-        requestId = requestId,
         questions = questions,
         answers = answers,
         raw = body,
-        endpoint = endpoint,
+        response = response,
     )
 }
 
 /** Turns a `/v1/models` body into a [ModelList]. */
 internal fun mapModels(
     body: JsonObject,
-    requestId: String?,
-    endpoint: String,
+    response: ResponseInfo,
 ): ModelList {
-    val reader = BodyReader(body, requestId, endpoint)
+    val reader = BodyReader(response)
     val models = body["models"] as? JsonArray ?: reader.fail("models", "expected an array")
     val infos = models.mapIndexed { i, element ->
         val path = "models[$i]"
@@ -75,18 +74,16 @@ internal fun mapModels(
             releaseDate = reader.optionalString(model, "release_date", "$path.release_date"),
         )
     }
-    return ModelList(infos, requestId)
+    return ModelList(infos, response.requestId)
 }
 
 private class BodyReader(
-    val body: JsonObject,
-    val requestId: String?,
-    val endpoint: String,
+    val response: ResponseInfo,
 ) {
     fun fail(
         path: String,
         detail: String,
-    ): Nothing = throw JevResponseValidationException(detail, path, body.toString(), requestId, endpoint)
+    ): Nothing = throw response.invalid(detail, path)
 
     fun answer(
         id: String,
@@ -109,9 +106,10 @@ private class BodyReader(
             }
 
             "score" -> {
-                val probabilities = byLevel(doubles(obj, path), "$path.probabilities")
-                val legend = byLevel(optionalObject(obj, "legend", "$path.legend").orEmpty(), "$path.legend")
                 val levels = (question as? ScoreQuestion)?.levels
+                val probabilities = byLevel(doubles(obj, path), "$path.probabilities", levels?.size)
+                val legend =
+                    byLevel(optionalObject(obj, "legend", "$path.legend").orEmpty(), "$path.legend", levels?.size)
                 ScoreAnswer(
                     score = requiredDouble(obj, "score", path),
                     probabilities = probabilities,
@@ -152,10 +150,16 @@ private class BodyReader(
             else -> fail(path, "expected a string")
         }
 
+    // An unquoted NaN parses, and so does a number too big for a Double, so both are refused here rather than left
+    // to surprise band(), isTrue() or nearestLevel later.
     private fun number(
         value: JsonElement?,
         path: String,
-    ): Double = (value as? JsonPrimitive)?.takeUnless { it.isString }?.doubleOrNull ?: fail(path, "expected a number")
+    ): Double {
+        val primitive = (value as? JsonPrimitive)?.takeUnless { it.isString }
+        val number = primitive?.doubleOrNull ?: fail(path, "expected a number")
+        return number.takeIf { it.isFinite() } ?: fail(path, "expected a finite number")
+    }
 
     private fun requiredDouble(
         obj: JsonObject,
@@ -171,13 +175,21 @@ private class BodyReader(
         optionalObject(obj, "probabilities", "$path.probabilities").orEmpty()
             .mapValues { (key, value) -> number(value, "$path.probabilities.$key") }
 
+    /** Keys a map by level number; one outside `0 until levelCount`, when the question's levels are known, fails. */
     private fun <V> byLevel(
         map: Map<String, V>,
         path: String,
+        levelCount: Int?,
     ): Map<Int, V> =
         map.entries
-            .map { (key, value) -> (key.toIntOrNull() ?: fail("$path.$key", "expected an integer level")) to value }
-            .sortedBy { it.first }
+            .map { (key, value) ->
+                val level = key.toIntOrNull() ?: fail("$path.$key", "expected an integer level")
+                if (level < 0 || (levelCount != null && level >= levelCount)) {
+                    val range = levelCount?.let { "0..${it - 1}" } ?: "0 or more"
+                    fail("$path.$key", "level $level is outside the question's levels ($range)")
+                }
+                level to value
+            }.sortedBy { it.first }
             .toMap()
 
     private fun inDeclaredOrder(

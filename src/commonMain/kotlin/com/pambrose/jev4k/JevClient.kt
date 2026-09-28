@@ -3,6 +3,7 @@ package com.pambrose.jev4k
 import com.pambrose.jev4k.internal.HttpClientFactory
 import com.pambrose.jev4k.internal.JevJson
 import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
+import com.pambrose.jev4k.internal.ResponseInfo
 import com.pambrose.jev4k.internal.SystemOneRequest
 import com.pambrose.jev4k.internal.USER_AGENT
 import com.pambrose.jev4k.internal.follow
@@ -35,6 +36,8 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -80,10 +83,7 @@ class JevClient(
         model: String?,
         options: JevCallOptions,
     ): JevResult {
-        if (state is JsonNull) throw JevValidationException(listOf("state must not be null"))
-        if (state.nestsTooDeep()) {
-            throw JevValidationException(listOf("state is nested more than $MAX_JSON_DEPTH levels deep"))
-        }
+        stateProblem(state)?.let { throw JevValidationException(listOf(it)) }
         // A blank model is treated as unset, as the builder treats a blank defaultModel.
         val resolvedModel = model?.trim()?.takeIf { it.isNotEmpty() } ?: config.defaultModel
         val request = SystemOneRequest(state, resolvedModel, questions.toWire())
@@ -96,7 +96,19 @@ class JevClient(
                 val fields = JevJson.encodeToJsonElement(SystemOneRequest.serializer(), request).jsonObject
                 setBody(JsonObject(fields + options.extraBody))
             }
-        }) { body, requestId, endpoint -> mapSystemOne(body, resolvedModel, questions, requestId, endpoint) }
+        }) { body, response -> mapSystemOne(body, resolvedModel, questions, response) }
+    }
+
+    /** What is wrong with [state], if anything. The API takes a string, an object or an array, as the SDKs type it. */
+    private fun stateProblem(state: JsonElement): String? {
+        val bare = (state as? JsonPrimitive)?.takeUnless { it.isString || it is JsonNull }
+        val kind = if (bare?.booleanOrNull != null) "a boolean" else "a number"
+        return when {
+            state is JsonNull -> "state must not be null"
+            bare != null -> "state must be a string, a JSON object or a JSON array, not $kind"
+            state.nestsTooDeep() -> "state is nested more than $MAX_JSON_DEPTH levels deep"
+            else -> null
+        }
     }
 
     override suspend fun models(): ModelList = models(NoCallOptions)
@@ -111,7 +123,7 @@ class JevClient(
         path: String,
         options: JevCallOptions,
         configure: HttpRequestBuilder.() -> Unit,
-        parse: (body: JsonObject, requestId: String?, endpoint: String) -> T,
+        parse: (body: JsonObject, response: ResponseInfo) -> T,
     ): T {
         check(http.isActive) { "JevClient is closed" }
         val endpoint = "${method.value} ${config.baseUrl}/$path"
@@ -134,7 +146,8 @@ class JevClient(
         if (!response.status.isSuccess()) {
             throw apiException(status, text, response.headers.toMap(), requestId, endpoint, retryHint(response.headers))
         }
-        return parse(parseObject(text, status, requestId, endpoint), requestId, endpoint)
+        val info = ResponseInfo(text, status, response.headers, requestId, endpoint)
+        return parse(parseObject(info), info)
     }
 
     /**
@@ -202,26 +215,16 @@ class JevClient(
             "Request to $endpoint timed out (the supplied engine's $which timeout)"
         }
 
-    private fun parseObject(
-        text: String,
-        status: Int,
-        requestId: String?,
-        endpoint: String,
-    ): JsonObject {
-        fun invalid(
-            problem: String,
-            cause: Throwable? = null,
-        ) = JevResponseValidationException(problem, null, text, requestId, endpoint, status, cause = cause)
-
+    private fun parseObject(response: ResponseInfo): JsonObject {
         // Checked before parsing: kotlinx.serialization parses by recursion, so a deep enough body overflows it.
-        val tooDeep = text.nestsTooDeep()
+        val tooDeep = response.text.nestsTooDeep()
         val body = try {
-            if (tooDeep) null else JevJson.parseToJsonElement(text)
+            if (tooDeep) null else JevJson.parseToJsonElement(response.text)
         } catch (e: SerializationException) {
-            throw invalid("body is not JSON", e)
+            throw response.invalid("body is not JSON", cause = e)
         }
         val problem = if (tooDeep) "body is nested more than $MAX_JSON_DEPTH levels deep" else "expected a JSON object"
-        return body as? JsonObject ?: throw invalid(problem)
+        return body as? JsonObject ?: throw response.invalid(problem)
     }
 
     private companion object {

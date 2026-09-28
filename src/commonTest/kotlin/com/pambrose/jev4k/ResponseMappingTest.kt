@@ -1,6 +1,8 @@
 package com.pambrose.jev4k
 
+import com.pambrose.jev4k.internal.ResponseInfo
 import com.pambrose.jev4k.internal.mapSystemOne
+import io.ktor.http.Headers
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
@@ -11,6 +13,7 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import io.ktor.http.headersOf
 
 class ResponseMappingTest : StringSpec() {
     private val documented = questions {
@@ -50,7 +53,12 @@ class ResponseMappingTest : StringSpec() {
         body: String,
         set: QuestionSet = documented,
         requestedModel: String = "jev-latest",
-    ): JevResult = mapSystemOne(json(body).jsonObject, requestedModel, set, requestId = "req-1", endpoint = "POST test")
+    ): JevResult = mapSystemOne(json(body).jsonObject, requestedModel, set, response(body))
+
+    private fun response(
+        body: String,
+        headers: Headers = Headers.Empty,
+    ) = ResponseInfo(body, 200, headers, requestId = "req-1", endpoint = "POST test")
 
     private fun single(
         answer: String,
@@ -357,6 +365,67 @@ class ResponseMappingTest : StringSpec() {
             r.choices.keys shouldBe setOf("department")
             r.scores.keys shouldBe setOf("frustration")
             r.raw shouldBe json(documentedResponse).jsonObject
+        }
+
+        // Everywhere else a null is treated as absent; one null answer must not cost the others.
+        "a null answer is treated as absent: the others still map, and reading it fails then" {
+            val r = single("""{"is_urgent":null,"department":{"choice":"sales","confidence":0.5}}""")
+            r.choice("department").choice shouldBe "sales"
+            shouldThrow<JevResponseValidationException> { r.noul("is_urgent") }
+                .message shouldContain "no answer returned for question 'is_urgent'"
+        }
+
+        "a number JSON can't hold, an unquoted NaN or one too big for a Double, is a response error" {
+            for (bad in listOf("NaN", "1e999", "-Infinity")) {
+                withClue(bad) {
+                    val e = shouldThrow<JevResponseValidationException> { single("""{"is_urgent":{"noul":$bad}}""") }
+                    e.fieldPath shouldBe "answers.is_urgent.noul"
+                    e.message shouldContain "expected a finite number"
+                }
+            }
+        }
+
+        "a Score level key outside the question's levels is a response error with its path" {
+            val tooHigh = """{"frustration":{"score":1,"confidence":0.5,"probabilities":{"0":0.5,"3":0.5}}}"""
+            shouldThrow<JevResponseValidationException> { single(tooHigh) }.fieldPath shouldBe
+                "answers.frustration.probabilities.3"
+            val negative = """{"frustration":{"score":1,"confidence":0.5,"legend":{"-1":"Below calm"}}}"""
+            shouldThrow<JevResponseValidationException> { single(negative) }.fieldPath shouldBe
+                "answers.frustration.legend.-1"
+        }
+
+        "an answer the request didn't ask for has no known levels, so only a negative level is refused" {
+            val extra = """{"is_urgent":{"noul":0.5},"extra":{"type":"score","score":7,"confidence":0.5,""" +
+                """"probabilities":{"7":1.0}}}"""
+            single(extra).answers["extra"].shouldBeInstanceOf<ScoreAnswer>().probabilities shouldBe mapOf(7 to 1.0)
+            val negative = """{"extra":{"type":"score","score":0,"confidence":0.5,"probabilities":{"-1":1.0}}}"""
+            shouldThrow<JevResponseValidationException> { single(negative) }.fieldPath shouldBe
+                "answers.extra.probabilities.-1"
+        }
+
+        // The body is kept as the server sent it, whitespace and all, not the parsed JSON written out again.
+        "a response error keeps the raw body, the status and the headers, when mapping and when reading" {
+            val body = """{ "answers": { "is_urgent": { "noul": "high" } } }"""
+            val headers = headersOf("X-Trace", "abc")
+            val mapping = shouldThrow<JevResponseValidationException> {
+                mapSystemOne(json(body).jsonObject, "m", documented, response(body, headers))
+            }
+            mapping.body shouldBe body
+            mapping.status shouldBe 200
+            mapping.headers["x-trace"] shouldBe listOf("abc")
+
+            val sparse = """{ "answers": {} }"""
+            val reading = shouldThrow<JevResponseValidationException> {
+                mapSystemOne(json(sparse).jsonObject, "m", documented, response(sparse, headers)).noul("is_urgent")
+            }
+            reading.body shouldBe sparse
+            reading.headers["x-trace"] shouldBe listOf("abc")
+        }
+
+        // Both official SDKs return the server's choice as is; only an enum read, which needs a constant, refuses it.
+        "a string-keyed Choice returns an option the question didn't declare as the server sent it" {
+            val r = single("""{"department":{"choice":"marketing","confidence":0.4}}""")
+            r.choice("department").choice shouldBe "marketing"
         }
     }
 }

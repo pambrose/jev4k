@@ -54,7 +54,8 @@ On Linux and Windows, any bare `IllegalStateException` raised during a call is a
 because that is how the Curl and WinHttp engines report a failed connection; the original is kept as its cause.
 
 Misusing a result is a programming error, not a `JevException`: asking for an id or handle that wasn't in the
-request, or reading a Noul as a Choice, throws `IllegalArgumentException`.
+request, reading a Noul as a Choice, or reading a Choice with an enum that lacks one of its options throws
+`IllegalArgumentException`.
 
 ## Handling errors
 
