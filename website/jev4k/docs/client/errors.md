@@ -18,7 +18,7 @@ SDKs:
 | `initialBackoff`         | 0.5 s             | first delay, doubling on each retry                                  |
 | `maxBackoff`             | 5 s               | cap on the delay                                                     |
 | `jitter`                 | 0.25              | subtract up to this fraction of each delay at random                 |
-| `respectRetryAfter`      | `true`            | honor the server's `retry-after-ms` / `Retry-After` header           |
+| `respectRetryAfter`      | `true`            | honor `retry-after-ms` / `Retry-After` (seconds or an HTTP date)     |
 | `maxRetryAfter`          | 60 s              | ignore server hints longer than this and use backoff instead         |
 
 `RetryPolicy.NONE` turns retries off. The [Configuration](configuration.md#retry-policies) page shows common
@@ -49,6 +49,10 @@ Every failure of a request or a response is a `JevException`:
 
 Messages include the status and request id, and never the API key. Header names in `headers` are lowercased, so
 `e.headers["retry-after"]` finds the header however the server spelled it and whichever engine read it.
+
+A redirect isn't followed, so a 3xx arrives as a plain `JevApiException`. A response declaring a body over 16 MiB is
+refused unread: a 2xx as a `JevResponseValidationException`, anything else as its status's exception with a null
+`body`, the message saying why.
 
 On Linux and Windows, any bare `IllegalStateException` raised during a call is also a `JevConnectionException`,
 because that is how the Curl and WinHttp engines report a failed connection; the original is kept as its cause.

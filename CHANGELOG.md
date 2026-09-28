@@ -68,6 +68,12 @@ small breaking changes, listed first under Changed.
   `JevResponseValidationException`, blaming the server, or could return another enum's constant.
 - A string-keyed Choice read returns an option the question didn't declare as the server sent it, as both official
   SDKs do. That was already the behavior; it is now documented and tested.
+- Redirects are no longer followed: a 3xx response is a `JevApiException` with its status. Ktor stripped only
+  `Authorization` on a cross-host redirect, so other configured headers went to the new host, and on Node.js fetch
+  re-sent the request body too.
+- A response whose declared `Content-Length` is over 16 MiB is refused before its body is read: a 2xx as a
+  `JevResponseValidationException`, any other status as its usual exception with a null `body`. A body sent without
+  a length isn't capped; the per-attempt timeout bounds it.
 - New subtypes of the sealed `Answer` and `Question` types may be added in a minor release, when TypeSafe adds a kind
   of question. A `when` over either that must keep compiling across upgrades should end in an `else` branch.
 - **Breaking: Maven coordinates.** The group is now `com.pambrose.jev4k`, so every artifact sits under one group, as
@@ -119,6 +125,9 @@ small breaking changes, listed first under Changed.
   `JevValidationException` or `JevResponseValidationException` instead of overflowing the stack.
 - With a caller-supplied engine, a `JevTimeoutException` from that engine's own connect or socket timeout names it
   instead of quoting `timeout`, which jev4k sets only as the request timeout for such an engine.
+- A `Retry-After` given as an HTTP-date is honored, measured from now and capped by `maxRetryAfter` like a number
+  of seconds, as the official Python SDK does. It was ignored, so retries came too early and `retryAfter` was null.
+- A configured `Accept` header is the only one sent; content negotiation added `application/json` beside it.
 - A `null` answer is treated as absent, failing only when it is read, instead of failing the whole response.
 - A response number that isn't finite (an unquoted `NaN`, or `1e999`), or a Score level key outside the question's
   levels, is a `JevResponseValidationException` with its field path, instead of surfacing later from `band()`,

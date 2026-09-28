@@ -18,6 +18,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.io.IOException
+import io.ktor.http.fromHttpToGmtDate
 
 /**
  * The retry rules on their own, without a client or a socket. The delay arithmetic and the header parsing are
@@ -51,8 +52,6 @@ class RetryTest : StringSpec() {
                 "  ",
                 "0",
                 "-5",
-                // The other form RFC 9110 allows for Retry-After. jev4k backs off rather than parsing it.
-                "Wed, 21 Oct 2026 07:28:00 GMT",
             )
             for (value in junk) {
                 withClue("retry-after-ms: '$value'") { retryHint(headersOf("retry-after-ms", value)) shouldBe null }
@@ -142,6 +141,23 @@ class RetryTest : StringSpec() {
             val truncated = IllegalStateException("Content-Length mismatch: expected 100 bytes, but received 11 bytes")
             isConnectionError(truncated) shouldBe true
             policy.retriesOn(truncated) shouldBe true
+        }
+
+        // The other form RFC 9110 allows. The Python SDK reads it, so jev4k does too.
+        "a Retry-After HTTP-date is the time left until it, and a past or malformed date is no hint" {
+            val now = "Wed, 21 Oct 2026 07:28:00 GMT".fromHttpToGmtDate().timestamp
+            retryHint(headersOf("Retry-After", "Wed, 21 Oct 2026 07:28:30 GMT"), now) shouldBe 30.seconds
+            retryHint(headersOf("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT"), now) shouldBe null
+            retryHint(headersOf("Retry-After", "Wed, 21 Oct 2026 07:27:00 GMT"), now) shouldBe null
+            retryHint(headersOf("Retry-After", "Wed, 21 Octember 2026"), now) shouldBe null
+        }
+
+        "a date hint is capped by maxRetryAfter like a numeric one" {
+            val now = "Wed, 21 Oct 2026 07:28:00 GMT".fromHttpToGmtDate().timestamp
+            val soon = headersOf("Retry-After", "Wed, 21 Oct 2026 07:28:30 GMT")
+            val late = headersOf("Retry-After", "Wed, 21 Oct 2026 07:30:00 GMT")
+            RetryPolicy().delayMillis(soon, 1, NoJitter, now) shouldBe 30_000L
+            RetryPolicy().delayMillis(late, 1, NoJitter, now) shouldBe 500L
         }
     }
 }

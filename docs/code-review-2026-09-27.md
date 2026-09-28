@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 49 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 53 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -54,14 +54,14 @@ Client and HTTP
   not the raw body
 - [x] [#20](#issue-20) `models()` discards the `x-typesafe-request-id` of a successful call
 - [x] [#21](#issue-21) A blank per-call model is sent as `"model": ""`
-- [ ] [#22](#issue-22) A `Retry-After` HTTP-date is ignored, unlike the official Python SDK
+- [x] [#22](#issue-22) A `Retry-After` HTTP-date is ignored, unlike the official Python SDK
 - [x] [#23](#issue-23) With a supplied engine, `JevTimeoutException` quotes `config.timeout` even when the engine's
   own connect timeout fired
-- [ ] [#24](#issue-24) A configured `Accept` header doesn't replace jev4k's; `ContentNegotiation` appends
+- [x] [#24](#issue-24) A configured `Accept` header doesn't replace jev4k's; `ContentNegotiation` appends
   `application/json`
-- [ ] [#25](#issue-25) Redirects are followed by default: custom headers go to another host, and Node re-sends
+- [x] [#25](#issue-25) Redirects are followed by default: custom headers go to another host, and Node re-sends
   POST bodies
-- [ ] [#26](#issue-26) Response bodies are read whole into memory, with no size cap
+- [x] [#26](#issue-26) Response bodies are read whole into memory, with no size cap
 - [x] [#27](#issue-27) No per-call timeout, retry or header overrides, unlike both official SDKs
 
 Configuration and validation
@@ -727,6 +727,10 @@ test, and state the rule in `JevApi.evaluate`'s KDoc.
 
 **Low** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/Retry.kt:48`
 
+**Fixed.** `retryHint` falls back to `fromHttpToGmtDate()` for `Retry-After`, using the time left from a `now` clock (an
+internal config hook, for tests), still capped by `maxRetryAfter`. The date moved out of RetryTest's junk list, which
+now tests a future, a present, a past and a malformed date, and ClientTest reads one into `retryAfter`.
+
 **What's wrong.** Only numeric retry hints are parsed, and the KDoc says this is deliberate. But the official Python
 SDK parses the date form for both its retry delay and its `retry_after`, and CLAUDE.md says the retry rules
 reproduce the SDKs. If TypeSafe sends a date, retries fire too early and `retryAfter` is null. TypeSafe doesn't
@@ -761,6 +765,9 @@ reported as "timed out after 30s", which points the reader at the wrong setting.
 
 **Low** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/HttpClientFactory.kt:66`
 
+**Fixed.** `ContentNegotiation` uses `ContentTypeMergeStrategy.SkipIfPresent`, since every request already carries
+`Accept`. ClientTest checks `headers.getAll(Accept)` with and without a configured one.
+
 **What's wrong.** The comment says a configured `Accept` replaces jev4k's. `ContentNegotiation` then appends
 `application/json` to any other value, so the request carries two. A gateway that is strict about `Accept` could
 reject it.
@@ -775,6 +782,9 @@ reject it.
 #### 25. Redirects are followed by default
 
 **Low** · Security · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/HttpClientFactory.kt:32`
+
+**Fixed.** `followRedirects = false` sits next to `expectSuccess = false`, so a 3xx is a `JevApiException`, on any
+engine. A MockEngine test checks that a 302 is reported and not followed, and the docs say so.
 
 **What's wrong.** `followRedirects` is left at Ktor's default, true. On a cross-host redirect, `HttpRedirect` strips
 only `Authorization`:
@@ -793,6 +803,11 @@ This needs a misconfigured or compromised endpoint, and nothing documents the re
 #### 26. Response bodies are read whole into memory, with no size cap
 
 **Low** · Security · medium · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:86`
+
+**Fixed.** As chosen, the declared-length check only: a receive-pipeline phase ahead of Ktor's `SaveBody` refuses a
+`Content-Length` over 16 MiB before the body is read. A 2xx becomes a `JevResponseValidationException`, anything else
+its status's exception with a null body and a message saying why. A chunked body stays uncapped, bounded by the timeout,
+as the docs say. ClientTest covers both paths, and ClientJvmTest a real CIO engine.
 
 **What's wrong.** `http.request` saves the whole body, and `bodyAsText()` then decodes it. Nothing checks
 `Content-Length` or caps the size (the official SDKs don't either). A misbehaving endpoint can exhaust a small heap

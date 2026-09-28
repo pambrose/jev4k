@@ -74,6 +74,14 @@ without them keep compiling.
 - **Client** (`JevClient.kt`, `internal/HttpClientFactory.kt`, `internal/Retry.kt`).
     - `HttpRequestRetry` reproduces the official SDKs' retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.
+      A `Retry-After` HTTP-date, which the Python SDK also reads, counts from the config's internal `now` clock.
+    - `followRedirects = false`: a 3xx becomes a `JevApiException`, since Ktor strips only `Authorization` on a
+      cross-host redirect and fetch would re-send the POST body. `ContentNegotiation` uses the `SkipIfPresent`
+      Accept merge strategy, so a caller's `Accept` isn't joined by a second `application/json`.
+    - `HttpClientFactory.limitBodySize` inserts a receive-pipeline phase ahead of `Before`, where Ktor's `SaveBody`
+      reads the whole body into memory, and refuses a declared `Content-Length` over `MAX_RESPONSE_BYTES` (16 MiB)
+      with an internal `OversizedResponseException`, which `execute` maps by status. A chunked body isn't capped;
+      the timeout bounds it. An `HttpSend` interceptor would be too late: the receive pipeline runs inside the send.
     - `HttpRequestRetry` must be installed **before** `HttpTimeout`, otherwise one timeout cancels every retry.
     - `expectSuccess = false`: non-2xx responses map to `JevApiException` subclasses (`apiException` in `Errors.kt`)
       after retries run out, keeping the raw body and the `x-typesafe-request-id` header. `JevApiException` lowercases
@@ -106,7 +114,7 @@ without them keep compiling.
       request timeout, so its own connect or socket timeout is named instead.
 - **Config** (`JevConfig.kt`). Each setting resolves as explicit value, then env var, then default. String settings
   are trimmed, and one that is blank after trimming counts as unset. The env vars are `TYPESAFE_API_KEY` (required),
-  `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal hooks (`env`, `retryDelay`, `random`) make tests
+  `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal hooks (`env`, `retryDelay`, `random`, `now`) make tests
   deterministic; `env` defaults to `platformGetenv`.
     - `build()` checks what Ktor would otherwise reject on every request, with an exception that isn't a
       `JevException` and whose message quotes the value. `baseUrl` is parsed once: http(s), a host, no userinfo,

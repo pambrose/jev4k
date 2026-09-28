@@ -151,7 +151,10 @@ class JevTimeoutException(
     cause: Throwable? = null,
 ) : JevConnectionException(message, cause)
 
-/** Builds the exception for a non-2xx response, after retries are exhausted. */
+/**
+ * Builds the exception for a non-2xx response, after retries are exhausted. [bodyNote] explains a body that wasn't
+ * read, in the message's place for one.
+ */
 internal fun apiException(
     status: Int,
     body: String?,
@@ -159,11 +162,12 @@ internal fun apiException(
     requestId: String?,
     endpoint: String,
     retryAfter: Duration?,
+    bodyNote: String? = null,
 ): JevApiException {
     val message = buildString {
         append("HTTP $status from $endpoint")
         requestId?.let { append(" (request id $it)") }
-        if (!body.isNullOrBlank()) append(": ${body.take(MAX_BODY_IN_MESSAGE)}")
+        if (!body.isNullOrBlank()) append(": ${body.take(MAX_BODY_IN_MESSAGE)}") else bodyNote?.let { append(": $it") }
     }
     val response = ErrorResponse(status, body, headers, requestId, endpoint, message)
     return when (status) {

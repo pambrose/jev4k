@@ -45,6 +45,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import io.ktor.http.fromHttpToGmtDate
+import com.pambrose.jev4k.internal.MAX_RESPONSE_BYTES
 
 class ClientTest : StringSpec() {
     private fun QueryBuilder.documentedQuestions() {
@@ -628,6 +630,50 @@ class ClientTest : StringSpec() {
             e.status shouldBe 201
             e.headers["x-trace"] shouldBe listOf("t")
             e.body shouldBe body
+        }
+
+        "a Retry-After date reaches the exception as the time left, by the client's clock" {
+            val now = "Wed, 21 Oct 2026 07:28:00 GMT".fromHttpToGmtDate().timestamp
+            val hint = mapOf("Retry-After" to "Wed, 21 Oct 2026 07:28:45 GMT")
+            val jev = testJev(configure = { this.now = { now } }) {
+                respondJson("{}", HttpStatusCode.TooManyRequests, hint)
+            }
+            shouldThrow<JevRateLimitException> { jev.client.ask(Triage, state = PAYOUT_TICKET) }
+                .retryAfter shouldBe 45.seconds
+        }
+
+        // Following one would send the client's headers to another host, and on Node the POST body too.
+        "a redirect is reported, not followed" {
+            val elsewhere = headersOf(HttpHeaders.Location, "https://elsewhere.example/v1/models")
+            val jev = testJev { respond("", HttpStatusCode.Found, elsewhere) }
+            shouldThrow<JevApiException> { jev.client.models() }.status shouldBe 302
+            jev.requests shouldHaveSize 1
+        }
+
+        "a configured Accept is the only Accept sent" {
+            val custom = testJev(configure = { headers[HttpHeaders.Accept] = "application/vnd.gateway+json" }) {
+                respondJson(TRIAGE_RESPONSE)
+            }
+            custom.client.ask(Triage, state = PAYOUT_TICKET)
+            custom.requests.single().headers.getAll(HttpHeaders.Accept) shouldBe listOf("application/vnd.gateway+json")
+
+            val plain = triageJev()
+            plain.client.ask(Triage, state = PAYOUT_TICKET)
+            plain.requests.single().headers.getAll(HttpHeaders.Accept) shouldBe listOf("application/json")
+        }
+
+        "a response declaring a body over the size limit is refused before the body is read" {
+            val huge = headersOf(HttpHeaders.ContentLength, "${MAX_RESPONSE_BYTES + 1}")
+            val ok = testJev { respond("{}", HttpStatusCode.OK, huge) }
+            val e = shouldThrow<JevResponseValidationException> { ok.client.ask(Triage, state = PAYOUT_TICKET) }
+            e.message shouldContain "body of ${MAX_RESPONSE_BYTES + 1} bytes not read"
+            e.body shouldBe null
+
+            val failed = testJev { respond("{}", HttpStatusCode.BadGateway, huge) }
+            val error = shouldThrow<JevInternalServerException> { failed.client.ask(Triage, state = PAYOUT_TICKET) }
+            error.status shouldBe 502
+            error.body shouldBe null
+            error.message shouldContain "not read, over the $MAX_RESPONSE_BYTES-byte limit"
         }
     }
 }

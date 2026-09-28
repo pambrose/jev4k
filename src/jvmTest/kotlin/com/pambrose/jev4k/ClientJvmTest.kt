@@ -8,6 +8,7 @@ import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.ParserException
 import java.security.cert.CertificateException
 import kotlin.time.Duration.Companion.seconds
+import io.kotest.matchers.string.shouldContain
 
 /**
  * The client cases that need the JVM: the blocking wrapper, a real CIO engine against a local socket, and the JVM's
@@ -87,6 +88,21 @@ class ClientJvmTest : StringSpec() {
                 }
                 server.requests shouldBe 3
                 delays shouldBe listOf(500L, 1000L)
+            }
+        }
+
+        // Without the check, CIO would read 100 MB into memory, or here, fail on the truncated body.
+        "a declared body over the size limit is refused before CIO reads it (real CIO engine)" {
+            val oversized = "${MODELS_HEAD_200}Content-Length: 104857600\r\n\r\n{}".encodeToByteArray()
+            RawServer(oversized).use { server ->
+                JevClient {
+                    testDefaults(mutableListOf())
+                    baseUrl = "http://127.0.0.1:${server.port}"
+                }.use { client ->
+                    shouldThrow<JevResponseValidationException> { client.models() }
+                        .message shouldContain "body of 104857600 bytes not read"
+                }
+                server.requests shouldBe 1
             }
         }
 

@@ -5,6 +5,7 @@ import com.pambrose.jev4k.internal.platformGetenv
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
+import io.ktor.util.date.getTimeMillis
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -163,6 +164,9 @@ class JevConfigBuilder {
     internal var retryDelay: suspend (Long) -> Unit = { delay(it.milliseconds) }
     internal var random: Random = Random.Default
 
+    /** The current time in epoch milliseconds, for reading a `Retry-After` date. */
+    internal var now: () -> Long = ::getTimeMillis
+
     fun build(): JevConfig {
         fun fromEnv(name: String) = env(name).setting()
 
@@ -193,6 +197,7 @@ class JevConfigBuilder {
             headers = headers.toMap(),
             retryDelay = retryDelay,
             random = random,
+            now = now,
         )
     }
 }
@@ -286,6 +291,7 @@ class JevConfig internal constructor(
     val headers: Map<String, String>,
     internal val retryDelay: suspend (Long) -> Unit,
     internal val random: Random,
+    internal val now: () -> Long,
 ) {
     override fun toString(): String =
         "JevConfig(apiKey=***, baseUrl=$baseUrl, defaultModel=$defaultModel, timeout=$timeout, retry=$retry, " +

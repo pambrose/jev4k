@@ -9,21 +9,56 @@ import io.ktor.client.plugins.HttpRequestRetryConfig
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.HttpTimeoutConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.ContentTypeMergeStrategy
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.statement.HttpReceivePipeline
+import io.ktor.http.Headers
+import io.ktor.http.contentLength
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.util.pipeline.PipelinePhase
+import kotlinx.coroutines.cancel
 import kotlin.time.Duration
 
 /** The `User-Agent` jev4k sends unless a caller names its own. */
 internal const val USER_AGENT = "jev4k/$JEV4K_VERSION"
 
+/** The largest response body jev4k reads, by its declared `Content-Length`: far beyond any real Jev response. */
+internal const val MAX_RESPONSE_BYTES = 16L * 1024 * 1024
+
+/** A response refused before its body was read, because its declared length is over [MAX_RESPONSE_BYTES]. */
+internal class OversizedResponseException(
+    val status: Int,
+    val headers: Headers,
+    val contentLength: Long,
+) : RuntimeException("Response body of $contentLength bytes is over the $MAX_RESPONSE_BYTES-byte limit")
+
 /** Builds the Ktor [HttpClient] for a [JevConfig]: the platform's default engine unless one is injected. */
 internal object HttpClientFactory {
+    private val LimitBodySize = PipelinePhase("LimitBodySize")
+
     fun create(config: JevConfig): HttpClient {
         val engine = config.engine
-        return if (engine != null) {
+        val client = if (engine != null) {
             HttpClient(engine) { configure(config) }
         } else {
             HttpClient(defaultEngine) { configure(config) }
+        }
+        return client.apply { limitBodySize() }
+    }
+
+    /**
+     * Refuses a response whose declared `Content-Length` is over [MAX_RESPONSE_BYTES] before Ktor reads its body
+     * into memory. That happens in the receive pipeline's `Before` phase (the SaveBody plugin), so this check runs in
+     * a phase of its own ahead of it. A body sent without a length (chunked) isn't checked; the timeout bounds it.
+     */
+    private fun HttpClient.limitBodySize() {
+        receivePipeline.insertPhaseBefore(HttpReceivePipeline.Before, LimitBodySize)
+        receivePipeline.intercept(LimitBodySize) { response ->
+            val length = response.contentLength()
+            if (length != null && length > MAX_RESPONSE_BYTES) {
+                response.cancel()
+                throw OversizedResponseException(response.status.value, response.headers, length)
+            }
         }
     }
 
@@ -31,7 +66,17 @@ internal object HttpClientFactory {
         // Errors are mapped from the raw response after retries, not thrown by Ktor.
         expectSuccess = false
 
-        install(ContentNegotiation) { json(JevJson) }
+        // A redirect is reported rather than followed. Ktor strips only Authorization on a cross-host redirect, so a
+        // gateway header would reach the other host, and on Node fetch would re-send the POST body there too. Set
+        // here, it applies to a supplied engine as well, and fetch then uses redirect: "manual".
+        followRedirects = false
+
+        // SkipIfPresent: every request already carries Accept (JevClient.setHeaders), so ContentNegotiation mustn't
+        // add application/json beside a caller's own Accept.
+        install(ContentNegotiation) {
+            json(JevJson)
+            acceptHeaderMergeStrategy = ContentTypeMergeStrategy.SkipIfPresent
+        }
 
         // HttpRequestRetry must be installed before HttpTimeout. Installed after it, the timeout wraps the
         // whole retry loop: one expiry cancels every later attempt before it reaches the server.
@@ -54,7 +99,7 @@ internal fun HttpRequestRetryConfig.follow(
     retryOnExceptionIf(policy.maxRetries) { _, cause -> policy.retriesOn(cause) }
     // The hint parsing (retry-after-ms, cap) lives in delayMillis, so Ktor's own Retry-After handling is off.
     delayMillis(respectRetryAfterHeader = false) { retry ->
-        policy.delayMillis(response?.headers, retry, config.random)
+        policy.delayMillis(response?.headers, retry, config.random, config.now())
     }
     delay { config.retryDelay(it) }
 }

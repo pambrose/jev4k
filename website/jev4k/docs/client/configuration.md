@@ -91,4 +91,9 @@ The messages never quote the key, a header value, or a URL that could hold crede
   Jev through a backend of your own (`baseUrl`) that adds the real key.
 - The key is sent as `Authorization: Bearer ...` on every request, and redacted from `JevConfig.toString()`.
 - Every request carries a `User-Agent` of `jev4k/<version>`. A `headers` entry of the same name replaces the
-  built-in one rather than adding a second value, so a gateway that needs its own `Authorization` can have it.
+  built-in one rather than adding a second value, so a gateway that needs its own `Authorization` or `Accept` can
+  have it.
+- Redirects are never followed. A 3xx response is reported as a `JevApiException` with its status, because following
+  one would send your headers, and on Node.js the request body, to whatever host it names.
+- A response whose declared `Content-Length` is over 16 MiB is refused before its body is read into memory. A body
+  sent without a length isn't checked; the per-attempt `timeout` bounds how long it can stream.

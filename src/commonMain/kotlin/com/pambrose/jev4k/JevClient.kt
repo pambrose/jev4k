@@ -3,6 +3,8 @@ package com.pambrose.jev4k
 import com.pambrose.jev4k.internal.HttpClientFactory
 import com.pambrose.jev4k.internal.JevJson
 import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
+import com.pambrose.jev4k.internal.MAX_RESPONSE_BYTES
+import com.pambrose.jev4k.internal.OversizedResponseException
 import com.pambrose.jev4k.internal.ResponseInfo
 import com.pambrose.jev4k.internal.SystemOneRequest
 import com.pambrose.jev4k.internal.USER_AGENT
@@ -144,7 +146,8 @@ class JevClient(
         val text = response.readRawBytes().decodeToString().removePrefix("\uFEFF")
         val status = response.status.value
         if (!response.status.isSuccess()) {
-            throw apiException(status, text, response.headers.toMap(), requestId, endpoint, retryHint(response.headers))
+            val hint = retryHint(response.headers, config.now())
+            throw apiException(status, text, response.headers.toMap(), requestId, endpoint, hint)
         }
         val info = ResponseInfo(text, status, response.headers, requestId, endpoint)
         return parse(parseObject(info), info)
@@ -191,12 +194,31 @@ class JevClient(
             // Throwable, not Exception: the Js engine reports a failed fetch as a kotlin.Error. Anything that isn't
             // a timeout or a connection failure is rethrown unchanged.
             throw when {
+                e is OversizedResponseException -> oversized(e, endpoint)
                 isTimeout(e) -> JevTimeoutException(timeoutMessage(endpoint, timeout, e), e)
                 e is UnresolvedAddressException -> JevConnectionException("Could not resolve the host for $endpoint", e)
                 isConnectionError(e) -> JevConnectionException("Could not reach $endpoint: ${e.message}", e)
                 else -> e
             }
         }
+
+    /**
+     * A response refused for its declared size, reported as a response error for a success status, or as the status's
+     * usual exception, with no body, for any other.
+     */
+    private fun oversized(
+        e: OversizedResponseException,
+        endpoint: String,
+    ): JevApiException {
+        val requestId = e.headers[JevDefaults.REQUEST_ID_HEADER]
+        val headers = e.headers.toMap()
+        val note = "body of ${e.contentLength} bytes not read, over the $MAX_RESPONSE_BYTES-byte limit"
+        return if (e.status in 200..299) {
+            JevResponseValidationException(note, null, null, requestId, endpoint, e.status, headers, e)
+        } else {
+            apiException(e.status, null, headers, requestId, endpoint, retryHint(e.headers, config.now()), note)
+        }
+    }
 
     /**
      * Quotes the [timeout] in force (the call's, or [JevConfig.timeout]) only when it is the limit that fired. jev4k's

@@ -437,15 +437,19 @@ For an Ollaya server on another host, such as `http://ollaya:11435` in Docker, a
 
 `RetryPolicy`'s defaults match TypeSafe's official Python and JS SDKs:
 
-| Setting                                     | Default                                                         |
-|---------------------------------------------|-----------------------------------------------------------------|
-| `maxRetries`                                | 2 retries after the first attempt                               |
-| `retryStatuses`                             | 408, 429, and 500–599 (including 529 Overloaded)                |
-| `retryOnConnectionError` / `retryOnTimeout` | `true` / `true`                                                 |
-| `initialBackoff` / `maxBackoff` / `jitter`  | 0.5 s, doubling up to 5 s, minus up to 25% jitter               |
-| `respectRetryAfter` / `maxRetryAfter`       | Honor the server's `retry-after-ms` / `Retry-After`, up to 60 s |
+| Setting                                     | Default                                                              |
+|---------------------------------------------|----------------------------------------------------------------------|
+| `maxRetries`                                | 2 retries after the first attempt                                    |
+| `retryStatuses`                             | 408, 429, and 500–599 (including 529 Overloaded)                     |
+| `retryOnConnectionError` / `retryOnTimeout` | `true` / `true`                                                      |
+| `initialBackoff` / `maxBackoff` / `jitter`  | 0.5 s, doubling up to 5 s, minus up to 25% jitter                    |
+| `respectRetryAfter` / `maxRetryAfter`       | Honor `retry-after-ms` / `Retry-After` (seconds or date), up to 60 s |
 
 `RetryPolicy.NONE` disables retries.
+
+Redirects are never followed: a 3xx is a `JevApiException`, since following one would send your headers, and on
+Node.js the request body, to whatever host it names. A response declaring a body over 16 MiB is refused before the
+body is read; one sent without a length is bounded only by `timeout`.
 
 ### Concurrency
 
