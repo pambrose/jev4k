@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 10 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 20 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -17,17 +17,17 @@ Every issue has a number. Tick its box when it's fixed, and update the count bel
 
 ### Medium
 
-- [ ] [#2](#issue-2) **Client.** Reading the response body can throw raw Ktor exceptions: a bad `Content-Type`, or
+- [x] [#2](#issue-2) **Client.** Reading the response body can throw raw Ktor exceptions: a bad `Content-Type`, or
   non-UTF-8 bytes off the JVM
-- [ ] [#3](#issue-3) **Client (JVM).** A TLS trust failure escapes as a raw `CertificateException` instead of
+- [x] [#3](#issue-3) **Client (JVM).** A TLS trust failure escapes as a raw `CertificateException` instead of
   `JevConnectionException`
-- [ ] [#4](#issue-4) **Client (JVM).** A truncated body or an unparseable status line escapes as a raw exception and
+- [x] [#4](#issue-4) **Client (JVM).** A truncated body or an unparseable status line escapes as a raw exception and
   is never retried
-- [ ] [#5](#issue-5) **Client.** A call on a closed `JevClient` fails with a bare `CancellationException`
-- [ ] [#6](#issue-6) **Client.** A call cancelled because a sibling failed is reported as a Jev error instead of
+- [x] [#5](#issue-5) **Client.** A call on a closed `JevClient` fails with a bare `CancellationException`
+- [x] [#6](#issue-6) **Client.** A call cancelled because a sibling failed is reported as a Jev error instead of
   `CancellationException`
 - [ ] [#7](#issue-7) **Client.** `JevApiException.headers` is case-sensitive, and key casing differs by engine
-- [ ] [#8](#issue-8) **Client.** Deeply nested JSON (a state, or a response) overflows the stack
+- [x] [#8](#issue-8) **Client.** Deeply nested JSON (a state, or a response) overflows the stack
 - [ ] [#9](#issue-9) **Config.** An API key or header with a control character leaks the full key in a raw Ktor
   exception on every call
 - [ ] [#10](#issue-10) **Config.** A `baseUrl` with trailing whitespace or a bad port passes validation, then every
@@ -55,7 +55,7 @@ Client and HTTP
 - [ ] [#20](#issue-20) `models()` discards the `x-typesafe-request-id` of a successful call
 - [ ] [#21](#issue-21) A blank per-call model is sent as `"model": ""`
 - [ ] [#22](#issue-22) A `Retry-After` HTTP-date is ignored, unlike the official Python SDK
-- [ ] [#23](#issue-23) With a supplied engine, `JevTimeoutException` quotes `config.timeout` even when the engine's
+- [x] [#23](#issue-23) With a supplied engine, `JevTimeoutException` quotes `config.timeout` even when the engine's
   own connect timeout fired
 - [ ] [#24](#issue-24) A configured `Accept` header doesn't replace jev4k's; `ContentNegotiation` appends
   `application/json`
@@ -104,9 +104,9 @@ Tests
 - [x] [#50](#issue-50) The "no tests discovered" guard is off for every test task
 - [ ] [#51](#issue-51) No test checks that `platformGetenv` actually returns a value
 - [ ] [#52](#issue-52) `mapModels`'s rejection branches and optional fields are untested
-- [ ] [#53](#issue-53) The default `retryDelay` (the real wait) never runs in any test
+- [x] [#53](#issue-53) The default `retryDelay` (the real wait) never runs in any test
 - [ ] [#54](#issue-54) No test checks that a supplied engine keeps its own connect and socket timeouts
-- [ ] [#55](#issue-55) No test pins the false side of the exact-class `IllegalStateException` rule
+- [x] [#55](#issue-55) No test pins the false side of the exact-class `IllegalStateException` rule
 - [ ] [#56](#issue-56) The real-CIO timeout test's 1 s budget includes CIO's cold start
 - [ ] [#57](#issue-57) `make live-tests` passes without any real API call when `TYPESAFE_API_KEY` is missing
 
@@ -128,7 +128,7 @@ Release and documentation
 
 - [x] [#69](#issue-69) The release checklist's version step names only README.md, not `GettingStarted.txt`
 - [x] [#70](#issue-70) The release checklist's intro and its Dokka line reference are stale
-- [ ] [#71](#issue-71) The release notes say JVM error handling "works unchanged elsewhere"; Linux and Windows
+- [x] [#71](#issue-71) The release notes say JVM error handling "works unchanged elsewhere"; Linux and Windows
   retry every bare `IllegalStateException`
 - [ ] [#72](#issue-72) The docs say jev4k writes nothing to stderr; without an SLF4J provider a warning appears
 - [ ] [#73](#issue-73) The development page says `.env` reaches every test task; it reaches only the JVM ones
@@ -244,6 +244,10 @@ reference CIO.
 
 **Medium** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:86`
 
+**Fixed.** `send` reads the body with `readRawBytes().decodeToString()` and drops a leading byte-order mark, so
+neither a malformed `Content-Type` nor bytes that aren't UTF-8 escape as a Ktor exception. ClientTest covers both,
+on a success and an error status, on every platform.
+
 **What's wrong.** `send()` calls `response.bodyAsText()` outside `execute()`'s try/catch, before the status check.
 Two things can fail there:
 - `bodyAsText()` first parses `Content-Type` to pick a charset. A malformed value such as `Content-Type: json`
@@ -267,6 +271,10 @@ promise that every failure of a request is a `JevException` (`website/jev4k/docs
 **Medium** · Client (JVM) · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:118`,
 `src/jvmMain/kotlin/com/pambrose/jev4k/internal/Platform.jvm.kt:12`
 
+**Fixed.** The JVM `isPlatformConnectionError` counts any `GeneralSecurityException`, so an untrusted certificate is
+retried and then reported as `JevConnectionException`. ClientJvmTest checks it against a local TLS server with a
+self-signed certificate.
+
 **What's wrong.** With CIO, an untrusted certificate chain throws `java.security.cert.CertificateException`. Typical
 causes:
 - a TLS-inspecting corporate proxy whose root isn't in the JDK's `cacerts`;
@@ -286,6 +294,11 @@ unchanged (`else -> e`), and it isn't retried. README.md:525 and the errors page
 #### 4. On the JVM, a truncated body or an unparseable status line escapes raw and is never retried
 
 **Medium** · Client (JVM) · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:118`
+
+**Fixed.** The truncated-body error turned out to be Ktor's own `Content-Length` check in `SavedCall`, on the JVM
+and native targets, so `isConnectionError` matches it on every platform. The JVM also counts CIO's
+`ParserException`. ClientJvmTest drives a real CIO engine against a truncated body (three attempts) and a garbled
+response, which also pins Ktor's wording.
 
 **What's wrong.** CIO reports two ordinary network failures with exceptions the JVM doesn't treat as connection
 errors:
@@ -307,6 +320,9 @@ throw a raw `IllegalStateException` on the first attempt. None of the default re
 
 **Medium** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:107`, `:71`
 
+**Fixed.** `send` fails fast with `IllegalStateException("JevClient is closed")`. A call that loses the client just
+as it starts gets an `IllegalStateException` too, instead of a bare `CancellationException`.
+
 **What's wrong.** `close()` only closes the Ktor client, and jev4k never checks for it. A later call runs into Ktor's
 completed client job and fails with a `JobCancellationException`. `execute` then rethrows that as if the caller had
 been cancelled.
@@ -327,6 +343,10 @@ been cancelled.
 #### 6. A call cancelled because a sibling failed is reported as a Jev error
 
 **Medium** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:111`
+
+**Fixed.** `execute` calls `ensureActive()` before classifying a failure, so a caller cancelled when a sibling
+failed gets its own `CancellationException`. `retriesOn` now follows Ktor's rule and retries a cancellation only
+when it wraps a timeout, and the `unwrapCancellation` KDoc is corrected.
 
 **What's wrong.** When a sibling coroutine fails, structured concurrency cancels an in-flight Jev call with a
 `JobCancellationException` whose cause is the sibling's exception. Ktor's `unwrapRequestTimeoutException` unwraps
@@ -372,6 +392,10 @@ The engines then differ:
 #### 8. Deeply nested JSON overflows the stack
 
 **Medium** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:60`, `:129`
+
+**Fixed.** A state or question entry nested more than 512 levels fails with `JevValidationException` before anything
+is sent. A response body that deep is refused before parsing with `JevResponseValidationException`, and an error
+body's `bodyJson` is null. Tests at and just over the limit run on every platform.
 
 **What's wrong.** kotlinx.serialization encodes and parses JSON recursively. A state nested a couple of thousand
 levels deep (about 10 KB, such as forwarded user JSON) makes `evaluate()` fail with:
@@ -676,6 +700,9 @@ document which form it sends, hence low severity.
 #### 23. With a supplied engine, `JevTimeoutException` quotes the wrong timeout
 
 **Low** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:115`
+
+**Fixed.** `config.timeout` is quoted only when it is the limit that fired; a supplied engine's own connect or
+socket timeout is named instead. The KDoc, the README and the errors page say so.
 
 **What's wrong.** Every timeout becomes "timed out after `${config.timeout}`". With a caller-supplied engine,
 though, only the request timeout is jev4k's. A `ConnectTimeoutException` from the engine's own 2 s connect timeout is
@@ -1144,6 +1171,9 @@ optional fields aren't. `/v1/systemone` has that coverage.
 
 **Low** · Tests · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevConfig.kt:97`
 
+**Fixed.** A ClientTest case keeps the real `retryDelay`. It asserts that the client waited at least the backoff,
+and that cancelling a call during a 10 s `retry-after-ms` wait ends it within seconds.
+
 **What's wrong.** Every test that retries replaces `retryDelay`, so the real `delay(...)` never runs. The suite
 would still pass if it became a no-op, or if it stopped being cancellable.
 
@@ -1170,6 +1200,9 @@ its tuning, as documented. No test checks either branch.
 #### 55. No test pins the false side of the exact-class `IllegalStateException` rule
 
 **Low** · Tests · small · `src/nativeMain/kotlin/com/pambrose/jev4k/internal/Platform.native.kt:16`
+
+**Fixed.** RetryTest asserts, on every platform, that `ClientEngineClosedException`, `SendCountExceedException` and
+a `CancellationException` are neither connection errors nor retried.
 
 **What's wrong.** Matching the exact class keeps Ktor's own `IllegalStateException` subclasses from counting as
 connection errors, for example `ClientEngineClosedException` and `SendCountExceedException`. Only the true side is
@@ -1386,6 +1419,10 @@ a line.
 #### 71. The release notes say JVM error handling "works unchanged elsewhere"
 
 **Low** · Docs · small · `RELEASE_NOTES.md:67`, `CHANGELOG.md:22`
+
+**Fixed.** The release notes and CHANGELOG say that on Linux and Windows any bare `IllegalStateException` during a
+call is retried and wrapped, including one from a supplied engine or a `MockEngine` handler. The README and the
+errors page carry the same note under their errors tables.
 
 **What's wrong.** On Linux and Windows, any bare `IllegalStateException` during a call is retried and then wrapped as
 `JevConnectionException`. That includes one from a supplied engine, from a MockEngine handler, or from `error()`.

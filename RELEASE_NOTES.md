@@ -65,7 +65,11 @@ the system's CA certificates, and on iOS, App Transport Security blocks a plain 
 Ollaya server, unless the app allows it.
 
 Every engine's way of reporting a failed connection is mapped to `JevConnectionException` and retried, so error
-handling written against the JVM client works unchanged elsewhere.
+handling written against the JVM client works unchanged elsewhere, with one difference. Curl and WinHttp report a
+failed connection as a bare `IllegalStateException`, so on Linux and Windows any bare `IllegalStateException` raised
+during a call is treated as one: retried, then reported as a `JevConnectionException` with it as the cause. That
+includes one thrown by a caller-supplied engine or a `MockEngine` handler, which the JVM and Apple platforms rethrow
+unchanged.
 
 **Full Changelog**: https://github.com/pambrose/jev4k/compare/0.1.0...0.2.0
 

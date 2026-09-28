@@ -50,6 +50,10 @@ There are two DSL layers over one core model. Both produce a validated `Question
     - An answer with no `type` is read as the type of question that was asked; an unknown type becomes `UnknownAnswer`.
     - Choice probabilities are reordered to the order the options were declared. Score keys `"0".."n"` become `Int`.
     - Absent answers fail when they are read, not when the response is parsed.
+    - JSON nested more than `MAX_JSON_DEPTH` (512, `internal/JsonDepth.kt`) levels is refused before
+      kotlinx.serialization recurses into it: a state or question entry with `JevValidationException`, a response
+      body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's `bodyJson`
+      is null. Both checks are iterative, so they can't overflow themselves.
 - **Client** (`JevClient.kt`, `internal/HttpClientFactory.kt`, `internal/Retry.kt`).
     - `HttpRequestRetry` reproduces the official SDKs' retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.
@@ -57,12 +61,21 @@ There are two DSL layers over one core model. Both produce a validated `Question
     - `expectSuccess = false`: non-2xx responses map to `JevApiException` subclasses (`apiException` in `Errors.kt`)
       after retries run out, keeping the raw body and the `x-typesafe-request-id` header.
     - `BlockingJev` (`jev.blocking`) wraps the suspend API in `runBlocking`, on the JVM only (see Platforms).
-    - `JevClient.execute` classifies a failed call in one place: `SerializationException` becomes
-      `JevValidationException`, a `CancellationException` is rethrown untouched (checked first, because on
-      Kotlin/Native it is also an `IllegalStateException`), and any other `Throwable` becomes `JevTimeoutException`
-      or `JevConnectionException` if it is one, or is rethrown. `Throwable`, because the Js engine reports a failed
-      fetch as a `kotlin.Error`. `isConnectionError` in `Retry.kt` uses the same predicate, so what is reported as
-      a connection error is also what gets retried.
+    - `JevClient.execute` classifies a failed call in one place. `SerializationException` becomes
+      `JevValidationException`. A `CancellationException` is caught next (first among the rest, because on
+      Kotlin/Native it is also an `IllegalStateException`): a cancelled caller gets its own cancellation through
+      `ensureActive()`, and one that isn't cancelled has lost a client closed as the call began, so it gets an
+      `IllegalStateException`. Any other `Throwable` first goes through `ensureActive()` too, because Ktor unwraps a
+      cancellation to its cause, and a caller cancelled when a sibling coroutine failed would otherwise get the
+      sibling's exception as a Jev error. It then becomes `JevTimeoutException` or `JevConnectionException` if it is
+      one, or is rethrown. `Throwable`, because the Js engine reports a failed fetch as a `kotlin.Error`.
+      `isConnectionError` in `Retry.kt` uses the same predicate, so what is reported as a connection error is also
+      what gets retried; `retriesOn` retries a cancellation only when it wraps a timeout, as Ktor's own rule does.
+    - `send` checks the client isn't closed before anything else, and reads the body as raw bytes decoded with
+      `decodeToString()`, not `bodyAsText()`: that parses the `Content-Type` (a malformed one throws) and, off the
+      JVM, throws on bytes that aren't UTF-8.
+    - A `JevTimeoutException` quotes `timeout` only when it is the limit that fired. A supplied engine gets only the
+      request timeout, so its own connect or socket timeout is named instead.
 - **Config** (`JevConfig.kt`). Each setting resolves as explicit value, then env var, then default; blank env values are
   ignored. The env vars are `TYPESAFE_API_KEY` (required), `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal
   hooks (`env`, `retryDelay`, `random`) make tests deterministic; `env` defaults to `platformGetenv`.
@@ -86,6 +99,12 @@ There are two DSL layers over one core model. Both produce a validated `Question
       handle or proxy setup), which are then retried and reported as connection errors with the cause kept, and the
       rule follows the host's default engine rather than the engine in use. `ClientJvmTest` pins that the JVM
       treats a bare ISE as an ordinary failure.
+    - Two more failures count as connection errors. On every platform, Ktor's own "Content-Length mismatch" check
+      (a bare ISE from `SavedCall` when a body is cut short) is matched by exact class and wording. On the JVM, CIO
+      reports an untrusted server certificate as a raw `CertificateException` and a response it can't parse as a
+      `ParserException` (in ktor-http-cio, which ktor-client-core needs anyway, so excluding CIO still works); the
+      JVM actual counts any `GeneralSecurityException` and `ParserException`. `ClientJvmTest` drives a real CIO
+      engine against `RawServer` for all three, which also pins Ktor's wording.
     - `BlockingJev` is an `expect class`. The `jvmMain` actual is the real one; the `nativeMain` and `webMain` actuals
       are empty. `JevClient` keeps `val blocking = BlockingJev(this)` in common code, so the JVM class file, and
       Java's `jev.getBlocking()`, are exactly as before. `-Xexpect-actual-classes` silences the Beta warning.
@@ -377,8 +396,10 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
 - HTTP is tested with Ktor's `MockEngine` through `testJev(...)` in `TestSupport.kt`. It injects the engine and records
   retry delays instead of sleeping, and `NoJitter` makes backoff predictable. A client on a real engine gets the same
   settings from `testDefaults(delays)`; `triageJev()`, `PAYOUT_TICKET` and `liveOptIn()` are shared there too.
-  `SilentServer` (JVM) is a local socket that never responds, for testing real-CIO timeouts. `PlatformEngineTest`
-  drives each platform's real default engine against a dead loopback port.
+  `SilentServer` (JVM) is a local socket that never responds, for testing real-CIO timeouts. `RawServer` (JVM)
+  answers every request with fixed bytes, for responses no real server sends, optionally over TLS with a
+  self-signed certificate made by the JDK's `keytool`. `PlatformEngineTest` drives each platform's real default
+  engine against a dead loopback port.
 - MockK is used where a dependency is mocked: `ConsumerTest` mocks `JevApi` to show how application code is tested
   without HTTP.
 - `LiveSmokeTest` (JVM) makes real API calls and runs only when `TYPESAFE_API_KEY` is set and `JEV4K_LIVE=1`

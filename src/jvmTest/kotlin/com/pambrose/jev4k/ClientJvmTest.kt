@@ -5,6 +5,8 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.ktor.http.cio.ParserException
+import java.security.cert.CertificateException
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -52,5 +54,60 @@ class ClientJvmTest : StringSpec() {
                 delays shouldBe listOf(500L, 1000L)
             }
         }
+
+        // The JDK doesn't trust a self-signed certificate, and CIO's TLS handshake reports that as a raw
+        // CertificateException, which isn't an IOException. It used to escape as is; it is a connection error now.
+        "a server certificate the JDK doesn't trust is a JevConnectionException (real CIO engine)" {
+            RawServer(MODELS_RESPONSE, RawServer.selfSignedTlsSocket()).use { server ->
+                JevClient {
+                    testDefaults(mutableListOf())
+                    baseUrl = "https://127.0.0.1:${server.port}"
+                    retry = RetryPolicy.NONE
+                }.use { client ->
+                    val e = shouldThrow<JevConnectionException> { client.models() }
+                    e.causes().any { it is CertificateException } shouldBe true
+                }
+                server.requests shouldBe 0
+            }
+        }
+
+        // Ktor checks that a saved body is as long as its Content-Length and throws a bare IllegalStateException
+        // when it isn't. isConnectionError matches Ktor's wording, so this also pins it: a Ktor upgrade that rewords
+        // the message fails here.
+        "a body cut short of its Content-Length is retried, then a JevConnectionException (real CIO engine)" {
+            val truncated = "${MODELS_HEAD_200}Content-Length: 100\r\n\r\n{\"models\":[".encodeToByteArray()
+            RawServer(truncated).use { server ->
+                val delays = mutableListOf<Long>()
+                JevClient {
+                    testDefaults(delays)
+                    baseUrl = "http://127.0.0.1:${server.port}"
+                }.use { client ->
+                    val e = shouldThrow<JevConnectionException> { client.models() }
+                    e.causes().any { it.message.orEmpty().startsWith("Content-Length mismatch") } shouldBe true
+                }
+                server.requests shouldBe 3
+                delays shouldBe listOf(500L, 1000L)
+            }
+        }
+
+        "a response CIO can't parse is a JevConnectionException (real CIO engine)" {
+            RawServer("NOT HTTP AT ALL\r\n\r\n".encodeToByteArray()).use { server ->
+                JevClient {
+                    testDefaults(mutableListOf())
+                    baseUrl = "http://127.0.0.1:${server.port}"
+                    retry = RetryPolicy.NONE
+                }.use { client ->
+                    val e = shouldThrow<JevConnectionException> { client.models() }
+                    e.causes().any { it is ParserException } shouldBe true
+                }
+            }
+        }
+    }
+
+    private fun Throwable.causes(): Sequence<Throwable> = generateSequence(this) { it.cause }
+
+    private companion object {
+        const val MODELS_HEAD_200 = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+        val MODELS_RESPONSE = "${MODELS_HEAD_200}Content-Length: 13\r\n\r\n{\"models\":[]}".encodeToByteArray()
     }
 }

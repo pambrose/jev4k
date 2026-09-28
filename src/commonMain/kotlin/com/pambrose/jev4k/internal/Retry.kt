@@ -18,27 +18,40 @@ import kotlin.time.Duration.Companion.seconds
 internal fun isTimeout(cause: Throwable): Boolean =
     cause is HttpRequestTimeoutException || cause is ConnectTimeoutException || cause is SocketTimeoutException
 
-/** A failure to reach the server at all, as opposed to an HTTP error response. */
+/** A failure to reach the server at all, or to receive its whole response, as opposed to an HTTP error response. */
 internal fun isConnectionError(cause: Throwable): Boolean =
-    cause is IOException || cause is UnresolvedAddressException || isPlatformConnectionError(cause)
+    cause is IOException ||
+        cause is UnresolvedAddressException ||
+        isTruncatedBody(cause) ||
+        isPlatformConnectionError(cause)
+
+/**
+ * Ktor's own check, on the JVM and native targets, that a saved response body is as long as its `Content-Length`
+ * says: the connection dropped partway through the body. Matched on the exact class and Ktor's wording, which
+ * RetryTest pins, so a Ktor upgrade that rewords it fails a test instead of passing unnoticed.
+ */
+private fun isTruncatedBody(cause: Throwable): Boolean =
+    cause::class == IllegalStateException::class && cause.message?.startsWith("Content-Length mismatch") == true
 
 /**
  * Ktor can deliver a timeout wrapped in (possibly nested) [CancellationException]s, as its own
- * `retryOnException` also assumes; find what's underneath. A genuine cancellation has no such
- * cause and stays a [CancellationException].
+ * `retryOnException` also assumes; find what's underneath. A cancellation's cause isn't always a timeout: when a
+ * sibling coroutine fails, the caller is cancelled with the sibling's exception as the cause.
  */
 internal fun Throwable.unwrapCancellation(): Throwable =
     generateSequence(this) { (it as? CancellationException)?.cause }.last()
 
-internal fun RetryPolicy.retriesOn(cause: Throwable): Boolean {
-    val unwrapped = cause.unwrapCancellation()
-    return when {
-        unwrapped is CancellationException -> false
-        isTimeout(unwrapped) -> retryOnTimeout
-        isConnectionError(unwrapped) -> retryOnConnectionError
+/**
+ * Ktor's own rule, with jev4k's switches: a timeout is retried even when it arrives wrapped in a cancellation, but
+ * no other cancellation is, so a caller cancelled because a sibling failed is never retried.
+ */
+internal fun RetryPolicy.retriesOn(cause: Throwable): Boolean =
+    when {
+        isTimeout(cause.unwrapCancellation()) -> retryOnTimeout
+        cause is CancellationException -> false
+        isConnectionError(cause) -> retryOnConnectionError
         else -> false
     }
-}
 
 /**
  * A header value as a positive, finite number of units, or null. `Duration` rejects NaN, and an

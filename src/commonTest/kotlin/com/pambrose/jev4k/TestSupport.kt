@@ -15,11 +15,23 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headers
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.random.Random
 
 /** Parses a JSON literal so tests can compare structure rather than formatting. */
 internal fun json(text: String): JsonElement = Json.parseToJsonElement(text)
+
+/** A number wrapped in [depth] nested arrays, e.g. `[[1]]` for 2. */
+internal fun nestedArrays(depth: Int): JsonElement {
+    var element: JsonElement = JsonPrimitive(1)
+    repeat(depth) { element = JsonArray(listOf(element)) }
+    return element
+}
+
+/** [nestedArrays] as JSON text, which can be sent without building the tree. */
+internal fun nestedArrayText(depth: Int): String = "[".repeat(depth) + "1" + "]".repeat(depth)
 
 /** A client wired to a [MockEngine], recording every retry delay instead of sleeping. */
 internal class TestJev(

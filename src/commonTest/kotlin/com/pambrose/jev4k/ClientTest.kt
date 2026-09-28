@@ -1,6 +1,7 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.JEV4K_VERSION
+import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -14,6 +15,7 @@ import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.string.shouldStartWith
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.http.ContentType
@@ -21,21 +23,28 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
+import io.ktor.http.headersOf
 import io.ktor.util.network.UnresolvedAddressException
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
+import kotlin.time.measureTime
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.io.IOException
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 class ClientTest : StringSpec() {
     private fun QueryBuilder.documentedQuestions() {
@@ -281,6 +290,7 @@ class ClientTest : StringSpec() {
                 awaitCancellation()
             }
             shouldThrow<JevTimeoutException> { jev.client.ask(Triage, state = PAYOUT_TICKET) }
+                .message shouldContain "timed out after 50ms"
             retried shouldBe 3
             jev.delays shouldBe listOf(500L, 1000L)
 
@@ -363,12 +373,19 @@ class ClientTest : StringSpec() {
             calls shouldBe 3
         }
 
-        "connect and socket timeouts surface as JevTimeoutException" {
-            for (cause in listOf(ConnectTimeoutException("too slow"), SocketTimeoutException("too slow"))) {
+        // A supplied engine keeps its own connect and socket timeouts (jev4k sets only the request timeout), so the
+        // message names the one that fired rather than quoting the configured timeout.
+        "a supplied engine's connect and socket timeouts surface as JevTimeoutException, named" {
+            val cases = listOf(
+                ConnectTimeoutException("too slow") to "the supplied engine's connect timeout",
+                SocketTimeoutException("too slow") to "the supplied engine's socket timeout",
+            )
+            for ((cause, named) in cases) {
                 withClue(cause::class.simpleName.orEmpty()) {
                     val jev = testJev { throw cause }
                     val e = shouldThrow<JevTimeoutException> { jev.client.ask(Triage, state = PAYOUT_TICKET) }
-                    e.message shouldContain "timed out after"
+                    e.message shouldContain named
+                    e.message shouldNotContain "timed out after"
                 }
             }
         }
@@ -439,6 +456,143 @@ class ClientTest : StringSpec() {
             val nonFinite = buildJsonObject { put("score", JsonPrimitive(Double.POSITIVE_INFINITY)) }
             shouldThrow<JevValidationException> { jev.client.ask(Triage, state = nonFinite) }
             jev.requests.shouldBeEmpty()
+        }
+
+        // bodyAsText() parses the Content-Type to pick a charset, so a malformed one used to escape as a raw Ktor
+        // exception; the body is now read as UTF-8 bytes whatever the header says.
+        "a malformed Content-Type doesn't stop the body being read" {
+            val badType = headersOf(HttpHeaders.ContentType, "json")
+            val ok = testJev { respond(TRIAGE_RESPONSE, HttpStatusCode.OK, badType) }
+            ok.client.ask(Triage, state = PAYOUT_TICKET)[Triage.urgent].noul shouldBe 0.92
+
+            val failed = testJev { respond("""{"error":"down"}""", HttpStatusCode.InternalServerError, badType) }
+            shouldThrow<JevInternalServerException> { failed.client.ask(Triage, state = PAYOUT_TICKET) }
+                .body shouldBe """{"error":"down"}"""
+        }
+
+        // Off the JVM, bodyAsText()'s decoder throws on bytes that aren't UTF-8; every platform now replaces them.
+        "a body that isn't valid UTF-8 is still a JevException" {
+            val invalid = byteArrayOf('{'.code.toByte(), 0xFF.toByte(), '}'.code.toByte())
+            val json = headersOf(HttpHeaders.ContentType, "application/json")
+            val ok = testJev { respond(invalid, HttpStatusCode.OK, json) }
+            shouldThrow<JevResponseValidationException> { ok.client.ask(Triage, state = PAYOUT_TICKET) }
+                .message shouldContain "body is not JSON"
+
+            val failed = testJev { respond(invalid, HttpStatusCode.BadGateway, json) }
+            shouldThrow<JevInternalServerException> { failed.client.ask(Triage, state = PAYOUT_TICKET) }
+        }
+
+        "a leading byte-order mark is ignored" {
+            val jev = testJev { respondJson("\uFEFF" + TRIAGE_RESPONSE.trimIndent()) }
+            jev.client.ask(Triage, state = PAYOUT_TICKET)[Triage.urgent].noul shouldBe 0.92
+        }
+
+        // Ktor fails a call on a closed client with a bare CancellationException, which looked like the caller had
+        // been cancelled; the client now says what happened, before sending anything.
+        "a closed client fails fast with IllegalStateException" {
+            val jev = triageJev()
+            jev.client.close()
+            shouldThrow<IllegalStateException> { jev.client.models() }.message shouldBe "JevClient is closed"
+            jev.requests.shouldBeEmpty()
+        }
+
+        // A sibling's failure cancels the call. Ktor unwraps that cancellation to its cause, the sibling's
+        // exception, which used to come back as a JevConnectionException; the caller must see its cancellation.
+        "a call cancelled because a sibling failed stays a cancellation and isn't retried" {
+            val started = CompletableDeferred<Unit>()
+            val jev = testJev(retry = RetryPolicy()) {
+                started.complete(Unit)
+                awaitCancellation()
+            }
+            var ended: Throwable? = null
+            shouldThrow<IOException> {
+                coroutineScope {
+                    launch {
+                        ended = runCatching { jev.client.ask(Triage, state = PAYOUT_TICKET) }.exceptionOrNull()
+                        ended?.let { throw it }
+                    }
+                    launch {
+                        started.await()
+                        throw IOException("disk full")
+                    }
+                }
+            }
+            ended.shouldBeInstanceOf<CancellationException>()
+            jev.delays.shouldBeEmpty()
+        }
+
+        // kotlinx.serialization recurses once per level, so a few thousand levels overflow the stack on every
+        // platform. The limit is checked before sending; a state right at it is sent, which also shows that every
+        // platform can encode that deep.
+        "a state nested too deeply fails before anything is sent" {
+            val jev = triageJev()
+            shouldThrow<JevValidationException> { jev.client.ask(Triage, state = nestedArrays(MAX_JSON_DEPTH + 1)) }
+                .message shouldContain "state is nested more than $MAX_JSON_DEPTH levels deep"
+            jev.requests.shouldBeEmpty()
+
+            jev.client.ask(Triage, state = nestedArrays(MAX_JSON_DEPTH))
+            jev.requests shouldHaveSize 1
+        }
+
+        "a response nested too deeply is a response error, not a stack overflow" {
+            // The body object is the first level, so MAX_JSON_DEPTH arrays inside it is one level too many.
+            val tooDeep = testJev { respondJson("""{"answers":{},"extra":${nestedArrayText(MAX_JSON_DEPTH)}}""") }
+            shouldThrow<JevResponseValidationException> { tooDeep.client.ask(Triage, state = PAYOUT_TICKET) }
+                .message shouldContain "nested more than $MAX_JSON_DEPTH levels deep"
+
+            val atLimit = testJev { respondJson("""{"answers":{},"extra":${nestedArrayText(MAX_JSON_DEPTH - 1)}}""") }
+            atLimit.client.ask(Triage, state = PAYOUT_TICKET).answers shouldBe emptyMap()
+
+            val error = testJev { respondJson(nestedArrayText(MAX_JSON_DEPTH + 1), HttpStatusCode.BadRequest) }
+            val e = shouldThrow<JevBadRequestException> { error.client.ask(Triage, state = PAYOUT_TICKET) }
+            e.bodyJson shouldBe null
+            e.body shouldStartWith "[[["
+        }
+
+        // Every other test records retry delays instead of sleeping. This one keeps the real wait, to show the client
+        // does back off, and that a cancelled call stops waiting at once.
+        "the default retry delay really waits, and cancelling a call ends its wait" {
+            var calls = 0
+            val flaky = closeAfterSpec(
+                MockEngine {
+                    calls++
+                    val status = if (calls == 1) HttpStatusCode.ServiceUnavailable else HttpStatusCode.OK
+                    respondJson(if (calls == 1) "{}" else TRIAGE_RESPONSE, status)
+                },
+            )
+            val backsOff = closeAfterSpec(
+                JevClient {
+                    apiKey = "test-key"
+                    env = { null }
+                    engine = flaky
+                    retry = RetryPolicy(initialBackoff = 200.milliseconds, jitter = 0.0)
+                },
+            )
+            val took = TimeSource.Monotonic.measureTime { backsOff.ask(Triage, state = PAYOUT_TICKET) }
+            withClue("took $took") { (took >= 200.milliseconds) shouldBe true }
+            calls shouldBe 2
+
+            val firstAttempt = CompletableDeferred<Unit>()
+            val slow = closeAfterSpec(
+                MockEngine {
+                    firstAttempt.complete(Unit)
+                    respondJson("{}", HttpStatusCode.ServiceUnavailable, mapOf("retry-after-ms" to "10000"))
+                },
+            )
+            val waits = closeAfterSpec(
+                JevClient {
+                    apiKey = "test-key"
+                    env = { null }
+                    engine = slow
+                },
+            )
+            coroutineScope {
+                val call = async { waits.ask(Triage, state = PAYOUT_TICKET) }
+                firstAttempt.await()
+                val stopped = TimeSource.Monotonic.measureTime { call.cancelAndJoin() }
+                withClue("stopped after $stopped") { (stopped < 5.seconds) shouldBe true }
+                call.isCancelled shouldBe true
+            }
         }
     }
 }

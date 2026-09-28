@@ -1,5 +1,6 @@
 package com.pambrose.jev4k
 
+import com.pambrose.jev4k.internal.nestsTooDeep
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -42,9 +43,9 @@ open class JevApiException(
     internal constructor(response: ErrorResponse) :
         this(response.status, response.body, response.headers, response.requestId, response.endpoint, response.message)
 
-    /** [body][JevApiException.body] parsed as JSON, or null if it isn't JSON. */
+    /** [body][JevApiException.body] parsed as JSON, or null if it isn't JSON or nests implausibly deep. */
     val bodyJson: JsonElement? by lazy {
-        body?.let {
+        body?.takeUnless { it.nestsTooDeep() }?.let {
             try {
                 Json.parseToJsonElement(it)
             } catch (_: SerializationException) {
@@ -105,13 +106,16 @@ class JevOverloadedException internal constructor(
     response: ErrorResponse,
 ) : JevInternalServerException(response)
 
-/** No HTTP response was received (DNS, TLS, refused or dropped connection). */
+/** No complete HTTP response was received (DNS, TLS, a refused or dropped connection, a truncated body). */
 open class JevConnectionException(
     message: String,
     cause: Throwable? = null,
 ) : JevException(message, cause)
 
-/** A request attempt exceeded the configured timeout. */
+/**
+ * A request attempt timed out: the configured `timeout`, or, with a caller-supplied engine, that engine's own
+ * connect or socket timeout, which the message then names.
+ */
 class JevTimeoutException(
     message: String,
     cause: Throwable? = null,

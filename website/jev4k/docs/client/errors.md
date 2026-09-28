@@ -44,10 +44,13 @@ Every failure of a request or a response is a `JevException`:
 | ↳ `JevInternalServerException`      | 5xx                                                                                                            |
 | ↳ ↳ `JevOverloadedException`        | 529: TypeSafe is temporarily overloaded                                                                        |
 | ↳ `JevResponseValidationException`  | a 2xx response that was malformed or didn't match the questions; `fieldPath` locates it                        |
-| `JevConnectionException`            | no response at all: DNS, TLS, or a refused or dropped connection                                               |
-| ↳ `JevTimeoutException`             | an attempt exceeded `timeout`                                                                                  |
+| `JevConnectionException`            | no complete response: DNS, TLS, a refused or dropped connection, or a body cut short                           |
+| ↳ `JevTimeoutException`             | an attempt exceeded `timeout`, or a supplied engine's own connect or socket timeout (the message names which)  |
 
 Messages include the status and request id, and never the API key.
+
+On Linux and Windows, any bare `IllegalStateException` raised during a call is also a `JevConnectionException`,
+because that is how the Curl and WinHttp engines report a failed connection; the original is kept as its cause.
 
 Misusing a result is a programming error, not a `JevException`: asking for an id or handle that wasn't in the
 request, or reading a Noul as a Choice, throws `IllegalArgumentException`.

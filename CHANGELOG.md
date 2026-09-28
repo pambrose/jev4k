@@ -20,7 +20,9 @@ unchanged; the other platforms are new.
   on Windows, and the `fetch`-based Js engine on Node.js. CIO can't make HTTPS requests on Kotlin/Native, hence the
   others.
 - Each engine's own way of reporting a failed connection (a bare `IllegalStateException` from Curl and WinHttp, a
-  failed fetch from the Js engine) becomes a `JevConnectionException` and is retried like an `IOException`.
+  failed fetch from the Js engine) becomes a `JevConnectionException` and is retried like an `IOException`. On
+  Linux and Windows that covers any bare `IllegalStateException` raised during a call, including one from a
+  caller-supplied engine or a `MockEngine` handler; the JVM and Apple platforms rethrow those unchanged.
 - ABI validation. `api/jev4k.api` (the JVM surface) and `api/jev4k.klib.api` (the other targets) record the public
   API; `make tests` and CI fail when it changes, and `make abi-update` rewrites them after an intended change.
 - `LiveProbeTest`, two opt-in calls to the real API that spend no tokens, run on every platform: an invalid key must
@@ -57,6 +59,23 @@ unchanged; the other platforms are new.
   every other job did, so the JDK matrix and the native jobs gate a merge.
 - The documentation site is built, in strict mode, on every pull request and `master` push, and deployed only when a
   release is published, so it never shows a version that isn't on Maven Central yet.
+
+### Fixed
+
+- Failures that escaped as raw Ktor or JDK exceptions are now `JevException`s:
+  - a malformed `Content-Type` header, which the body is no longer decoded by;
+  - a response body that isn't valid UTF-8, which is now decoded leniently on every platform;
+  - on the JVM, a server certificate the JDK doesn't trust, and a response CIO can't parse (both
+    `JevConnectionException`);
+  - a response body cut short of its `Content-Length` (`JevConnectionException`, retried).
+- A call on a closed `JevClient` fails with `IllegalStateException("JevClient is closed")` instead of a bare
+  `CancellationException` that looked like the caller's own cancellation.
+- A call cancelled because a sibling coroutine failed ends with its `CancellationException`, not a
+  `JevConnectionException` made from the sibling's exception, and is no longer retried.
+- JSON nested more than 512 levels deep, in a state, a question entry or a response, is rejected with a
+  `JevValidationException` or `JevResponseValidationException` instead of overflowing the stack.
+- With a caller-supplied engine, a `JevTimeoutException` from that engine's own connect or socket timeout names it
+  instead of quoting `timeout`, which jev4k sets only as the request timeout for such an engine.
 
 ## [0.1.0] - 2026-09-20
 

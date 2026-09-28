@@ -1,8 +1,10 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.JevJson
+import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
 import com.pambrose.jev4k.internal.WireQuestion
 import com.pambrose.jev4k.internal.enumTypeName
+import com.pambrose.jev4k.internal.nestsTooDeep
 import com.pambrose.jev4k.internal.toWire
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
@@ -142,6 +144,9 @@ private fun validate(
 ): List<String> =
     buildList {
         if (question.instructions.isEmptyEntry()) add("question '$id': $INSTRUCTIONS_REQUIRED")
+        for ((name, entry) in question.entries()) {
+            if (entry.nestsTooDeep()) add("question '$id': $name is nested more than $MAX_JSON_DEPTH levels deep")
+        }
         when (question) {
             is NoulQuestion -> {
                 // Noul criteria are optional; nothing else to check.
@@ -164,6 +169,15 @@ private fun validate(
             }
         }
     }
+
+/** Every JSON entry a question sends, each named as a validation message refers to it. */
+private fun Question.entries(): List<Pair<String, JsonElement>> =
+    listOf("instructions" to instructions) +
+        when (this) {
+            is NoulQuestion -> listOfNotNull(whenTrue?.let { "whenTrue" to it }, whenFalse?.let { "whenFalse" to it })
+            is ChoiceQuestion -> options.map { (key, entry) -> "option '$key'" to entry }
+            is ScoreQuestion -> levels.mapIndexed { index, entry -> "level $index" to entry }
+        }
 
 internal fun noulRef(
     id: String,

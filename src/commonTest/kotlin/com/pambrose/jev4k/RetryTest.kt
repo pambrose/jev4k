@@ -1,20 +1,23 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.delayMillis
+import com.pambrose.jev4k.internal.isConnectionError
 import com.pambrose.jev4k.internal.retriesOn
 import com.pambrose.jev4k.internal.retryHint
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.ktor.client.engine.ClientEngineClosedException
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.SendCountExceedException
 import io.ktor.http.Headers
 import io.ktor.http.headersOf
 import io.ktor.util.network.UnresolvedAddressException
-import kotlinx.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.io.IOException
 
 /**
  * The retry rules on their own, without a client or a socket. The delay arithmetic and the header parsing are
@@ -101,19 +104,44 @@ class RetryTest : StringSpec() {
             RetryPolicy(retryOnConnectionError = false).retriesOn(IOException("refused")) shouldBe false
         }
 
-        // Ktor can hand a timeout back wrapped in CancellationExceptions; a real cancellation has no such cause
-        // and must never be retried.
+        // Ktor can hand a timeout back wrapped in CancellationExceptions. Any other cancellation, including one
+        // whose cause is a sibling coroutine's failure, must never be retried.
         "a cancellation is retried only when it wraps a timeout" {
             policy.retriesOn(CancellationException("cancelled")) shouldBe false
             val wrapped = CancellationException("cancelled", ConnectTimeoutException("too slow"))
             policy.retriesOn(wrapped) shouldBe true
             RetryPolicy(retryOnTimeout = false).retriesOn(wrapped) shouldBe false
+            policy.retriesOn(CancellationException("cancelled", IOException("disk full"))) shouldBe false
         }
 
         // Not an IllegalStateException: a bare one is how the Curl and WinHttp engines report a failed connection,
         // so on Linux and Windows it is retried.
         "anything else is not retried" {
             policy.retriesOn(IllegalArgumentException("bug")) shouldBe false
+        }
+
+        // The bare-ISE rule for Curl and WinHttp matches the exact class, so none of Ktor's own
+        // IllegalStateException subclasses, nor a cancellation (one of them on Kotlin/Native), is a connection error.
+        "Ktor's IllegalStateException subclasses and cancellations are not connection errors" {
+            val cases = listOf(
+                ClientEngineClosedException(),
+                SendCountExceedException("too many sends"),
+                CancellationException("cancelled"),
+            )
+            for (cause in cases) {
+                withClue(cause::class.simpleName.orEmpty()) {
+                    isConnectionError(cause) shouldBe false
+                    policy.retriesOn(cause) shouldBe false
+                }
+            }
+        }
+
+        // Ktor's check that a saved body is as long as its Content-Length. ClientJvmTest pins the wording against a
+        // real server; this pins that every platform treats it as a dropped connection.
+        "a body cut short of its Content-Length is a connection error" {
+            val truncated = IllegalStateException("Content-Length mismatch: expected 100 bytes, but received 11 bytes")
+            isConnectionError(truncated) shouldBe true
+            policy.retriesOn(truncated) shouldBe true
         }
     }
 }

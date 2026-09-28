@@ -1,5 +1,6 @@
 package com.pambrose.jev4k
 
+import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
@@ -115,6 +116,20 @@ class ValidationTest : StringSpec() {
                 score("s", "How much?") { level("only") }
             }
             problems shouldHaveSize 2
+        }
+
+        // Question entries are encoded with the request, so they get the same depth limit as the state.
+        "question entries nested too deeply are reported like any other problem" {
+            val problems = problemsOf {
+                noul("deep", nestedArrays(MAX_JSON_DEPTH + 1))
+                choice("pick", "Which one?") { "a" means nestedArrays(MAX_JSON_DEPTH + 1) }
+                score("fine", "How much?") { levels("Low", "High") }
+            }
+            problems shouldBe
+                listOf(
+                    "question 'deep': instructions is nested more than $MAX_JSON_DEPTH levels deep",
+                    "question 'pick': option 'a' is nested more than $MAX_JSON_DEPTH levels deep",
+                )
         }
     }
 }
