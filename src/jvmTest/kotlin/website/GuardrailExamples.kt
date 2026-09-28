@@ -2,6 +2,7 @@ package website
 
 import com.pambrose.jev4k.JevApi
 import com.pambrose.jev4k.JevQuery
+import com.pambrose.jev4k.JevResult
 import com.pambrose.jev4k.NoulBand
 import com.pambrose.jev4k.ask
 
@@ -43,32 +44,38 @@ data class GuardPolicy(
 val strict = GuardPolicy(review = 0.35, action = 0.70, severityBlock = 2.0)
 val permissive = GuardPolicy(review = 0.35, action = 0.85, severityBlock = 2.0)
 
-// The same assessment under different named policies: only the thresholds change.
-suspend fun screen(
-    jev: JevApi,
-    message: String,
-    policy: GuardPolicy = strict,
+// A policy is pure code over one assessment: only the thresholds change.
+fun decide(
+    r: JevResult,
+    policy: GuardPolicy,
 ): Decision {
-    val r = jev.ask(InputGuard, state = message)
     val hazards =
         mapOf(
             Decision.BLOCK to maxOf(r[InputGuard.jailbreak].noul, r[InputGuard.harmfulRequest].noul),
             Decision.REVIEW to r[InputGuard.medicalAdvice].noul,
             Decision.SUPPORT to r[InputGuard.selfHarm].noul, // a crisis path, not a block
         )
+    // Severity never triggers on its own; it only escalates a review to a block. A review raised by the self-harm
+    // signal is the exception: an uncertain crisis goes to a person, not a refusal.
+    val severe = r[InputGuard.severity].score >= policy.severityBlock
     val triggered =
         hazards.mapNotNull { (action, p) ->
             when {
                 p >= policy.action -> action
-                p >= policy.review -> Decision.REVIEW
-                else -> null
+                p < policy.review -> null
+                severe && action != Decision.SUPPORT -> Decision.BLOCK
+                else -> Decision.REVIEW
             }
         }
-    // Severity never triggers on its own; it only escalates a review to a block.
-    val severe = r[InputGuard.severity].score >= policy.severityBlock
-    val escalated = triggered.map { if (it == Decision.REVIEW && severe) Decision.BLOCK else it }
+    return listOf(Decision.SUPPORT, Decision.BLOCK, Decision.REVIEW).firstOrNull { it in triggered } ?: Decision.PASS
+}
 
-    return listOf(Decision.SUPPORT, Decision.BLOCK, Decision.REVIEW).firstOrNull { it in escalated } ?: Decision.PASS
+suspend fun screenUnderBothPolicies(
+    jev: JevApi,
+    message: String,
+) {
+    val assessment = jev.ask(InputGuard, state = message) // the only request
+    println("strict: ${decide(assessment, strict)}, permissive: ${decide(assessment, permissive)}")
 }
 // --8<-- [end:policy]
 

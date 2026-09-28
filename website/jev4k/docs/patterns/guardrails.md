@@ -19,7 +19,8 @@ Split "is this out of bounds?" into one Noul per hazard, plus an ordinal severit
 ## Policies in code
 
 Map each hazard to an action with two thresholds, let severity escalate reviews to blocks, and resolve by
-precedence. A policy is a named set of thresholds, so you can switch between them without re-asking anything:
+precedence. A policy is a named set of thresholds applied by plain code, so one assessment can be judged under
+any number of policies without re-asking anything:
 
 ```kotlin
 --8<-- "GuardrailExamples.kt:policy"
@@ -27,7 +28,9 @@ precedence. A policy is a named set of thresholds, so you can switch between the
 
 - **Graded actions beat a plain block.** A self-harm signal routes to *support*, which is "the difference between
   helping someone and hanging up on them".
-- **Severity escalates.** On its own it never triggers anything; it turns a review into a block.
+- **Severity escalates.** On its own it never triggers anything; it turns a review into a block. The exception is
+  a review raised by an uncertain self-harm signal, which goes to a person rather than becoming a refusal.
+  TypeSafe's cookbook escalates that one too; this example doesn't, so it matches the support path above.
 - **Screen outputs too.** An ordinary-looking prompt can still produce a harmful reply, so run a similar battery
   on the model's response.
 

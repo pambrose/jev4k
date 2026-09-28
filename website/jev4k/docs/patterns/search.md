@@ -34,6 +34,9 @@ The pairing matters. Choice probabilities always sum to 1, so *some* line wins e
 answers the question. In TypeSafe's example, a question the terms of service didn't cover still put 0.86
 probability on the closest line, while `exists` was only 0.14.
 
+A Choice takes at most 255 options, so one request searches at most 255 lines. For a longer document, search in
+two passes, as TypeSafe's cookbook suggests: offer blocks of lines first, then the lines of the chosen block.
+
 ## Filtering RAG context
 
 Between retrieval and generation, ask a few narrow questions about each (query, passage) pair, and keep the

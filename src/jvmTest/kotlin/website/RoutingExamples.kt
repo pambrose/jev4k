@@ -87,15 +87,13 @@ suspend fun pickModel(
 ): ModelTier {
     val result = jev.ask(PromptDifficulty, state = prompt)
     val difficulty = result[PromptDifficulty.difficulty]
-    return when {
-        // Unsure: don't under-provision.
-        difficulty.confidence < 0.5 -> ModelTier.LARGE
-
-        result[PromptDifficulty.needsTools].isTrue() || difficulty.score > 1.5 -> ModelTier.REASONING
-
-        difficulty.score > 0.5 -> ModelTier.LARGE
-
-        else -> ModelTier.SMALL
-    }
+    val tier =
+        when {
+            result[PromptDifficulty.needsTools].isTrue() || difficulty.score > 1.5 -> ModelTier.REASONING
+            difficulty.score > 0.5 -> ModelTier.LARGE
+            else -> ModelTier.SMALL
+        }
+    // Unsure: don't under-provision. An uncertain estimate rounds up to at least LARGE, never down.
+    return if (difficulty.confidence < 0.5) maxOf(tier, ModelTier.LARGE) else tier
 }
 // --8<-- [end:model-router]

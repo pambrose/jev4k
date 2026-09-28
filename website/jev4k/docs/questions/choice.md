@@ -67,8 +67,8 @@ This costs a few extra input tokens and saves a second round trip. See
 
 ## Many options
 
-Options are cheap. Give the model the full list of categories, teams or products (up to 255) rather than a
-shortlist:
+Options are cheap. Give the model the full list of categories, teams or products rather than a shortlist. A
+Choice takes up to 255 options, so a list that gets an `other` added can hold up to 254:
 
 ```kotlin
 --8<-- "ChoiceExamples.kt:many-options"

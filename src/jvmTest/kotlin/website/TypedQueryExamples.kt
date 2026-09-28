@@ -10,6 +10,8 @@ import com.pambrose.jev4k.query
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 // --8<-- [start:object-query]
 object Triage : JevQuery() {
@@ -99,15 +101,18 @@ suspend fun typedInclude(
 }
 
 // --8<-- [start:many-states]
-// The same query works for any number of states; run them concurrently if you like.
+// The same query works for any number of states. Run them concurrently, a few at a time.
 suspend fun triageAll(
     jev: JevApi,
     tickets: List<String>,
-): Map<String, Team> =
-    coroutineScope {
+    parallelism: Int = 4,
+): Map<String, Team> {
+    val permits = Semaphore(parallelism)
+    return coroutineScope {
         tickets
-            .map { ticket -> async { ticket to jev.ask(Triage, state = ticket)[Triage.team].choice } }
+            .map { ticket -> async { ticket to permits.withPermit { jev.ask(Triage, state = ticket) } } }
             .awaitAll()
-            .toMap()
+            .associate { (ticket, result) -> ticket to result[Triage.team].choice }
     }
+}
 // --8<-- [end:many-states]

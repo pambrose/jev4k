@@ -71,6 +71,7 @@ suspend fun countFruits(
     jev: JevApi,
     items: List<String>,
 ): Int {
+    if (items.isEmpty()) return 0 // a request needs at least one question
     val state = buildJsonObject { putJsonArray("items") { addAll(items) } }
     val result =
         jev.query(state = state) {

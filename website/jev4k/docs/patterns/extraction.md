@@ -35,6 +35,9 @@ in code:
 --8<-- "ExtractionExamples.kt:date-assemble"
 ```
 
+Every part can say `none`: the enums have a `NONE`, and the month and day are string Choices with a `"none"`
+option, because an enum of months couldn't. A `none` in a part the date needs leaves it null, marked for review.
+
 Validate in code, too. In TypeSafe's example, a document containing a *different* date made the mode come back
 as "absolute" with no month. Only the incomplete parts and the low minimum confidence (0.46) caught it.
 
@@ -66,3 +69,6 @@ The same rule applies to amounts: let Jev identify *which* number is the total, 
 ```kotlin
 --8<-- "BestPracticeExamples.kt:math-in-code"
 ```
+
+The `none` option matters here too: without it, an invoice whose total isn't among the amounts found would still
+come back with one of them, confidently.

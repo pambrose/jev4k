@@ -8,6 +8,8 @@ import com.pambrose.jev4k.query
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 // --8<-- [start:resume]
 object ResumeScreen : JevQuery() {
@@ -56,20 +58,41 @@ fun fit(
 // --8<-- [end:weights]
 
 // --8<-- [start:ranking]
-suspend fun shortlist(
+// The only requests: one per resume, a few at a time. The results are what the rankings reuse.
+suspend fun assessResumes(
     jev: JevApi,
     resumes: Map<String, String>,
+    parallelism: Int = 4,
+): Map<String, JevResult> {
+    val permits = Semaphore(parallelism)
+    return coroutineScope {
+        resumes
+            .map { (name, resume) -> async { name to permits.withPermit { jev.ask(ResumeScreen, state = resume) } } }
+            .awaitAll()
+            .toMap()
+    }
+}
+
+// Pure code over stored results: every weighting is free.
+fun rankCandidates(
+    results: Map<String, JevResult>,
     weights: RoleWeights,
     top: Int = 5,
 ): List<Pair<String, Double>> =
-    coroutineScope {
-        resumes
-            .map { (name, resume) -> async { name to jev.ask(ResumeScreen, state = resume) } }
-            .awaitAll()
-            .map { (name, result) -> name to fit(result, weights) } // re-weighting needs no new requests
-            .sortedByDescending { it.second }
-            .take(top)
-    }
+    results
+        .map { (name, result) -> name to fit(result, weights) }
+        .sortedByDescending { it.second }
+        .take(top)
+
+suspend fun shortlistBothRoles(
+    jev: JevApi,
+    resumes: Map<String, String>,
+) {
+    val results = assessResumes(jev, resumes)                 // asks Jev once per resume
+    val engineers = rankCandidates(results, seniorEngineer)   // no new requests
+    val managers = rankCandidates(results, engineeringManager) // no new requests
+    println("engineers: $engineers\nmanagers: $managers")
+}
 // --8<-- [end:ranking]
 
 // --8<-- [start:signals]

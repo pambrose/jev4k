@@ -34,7 +34,10 @@ What makes these checks work:
 
 - **Narrow and grounded.** Each check asks one yes/no question about one field against the source. Vague
   "is this record good?" questions give mushy scores.
-- **Bad = TRUE.** Phrase every check so that "yes" means "something is wrong", with explicit criteria.
+- **Bad = TRUE.** Phrase every check so that "yes" means "something is wrong", with explicit criteria for both
+  answers.
+- **Ask an empty field only whether it should be empty.** Content checks on an empty value invite false alarms,
+  so an empty field gets a single absence check instead. An extraction with no fields at all escalates.
 - **Max, not mean.** One confident red flag should escalate, not be averaged away.
 
 ## Tool-call traces

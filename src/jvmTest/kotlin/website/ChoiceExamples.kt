@@ -99,7 +99,7 @@ suspend fun choiceSpeculative(jev: JevApi) {
 }
 
 // --8<-- [start:many-options]
-// Options are cheap: offer the full list (up to 255) rather than a shortlist.
+// Options are cheap: offer the full list (up to 254, leaving room for "other") rather than a shortlist.
 suspend fun categorize(
     jev: JevApi,
     listing: String,
@@ -109,7 +109,7 @@ suspend fun categorize(
         jev.query(state = listing) {
             choice("category", "Which product category does this listing belong to?") {
                 categories.forEach { option(it) }
-                "other" means "None of the listed categories fits"
+                if ("other" !in categories) "other" means "None of the listed categories fits"
             }
         }
     return result.choice("category").choice

@@ -43,4 +43,5 @@ The same idea chooses which LLM handles a prompt, sending easy prompts to cheap 
 --8<-- "RoutingExamples.kt:model-router"
 ```
 
-When the difficulty estimate itself is uncertain, the router errs toward the more capable model.
+When the difficulty estimate itself is uncertain, the router errs toward the more capable model: it raises the tier
+to at least `LARGE`, and never lowers one that already needs `REASONING`.

@@ -50,7 +50,12 @@ class DueDateQuery(
     role: String,
 ) : JevQuery() {
     val mode by choice<DateMode>("How is $role written?")
-    val month by choice<Month>("If $role is an absolute date, which month is it in?")
+
+    // Month names as strings, not choice<Month>: an enum of months has no way to say "none".
+    val month by choice("If $role is an absolute date, which month is it in?") {
+        Month.entries.forEach { option(it.name) }
+        "none" means "The document does not state a month"
+    }
     val day by choice("If $role is an absolute date, which day of the month is it?") {
         (1..31).forEach { option(it.toString()) }
         "none" means "The document does not state a day"
@@ -104,13 +109,14 @@ suspend fun dueDate(
 
 // The next occurrence of month/day on or after today; null for "none" or an impossible date like February 30.
 private fun nextDate(
-    month: Month,
+    month: String,
     day: String,
     today: LocalDate,
 ): LocalDate? {
+    val monthOfYear = Month.entries.firstOrNull { it.name == month } ?: return null
     val dayOfMonth = day.toIntOrNull() ?: return null
     return try {
-        LocalDate.of(today.year, month, dayOfMonth).let { if (it < today) it.plusYears(1) else it }
+        LocalDate.of(today.year, monthOfYear, dayOfMonth).let { if (it < today) it.plusYears(1) else it }
     } catch (e: DateTimeException) {
         println("impossible date: ${e.message}")
         null

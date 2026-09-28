@@ -2,6 +2,7 @@ package website
 
 import com.pambrose.jev4k.JevApi
 import com.pambrose.jev4k.JevQuery
+import com.pambrose.jev4k.MAX_CHOICE_OPTIONS
 import com.pambrose.jev4k.ask
 import com.pambrose.jev4k.query
 import kotlinx.coroutines.async
@@ -60,6 +61,11 @@ suspend fun findAnswer(
     lines: List<String>,
     question: String,
 ): SearchHit? {
+    // One option per line, and a Choice takes at most 255. Search a longer document in two passes: a block of lines
+    // first, then a line inside it.
+    if (lines.isEmpty()) return null
+    require(lines.size <= MAX_CHOICE_OPTIONS) { "Search at most $MAX_CHOICE_OPTIONS lines at a time" }
+
     val ids = lines.indices.map { "L%03d".format(it) }
     val document = lines.indices.joinToString("\n") { "${ids[it]}| ${lines[it]}" }
 

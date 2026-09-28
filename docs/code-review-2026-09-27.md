@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 77 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 85 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -41,7 +41,7 @@ Every issue has a number. Tick its box when it's fixed, and update the count bel
   before Central has them
 - [x] [#15](#issue-15) **Docs.** The README's MockK testing example fails: `"technical"` versus the enum key
   `TECHNICAL`
-- [ ] [#16](#issue-16) **Examples.** Examples that build Choice options from caller data throw on ordinary inputs
+- [x] [#16](#issue-16) **Examples.** Examples that build Choice options from caller data throw on ordinary inputs
   (over 255 lines, empty lists)
 
 ### Low
@@ -136,13 +136,13 @@ Release and documentation
 
 Website examples
 
-- [ ] [#75](#issue-75) The model-router example caps uncertain prompts at LARGE even when they need REASONING
-- [ ] [#76](#issue-76) Two concurrency examples fan out without a bound, against the docs' own advice
-- [ ] [#77](#issue-77) The "Rank without new requests" example re-queries Jev for every ranking
-- [ ] [#78](#issue-78) The extraction examples leave out the `none` escape the page requires
-- [ ] [#79](#issue-79) The guardrail example blocks an uncertain self-harm signal that the page says goes to support
-- [ ] [#80](#issue-80) The guardrail example can't switch policies without re-asking, as its page claims
-- [ ] [#81](#issue-81) The verification example has no explicit criteria and checks content on empty fields
+- [x] [#75](#issue-75) The model-router example caps uncertain prompts at LARGE even when they need REASONING
+- [x] [#76](#issue-76) Two concurrency examples fan out without a bound, against the docs' own advice
+- [x] [#77](#issue-77) The "Rank without new requests" example re-queries Jev for every ranking
+- [x] [#78](#issue-78) The extraction examples leave out the `none` escape the page requires
+- [x] [#79](#issue-79) The guardrail example blocks an uncertain self-harm signal that the page says goes to support
+- [x] [#80](#issue-80) The guardrail example can't switch policies without re-asking, as its page claims
+- [x] [#81](#issue-81) The verification example has no explicit criteria and checks content on empty fields
 
 ### Nit
 
@@ -607,6 +607,10 @@ with `JevResponseValidationException: question 'team': unknown option 'technical
 
 **Medium** · Examples · small · `src/jvmTest/kotlin/website/RankingExamples.kt:63`,
 `src/jvmTest/kotlin/website/ChoiceExamples.kt:111`, `website/jev4k/docs/patterns/search.md:26`
+
+**Fixed.** `findAnswer` returns null for an empty document and requires at most 255 lines, with a comment on searching
+longer ones in two passes; `categorize` adds `other` only when it's absent, and says up to 254 plus `other`;
+`countFruits` returns 0 for no items. `search.md` has the 255-option caveat, and the Choice page the 254 figure.
 
 **What's wrong.** Several examples turn caller data straight into Choice options:
 - **`findAnswer`** (line search) makes one option per line. A document over 255 lines, or an empty one, throws
@@ -1656,6 +1660,9 @@ no Node-only attribute, so they load in a browser, and nothing refuses a browser
 
 **Low** · Examples · small · `src/jvmTest/kotlin/website/RoutingExamples.kt:92`
 
+**Fixed.** `pickModel` works out the tier first and then raises an uncertain estimate to `maxOf(tier, LARGE)`, so it
+never caps a REASONING prompt. `routing.md` says so.
+
 **What's wrong.** The `confidence < 0.5 -> LARGE` branch comes before the REASONING branch. So an uncertain prompt
 that needs tools, or scores as hard, is capped at LARGE. The code comment and `routing.md:46` say uncertainty errs
 toward the more capable model.
@@ -1670,6 +1677,8 @@ uncertain.
 **Low** · Examples · small · `src/jvmTest/kotlin/website/TypedQueryExamples.kt:109`,
 `src/jvmTest/kotlin/website/CompositeScoringExamples.kt:66`
 
+**Fixed.** `triageAll` bounds its fan-out with a `Semaphore`, and so does the resume assessment (#77).
+
 **What's wrong.** Both examples launch one `async` per input, with no limit. That contradicts `calls.md`'s guidance
 that about 8 concurrent requests already hit rate limits. In the typed-queries example it also contradicts the
 sentence right after the example.
@@ -1681,6 +1690,9 @@ sentence right after the example.
 #### 77. The "Rank without new requests" example re-queries Jev
 
 **Low** · Examples · small · `src/jvmTest/kotlin/website/CompositeScoringExamples.kt:67`
+
+**Fixed.** `assessResumes` makes one request per resume, with bounded concurrency, and the pure `rankCandidates` ranks
+the stored results; `shortlistBothRoles` ranks one set of results for both roles. The page describes it.
 
 **What's wrong.** `shortlist` calls `jev.ask` for every resume each time it runs, and then throws the results away.
 Ranking the same pool under a second weighting re-sends everything.
@@ -1697,6 +1709,9 @@ Then show both weightings applied to the same stored results.
 
 **Low** · Examples · small · `src/jvmTest/kotlin/website/ExtractionExamples.kt:53`
 
+**Fixed.** `DueDateQuery.month` is a string Choice of month names plus `none`, since an enum can't say none, and the
+invoice total offers `none` too, which makes `overBudget` return null. The extraction page explains both.
+
 **What's wrong.** The page says to always include a `none` option, but two examples don't:
 - `DueDateQuery.month` uses `choice<Month>`, which can't say none;
 - the invoice `total` Choice has no none option either.
@@ -1711,6 +1726,9 @@ So an absent value comes back as a confident but wrong month or amount.
 
 **Low** · Examples · small · `src/jvmTest/kotlin/website/GuardrailExamples.kt:69`
 
+**Fixed.** The code change: a review raised by the self-harm signal is kept out of severity escalation, and the page
+says so, noting that TypeSafe's cookbook escalates it.
+
 **What's wrong.** Any REVIEW with high severity becomes BLOCK, including one that came from an uncertain self-harm
 signal. The page says self-harm routes to support. The behavior is inherited from TypeSafe's cookbook.
 
@@ -1724,6 +1742,9 @@ signal. The page says self-harm routes to support. The behavior is inherited fro
 
 **Low** · Examples · small · `src/jvmTest/kotlin/website/GuardrailExamples.kt:52`
 
+**Fixed.** `decide(result, policy)` is pure code over one assessment, and `screenUnderBothPolicies` applies `strict` and
+`permissive` to the same result, so `permissive` is used.
+
 **What's wrong.** `screen` asks Jev and applies the policy in the same function, so switching policies means asking
 again. `permissive` is declared but never used. The page says policies switch "without re-asking anything".
 
@@ -1734,6 +1755,9 @@ again. `permissive` is declared but never used. The page says policies switch "w
 #### 81. The verification example has no explicit criteria
 
 **Low** · Examples · small · `src/jvmTest/kotlin/website/VerificationExamples.kt:73`
+
+**Fixed.** Each check carries the cookbook's `whenTrue`/`whenFalse` criteria, an empty field gets only the
+`absence_wrong` check, and an empty map escalates instead of throwing. The page adds the empty-field rule.
 
 **What's wrong.** The page requires explicit criteria on every check, but the example's checks have none. Its
 content checks also run on empty fields, which invites false TRUE answers, and an empty map throws.

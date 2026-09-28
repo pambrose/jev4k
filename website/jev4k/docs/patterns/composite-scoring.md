@@ -25,8 +25,9 @@ prompt.
 
 ## Rank without new requests
 
-The answers are reusable data. Re-weighting, re-ranking or filtering reads the stored results; it never calls
-Jev again:
+The answers are reusable data. Ask once and keep the results; re-weighting, re-ranking or filtering then reads
+them and never calls Jev again. Here `assessResumes` makes the only requests, a few at a time, and
+`rankCandidates` is plain code that ranks the same results for two roles:
 
 ```kotlin
 --8<-- "CompositeScoringExamples.kt:ranking"

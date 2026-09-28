@@ -53,20 +53,25 @@ object PythonSkill : JevQuery() {
 // --8<-- [end:degree]
 
 // --8<-- [start:math-in-code]
-// Jev reads meaning, not numbers: let it pick out the value, then do the arithmetic in code.
+// Jev reads meaning, not numbers: let it pick out the value, then do the arithmetic in code. Null means the
+// invoice states no total to compare, which is for a person to look at, not a guess.
 suspend fun overBudget(
     jev: JevApi,
     invoice: String,
     budgetUsd: Double,
-): Boolean {
+): Boolean? {
     val amounts = Regex("""\$([\d,]+\.\d{2})""").findAll(invoice).map { it.groupValues[1] }.distinct().toList()
-    if (amounts.isEmpty()) return false
+    if (amounts.isEmpty()) return null
     val total =
         jev
             .query(state = invoice) {
-                choice("total", "Which amount is the total the customer must pay?") { amounts.forEach { option(it) } }
+                choice("total", "Which amount is the total the customer must pay?") {
+                    amounts.forEach { option(it) }
+                    "none" means "None of these amounts is the total"
+                }
             }.choice("total")
             .choice
+    if (total == "none") return null
     return total.replace(",", "").toDouble() > budgetUsd
 }
 // --8<-- [end:math-in-code]

@@ -53,24 +53,62 @@ suspend fun checkCitation(
 // --8<-- [end:citation]
 
 // --8<-- [start:extraction-gate]
+// Every check is phrased so TRUE means "something is wrong", with explicit criteria for both answers.
+class FieldCheck(
+    val question: String,
+    val whenTrue: String,
+    val whenFalse: String,
+)
+
+val valueChecks =
+    mapOf(
+        "hallucinated" to
+            FieldCheck(
+                "Is the `extracted_field` unsupported by, or absent from, the source text?",
+                "The `extracted_field` is not supported by, or is absent from, the source text",
+                "The `extracted_field` is supported by the source text",
+            ),
+        "off_target" to
+            FieldCheck(
+                "Does the source text fail to genuinely report this field, so the value came from incidental text?",
+                "The source does not genuinely provide this field; the value was pulled from incidental text",
+                "The source genuinely reports this field",
+            ),
+        "format_violation" to
+            FieldCheck(
+                "Does the `extracted_field` violate the format implied by the field's name?",
+                "The `extracted_field` violates the implied format",
+                "The `extracted_field` satisfies the implied format",
+            ),
+    )
+
+// An empty field has no content to check, only whether leaving it empty was right.
+val absenceCheck =
+    "absence_wrong" to
+        FieldCheck(
+            "The `extracted_field` is empty. Does the source text contain the information this field describes?",
+            "A value was wrongly omitted",
+            "Returning nothing is correct",
+        )
+
 // Verify a cheap model's extraction field by field; escalate only when a check fires.
 suspend fun needsEscalation(
     jev: JevApi,
     sourceText: String,
     extracted: Map<String, String>,
 ): Boolean {
-    val checks =
-        mapOf(
-            "hallucinated" to "Is the `extracted_field` unsupported by, or absent from, the source text?",
-            "off_target" to "Was the `extracted_field` pulled from incidental text, not a real mention of the field?",
-            "format_violation" to "Does the `extracted_field` violate the format implied by the field's name?",
-        )
+    // Nothing extracted is nothing to vouch for, so it goes to the stronger model: the safe direction.
+    if (extracted.isEmpty()) return true
     val result =
         jev.query(state = sourceText) {
             for ((field, value) in extracted) {
-                for ((check, question) in checks) {
-                    // Phrase every check so TRUE means "something is wrong".
-                    noul("$field::$check", entry("field" to field, "extracted_field" to value, "question" to question))
+                val checks = if (value.isBlank()) mapOf(absenceCheck) else valueChecks
+                for ((name, check) in checks) {
+                    val instructions = entry("field" to field, "extracted_field" to value, "question" to check.question)
+                    noul("$field::$name", instructions) {
+                        whenTrue(check.whenTrue)
+                        whenFalse(check.whenFalse)
+                    }
                 }
             }
         }
