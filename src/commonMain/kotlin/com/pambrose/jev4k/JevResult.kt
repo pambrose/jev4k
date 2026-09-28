@@ -29,7 +29,16 @@ class JevResult internal constructor(
     val requestId: String? get() = response.requestId
 
     operator fun <A : Answer> get(ref: QuestionRef<A>): A {
-        require(ref in questions) { "Question '${ref.id}' is not part of this request" }
+        require(ref in questions) {
+            if (questions[ref.id] == null) {
+                "Question '${ref.id}' is not part of this request"
+            } else {
+                // Typically a mock that returns a result built for a fixed set, while the code under test builds
+                // its questions, and so its handles, afresh on every call.
+                "Question '${ref.id}' is part of this request, but through a different handle: this handle belongs " +
+                    "to another QuestionSet. Read the answer by id, or build the result from the set that was sent"
+            }
+        }
         return decodeAnswer(ref.id, ref.decode)
     }
 

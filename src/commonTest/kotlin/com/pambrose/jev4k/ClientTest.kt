@@ -47,6 +47,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import io.ktor.http.fromHttpToGmtDate
 import com.pambrose.jev4k.internal.MAX_RESPONSE_BYTES
+import io.ktor.client.plugins.HttpTimeoutCapability
+import io.ktor.client.plugins.HttpTimeoutConfig
+import com.pambrose.jev4k.internal.limitTo
 
 class ClientTest : StringSpec() {
     private fun QueryBuilder.documentedQuestions() {
@@ -674,6 +677,27 @@ class ClientTest : StringSpec() {
             error.status shouldBe 502
             error.body shouldBe null
             error.message shouldContain "not read, over the $MAX_RESPONSE_BYTES-byte limit"
+        }
+
+        // A supplied engine keeps its own connect and socket timeouts: CIO, for one, prefers the ones on a request
+        // over its own, so jev4k sets only the request timeout there.
+        "a supplied engine gets only the request timeout, the client's or the call's" {
+            val jev = testJev(configure = { timeout = 7.seconds }) { respondJson(TRIAGE_RESPONSE) }
+            jev.client.ask(Triage, state = PAYOUT_TICKET)
+            jev.client.withOptions(JevCallOptions { timeout = 3.seconds }).ask(Triage, state = PAYOUT_TICKET)
+            val (plain, perCall) = jev.requests.map { it.getCapabilityOrNull(HttpTimeoutCapability) }
+            plain?.requestTimeoutMillis shouldBe 7_000L
+            plain?.connectTimeoutMillis shouldBe null
+            plain?.socketTimeoutMillis shouldBe null
+            perCall?.requestTimeoutMillis shouldBe 3_000L
+            perCall?.connectTimeoutMillis shouldBe null
+        }
+
+        "jev4k's own engine gets the timeout for connecting and reading as well" {
+            val own = HttpTimeoutConfig().apply { limitTo(4.seconds, ownEngine = true) }
+            own.requestTimeoutMillis shouldBe 4_000L
+            own.connectTimeoutMillis shouldBe 4_000L
+            own.socketTimeoutMillis shouldBe 4_000L
         }
     }
 }

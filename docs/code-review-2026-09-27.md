@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 53 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 61 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -95,20 +95,20 @@ Java interop and public API
 - [x] [#44](#issue-44) `BlockingJev` can only be built by `JevClient`, so blocking code can't wrap a fake `JevApi`
 - [ ] [#45](#issue-45) The docs say Java has "no route" to enum Choices, but the `@PublishedApi` members are callable
 - [x] [#46](#issue-46) `@PublishedApi` on `ValueJson` does nothing, and puts an internal `Json` into both ABI dumps
-- [ ] [#47](#issue-47) The testing docs show only a fixed-QuestionSet mock, which fails for per-call handles
-- [ ] [#48](#issue-48) `jevResult(String)` skips the client's body-level validation, contrary to its docs
+- [x] [#47](#issue-47) The testing docs show only a fixed-QuestionSet mock, which fails for per-call handles
+- [x] [#48](#issue-48) `jevResult(String)` skips the client's body-level validation, contrary to its docs
 - [ ] [#49](#issue-49) `RetryPolicy`'s docs say the defaults match both SDKs; Python also has a 30 s total budget
 
 Tests
 
 - [x] [#50](#issue-50) The "no tests discovered" guard is off for every test task
-- [ ] [#51](#issue-51) No test checks that `platformGetenv` actually returns a value
-- [ ] [#52](#issue-52) `mapModels`'s rejection branches and optional fields are untested
+- [x] [#51](#issue-51) No test checks that `platformGetenv` actually returns a value
+- [x] [#52](#issue-52) `mapModels`'s rejection branches and optional fields are untested
 - [x] [#53](#issue-53) The default `retryDelay` (the real wait) never runs in any test
-- [ ] [#54](#issue-54) No test checks that a supplied engine keeps its own connect and socket timeouts
+- [x] [#54](#issue-54) No test checks that a supplied engine keeps its own connect and socket timeouts
 - [x] [#55](#issue-55) No test pins the false side of the exact-class `IllegalStateException` rule
-- [ ] [#56](#issue-56) The real-CIO timeout test's 1 s budget includes CIO's cold start
-- [ ] [#57](#issue-57) `make live-tests` passes without any real API call when `TYPESAFE_API_KEY` is missing
+- [x] [#56](#issue-56) The real-CIO timeout test's 1 s budget includes CIO's cold start
+- [x] [#57](#issue-57) `make live-tests` passes without any real API call when `TYPESAFE_API_KEY` is missing
 
 Build and CI
 
@@ -147,7 +147,7 @@ Website examples
 ### Nit
 
 - [ ] [#82](#issue-82) `JavaInterop.java`'s comment overstates what it pins
-- [ ] [#83](#issue-83) `BlockingJevTest` matches the `QuestionSet` with `any()`
+- [x] [#83](#issue-83) `BlockingJevTest` matches the `QuestionSet` with `any()`
 - [ ] [#84](#issue-84) CLAUDE.md says every type name follows the JS SDK; only the question types do
 - [ ] [#85](#issue-85) README testing section: a missing space and a doubled lead-in colon
 
@@ -1196,6 +1196,10 @@ would therefore show up as an API change.
 
 **Low** · Docs / testing · small · `src/commonMain/kotlin/com/pambrose/jev4k/Testing.kt:21`, `README.md:560`
 
+**Fixed.** The `jevResult` KDoc, the README and the calls page show `answers { jevResult(body, secondArg()) }` for
+questions built per call, and `JevResult.get` now says when a handle's id is in the request but the handle isn't.
+`ConsumerTest` exercises both.
+
 **What's wrong.** The only mock shown is `returns jevResult(body, X.questions)`. Results check handle identity, so
 this throws "not part of this request" for code that builds its questions on each call: inline handles, or
 `JevQuery` class instances. The docs teach several such patterns.
@@ -1209,6 +1213,9 @@ this throws "not part of this request" for code that builds its questions on eac
 #### 48. `jevResult(String)` skips the client's body-level validation
 
 **Low** · Testing API · small · `src/commonMain/kotlin/com/pambrose/jev4k/Testing.kt:42`
+
+**Fixed.** `parseObject` moved to `ResponseInfo.parseObject()`, which `JevClient` and `jevResult(String)` share.
+`ConsumerTest` checks `"not json"` and `"[]"`.
 
 **What's wrong.** The client turns a non-JSON or non-object body into a `JevResponseValidationException`, in
 `parseObject`. `jevResult(String)` instead calls `parseToJsonElement(body).jsonObject` directly, and throws
@@ -1260,6 +1267,10 @@ platform ran nothing.
 
 **Low** · Tests · small · `src/commonTest/kotlin/com/pambrose/jev4k/TestSupport.kt:89`
 
+**Fixed.** `build.gradle.kts` sets `JEV4K_ENV_PROBE` on every `Test`, `KotlinJsTest` and `KotlinNativeTest`, plus
+`SIMCTL_CHILD_JEV4K_ENV_PROBE` on simulator tasks (KGP doesn't add the prefix), and `docker-linux-tests` passes it with
+`-e`. `PlatformEnvTest` asserts `platformGetenv` returns it, and null for an unset name.
+
 **What's wrong.** Every test stubs `env`. On js, wasmJs and native, the only real call is `liveOptIn()`, and in
 ordinary runs that returns null whether or not the lookup works.
 
@@ -1276,6 +1287,9 @@ ordinary runs that returns null whether or not the lookup works.
 #### 52. `mapModels`'s rejection branches are untested
 
 **Low** · Tests · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/ResponseMapper.kt:67`
+
+**Fixed.** `ResponseMappingTest` covers every rejection branch at its field path, table-driven, plus the optional fields
+and an empty list.
 
 **What's wrong.** Only the happy path is tested. The four rejection branches, each with its own field path, and the
 optional fields aren't. `/v1/systemone` has that coverage.
@@ -1305,6 +1319,9 @@ would still pass if it became a no-op, or if it stopped being cancellable.
 #### 54. No test checks that a supplied engine keeps its own timeouts
 
 **Low** · Tests · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/HttpClientFactory.kt:55`
+
+**Fixed.** `ClientTest` reads `HttpTimeoutCapability` off recorded MockEngine requests: only the request timeout is set,
+the client's or the call's. `limitTo` is tested directly for jev4k's own engine.
 
 **What's wrong.** jev4k sets the connect and socket timeouts only for its own engine, so a supplied engine keeps
 its tuning, as documented. No test checks either branch.
@@ -1337,6 +1354,8 @@ retry and mislabel those exceptions.
 
 **Low** · Tests · small · `src/jvmTest/kotlin/com/pambrose/jev4k/ClientJvmTest.kt:47`
 
+**Fixed.** The test warms CIO up against a `RawServer` first, so a cold start can't eat the first attempt's second.
+
 **What's wrong.** The first attempt pays for CIO's cold start, and the server-side request count is the only
 assertion that catches a wrong plugin order. So a loaded runner can fail the test intermittently with "server saw
 2 requests".
@@ -1350,6 +1369,8 @@ assertion that catches a wrong plugin order. So a loaded runner can fail the tes
 #### 57. `make live-tests` passes without any real API call when the key is missing
 
 **Low** · Tests · small · `Makefile:235`
+
+**Fixed.** `live-tests` fails at once without a key, using the same check as `all-tests`.
 
 **What's wrong.** `live-tests` never checks for `TYPESAFE_API_KEY`. Without it, LiveSmokeTest skips every test and
 LiveProbeTest, which uses a fake key, passes. The build succeeds without a single real call.
@@ -1702,6 +1723,8 @@ the comment to match, or add calls that pin the other overloads.
 #### 83. `BlockingJevTest` matches the `QuestionSet` with `any()`
 
 **Nit** · Tests · small · `src/jvmTest/kotlin/com/pambrose/jev4k/BlockingJevTest.kt:68`
+
+**Fixed.** The query test matches the forwarded set with `match { it.ids == Triage.questions.ids }`.
 
 The test never checks that the inline block's questions are forwarded. Use
 `match { it.ids == Triage.questions.ids }`, or rename the test to what it checks.

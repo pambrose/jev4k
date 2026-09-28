@@ -75,9 +75,10 @@ class BlockingJevTest : StringSpec() {
             blocking.query(jsonState, "m2", inline)
             blocking.query(Ticket("s", "m"), "m3", inline)
 
-            coVerify(exactly = 1) { api.evaluate(JsonPrimitive("text state"), any(), "m1") }
-            coVerify(exactly = 1) { api.evaluate(jsonState, any(), "m2") }
-            coVerify(exactly = 1) { api.evaluate(jsonEntry(Ticket("s", "m")), any(), "m3") }
+            val triage = Triage.questions.ids
+            coVerify(exactly = 1) { api.evaluate(JsonPrimitive("text state"), match { it.ids == triage }, "m1") }
+            coVerify(exactly = 1) { api.evaluate(jsonState, match { it.ids == triage }, "m2") }
+            coVerify(exactly = 1) { api.evaluate(jsonEntry(Ticket("s", "m")), match { it.ids == triage }, "m3") }
         }
 
         "models is forwarded too" {

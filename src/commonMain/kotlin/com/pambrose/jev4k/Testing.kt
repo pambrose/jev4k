@@ -1,14 +1,13 @@
 package com.pambrose.jev4k
 
-import com.pambrose.jev4k.internal.JevJson
 import com.pambrose.jev4k.internal.ResponseInfo
 import com.pambrose.jev4k.internal.mapSystemOne
+import com.pambrose.jev4k.internal.parseObject
 import com.pambrose.jev4k.internal.retryHint
 import io.ktor.http.Headers
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
 import kotlin.jvm.JvmOverloads
 import kotlin.time.Duration
 
@@ -30,6 +29,13 @@ private const val TEST_ENDPOINT = "POST (test)"
  * The body is validated exactly as a real one is, so a malformed answer raises
  * [JevResponseValidationException] here too. Recording a real response and replaying it is a good way to keep a
  * fixture honest.
+ *
+ * A result answers only the handles of the set it was built for. Code that builds its questions on each call (inline
+ * handles, or a `JevQuery` class) sends a new set every time, so build the result from the one the mock received:
+ *
+ * ```
+ * coEvery { jev.evaluate(any(), any(), any()) } answers { jevResult(body, secondArg()) }
+ * ```
  */
 @JvmOverloads
 fun jevResult(
@@ -39,7 +45,10 @@ fun jevResult(
     requestId: String? = null,
 ): JevResult = mapSystemOne(body, model, questions, testResponse(body.toString(), requestId))
 
-/** The same, from the response body as JSON text. */
+/**
+ * The same, from the response body as JSON text. Text that isn't JSON, or isn't a JSON object, raises
+ * [JevResponseValidationException], as it does from the client, so a garbled response can be simulated too.
+ */
 @JvmOverloads
 fun jevResult(
     body: String,
@@ -47,8 +56,8 @@ fun jevResult(
     model: String = JevDefaults.MODEL,
     requestId: String? = null,
 ): JevResult {
-    val json = JevJson.parseToJsonElement(body).jsonObject
-    return mapSystemOne(json, model, questions, testResponse(body, requestId))
+    val response = testResponse(body, requestId)
+    return mapSystemOne(response.parseObject(), model, questions, response)
 }
 
 private fun testResponse(

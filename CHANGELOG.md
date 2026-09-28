@@ -128,6 +128,13 @@ small breaking changes, listed first under Changed.
 - A `Retry-After` given as an HTTP-date is honored, measured from now and capped by `maxRetryAfter` like a number
   of seconds, as the official Python SDK does. It was ignored, so retries came too early and `retryAfter` was null.
 - A configured `Accept` header is the only one sent; content negotiation added `application/json` beside it.
+- `jevResult(String)` checks the body as the client does, so text that isn't a JSON object raises
+  `JevResponseValidationException` rather than a raw kotlinx exception, and a garbled response can be simulated.
+- Reading a result with a handle from another `QuestionSet` whose id matches one in the request says so, and how to
+  fix it, instead of only that the question isn't part of the request. That is what a mock returning a result built
+  for a fixed set hits when the code under test builds its questions per call; the testing docs now show
+  `answers { jevResult(body, secondArg()) }` for it.
+- `make live-tests` fails at once without `TYPESAFE_API_KEY`, instead of passing without making a real call.
 - A `null` answer is treated as absent, failing only when it is read, instead of failing the whole response.
 - A response number that isn't finite (an unquoted `NaN`, or `1e999`), or a Score level key outside the question's
   levels, is a `JevResponseValidationException` with its field path, instead of surfacing later from `band()`,

@@ -458,7 +458,16 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
 - MockK is used where a dependency is mocked: `ConsumerTest` mocks `JevApi` to show how application code is tested
   without HTTP.
 - `LiveSmokeTest` (JVM) makes real API calls and runs only when `TYPESAFE_API_KEY` is set and `JEV4K_LIVE=1`
-  (`make live-tests` sets it), so ordinary runs never spend tokens.
+  (`make live-tests` sets it), so ordinary runs never spend tokens. `make live-tests` fails at once without a key,
+  since the probes would otherwise pass with no real call made.
+- `PlatformEnvTest` (common) is the one test that doesn't stub the environment: it checks `platformGetenv` against
+  `JEV4K_ENV_PROBE=present`, which `build.gradle.kts` sets on every `Test`, `KotlinJsTest` and `KotlinNativeTest`
+  (and as `SIMCTL_CHILD_JEV4K_ENV_PROBE` on simulator tasks, since KGP doesn't add the prefix) and
+  `docker-linux-tests` passes to its containers. Running a test binary some other way needs it set by hand.
+- A result answers only the handles of the set it was built for. A MockK mock of code that builds its questions per
+  call returns `answers { jevResult(body, secondArg()) }`; `JevResult.get` names that case when a handle's id is
+  in the request but the handle isn't. `jevResult(String)` checks the body with the client's own
+  `ResponseInfo.parseObject`.
 - `LiveProbeTest` (common) runs only with `JEV4K_LIVE=1` and spends no tokens: an invalid key must come back as
   `JevAuthenticationException` over TLS, and a 1 ms timeout as `JevTimeoutException`. It passes on the JVM, Node.js
   and macOS, and on linuxX64 and linuxArm64 under `JEV4K_LIVE=1 make docker-linux-tests`. A plain `ubuntu` image

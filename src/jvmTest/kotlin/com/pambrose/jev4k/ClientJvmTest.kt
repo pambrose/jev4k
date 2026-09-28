@@ -39,9 +39,16 @@ class ClientJvmTest : StringSpec() {
         }
 
         // The engine-level check that HttpRequestRetry is installed before HttpTimeout: installed after it, one
-        // expiry cancels the whole retry loop and the server only ever sees the first attempt. The timeout is
-        // generous because the first attempt pays for CIO's cold start, and only the count matters here.
+        // expiry cancels the whole retry loop and the server only ever sees the first attempt. CIO is warmed up
+        // first, against another server, so a cold start on a loaded runner can't eat the first attempt's second
+        // before its request is written, and the count stays exact.
         "a slow response times out, and timeouts are retried (real CIO engine)" {
+            RawServer(MODELS_RESPONSE).use { warm ->
+                JevClient {
+                    testDefaults(mutableListOf())
+                    baseUrl = "http://127.0.0.1:${warm.port}"
+                }.use { it.models() }
+            }
             SilentServer().use { server ->
                 val delays = mutableListOf<Long>()
                 JevClient {

@@ -14,6 +14,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import io.ktor.http.headersOf
+import com.pambrose.jev4k.internal.mapModels
 
 class ResponseMappingTest : StringSpec() {
     private val documented = questions {
@@ -352,7 +353,7 @@ class ResponseMappingTest : StringSpec() {
 
             val r = map(documentedResponse)
             foreign.id shouldBe "department"
-            shouldThrow<IllegalArgumentException> { r[foreign] }.message shouldContain "not part of this request"
+            shouldThrow<IllegalArgumentException> { r[foreign] }.message shouldContain "through a different handle"
 
             // The handle from the set that was actually asked reads fine.
             val own = documented["department"] as QuestionRef<*>
@@ -426,6 +427,32 @@ class ResponseMappingTest : StringSpec() {
         "a string-keyed Choice returns an option the question didn't declare as the server sent it" {
             val r = single("""{"department":{"choice":"marketing","confidence":0.4}}""")
             r.choice("department").choice shouldBe "marketing"
+        }
+
+        "a models body maps optional fields to null, and an empty list to an empty ModelList" {
+            val one = """{"models":[{"name":"a"},{"name":"b","description":null,"release_date":"2026-09-01"}]}"""
+            mapModels(json(one).jsonObject, response(one)) shouldBe
+                listOf(ModelInfo("a", null, null), ModelInfo("b", null, "2026-09-01"))
+            val none = """{"models":[]}"""
+            mapModels(json(none).jsonObject, response(none)) shouldBe emptyList()
+        }
+
+        "each malformed part of a models body is reported at its own field path" {
+            val cases = listOf(
+                """{}""" to "models",
+                """{"models":{}}""" to "models",
+                """{"models":[1]}""" to "models[0]",
+                """{"models":[{}]}""" to "models[0].name",
+                """{"models":[{"name":3}]}""" to "models[0].name",
+                """{"models":[{"name":"a"},{"name":"b","description":5}]}""" to "models[1].description",
+                """{"models":[{"name":"a","release_date":[]}]}""" to "models[0].release_date",
+            )
+            for ((body, path) in cases) {
+                withClue(body) {
+                    shouldThrow<JevResponseValidationException> { mapModels(json(body).jsonObject, response(body)) }
+                        .fieldPath shouldBe path
+                }
+            }
         }
     }
 }

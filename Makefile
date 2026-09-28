@@ -102,7 +102,7 @@ docker-linux-tests: _require-docker  ## Run the linuxX64 and linuxArm64 tests in
 	for pair in linuxX64:amd64 linuxArm64:arm64; do \
 		target=$${pair%%:*}; arch=$${pair##*:}; log=$(LINUX_TEST_LOGS)/$$target.log; \
 		echo "== $$target on linux/$$arch ($(LINUX_TEST_IMAGE))"; \
-		docker run --rm --platform linux/$$arch -e JEV4K_LIVE \
+		docker run --rm --platform linux/$$arch -e JEV4K_LIVE -e JEV4K_ENV_PROBE=present \
 			-v "$(CURDIR)/build/bin/$$target/debugTest:/tests:ro" $(LINUX_TEST_IMAGE) /tests/test.kexe > $$log 2>&1; \
 		code=$$?; \
 		grep -v -E '^(##teamcity|\[(=+|-+| +PASSED +)\])' $$log; \
@@ -234,7 +234,12 @@ example:  ## Run the Triage example against the live API (needs TYPESAFE_API_KEY
 # suite, which is harmless. The simulators only see variables prefixed SIMCTL_CHILD_, so their probes stay skipped:
 # a test binary spawned by simctl can't validate any TLS certificate, so they would fail there regardless.
 LIVE_PROBE_TESTS = $(foreach task,$(1),$(task) --rerun --tests "com.pambrose.jev4k.LiveProbeTest")
+# Without a key LiveSmokeTest skips every test and the probes, which use a fake key, pass, so the run would succeed
+# without one real call; the recipe refuses to start instead.
 live-tests:  ## Run the live API tests: the JVM smoke tests (needs TYPESAFE_API_KEY) and each platform's probes
+	@if [ -z "$$TYPESAFE_API_KEY" ] && ! grep -qs '^TYPESAFE_API_KEY=..*' .env; then \
+		echo "live-tests needs TYPESAFE_API_KEY, in the environment or .env"; exit 1; \
+	fi
 	JEV4K_LIVE=1 $(GRADLE) jvmTest --rerun --tests "com.pambrose.jev4k.LiveSmokeTest" \
 		--tests "com.pambrose.jev4k.LiveProbeTest" $(call LIVE_PROBE_TESTS,$(JS_TESTS) $(NATIVE_TESTS))
 

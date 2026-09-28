@@ -614,6 +614,13 @@ route(jev, ticket) shouldBe Team.TECHNICAL
 coEvery { jev.evaluate(any(), any(), any()) } throws jevApiException(429, retryAfter = 2.seconds)
 ```
 
+A result answers only the handles of the question set it was built for. Code that builds its questions on every call
+(inline handles, or a `JevQuery` class) sends a new set each time, so build the result from the one the mock received:
+
+```kotlin
+coEvery { jev.evaluate(any(), any(), any()) } answers { jevResult(body, secondArg()) }
+```
+
 A mock of `JevApi` needs `evaluate(any(), any(), any(), any())` stubbed as well when the code under test passes
 `JevCallOptions` or uses `withOptions`; a fake that implements only the three-argument `evaluate` needs nothing more.
 To exercise the real client without the network, pass a Ktor `MockEngine` as`JevClient { engine = MockEngine { ... } }`.
@@ -666,7 +673,7 @@ The runnable example is [`TriageExample.kt`](src/jvmTest/kotlin/com/pambrose/jev
 unit tests use Kotest, MockK, and Ktor's `MockEngine`, and most of them run on every platform. One timeout test drives
 the real CIO engine against a loopback socket, and one test per platform dials a loopback port nothing listens on, so
 no traffic ever leaves the machine. Live tests run only when `JEV4K_LIVE=1`, which `make live-tests` sets; the JVM
-smoke tests also need `TYPESAFE_API_KEY`.
+smoke tests also need `TYPESAFE_API_KEY`, and `make live-tests` refuses to start without it.
 
 ## Thanks to TypeSafe
 

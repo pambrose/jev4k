@@ -14,6 +14,7 @@ import com.pambrose.jev4k.internal.isTimeout
 import com.pambrose.jev4k.internal.limitTo
 import com.pambrose.jev4k.internal.mapModels
 import com.pambrose.jev4k.internal.mapSystemOne
+import com.pambrose.jev4k.internal.parseObject
 import com.pambrose.jev4k.internal.nestsTooDeep
 import com.pambrose.jev4k.internal.retryHint
 import com.pambrose.jev4k.internal.toWire
@@ -150,7 +151,7 @@ class JevClient(
             throw apiException(status, text, response.headers.toMap(), requestId, endpoint, hint)
         }
         val info = ResponseInfo(text, status, response.headers, requestId, endpoint)
-        return parse(parseObject(info), info)
+        return parse(info.parseObject(), info)
     }
 
     /**
@@ -236,18 +237,6 @@ class JevClient(
             val which = if (cause is ConnectTimeoutException) "connect" else "socket"
             "Request to $endpoint timed out (the supplied engine's $which timeout)"
         }
-
-    private fun parseObject(response: ResponseInfo): JsonObject {
-        // Checked before parsing: kotlinx.serialization parses by recursion, so a deep enough body overflows it.
-        val tooDeep = response.text.nestsTooDeep()
-        val body = try {
-            if (tooDeep) null else JevJson.parseToJsonElement(response.text)
-        } catch (e: SerializationException) {
-            throw response.invalid("body is not JSON", cause = e)
-        }
-        val problem = if (tooDeep) "body is nested more than $MAX_JSON_DEPTH levels deep" else "expected a JSON object"
-        return body as? JsonObject ?: throw response.invalid(problem)
-    }
 
     private companion object {
         const val SYSTEM_ONE_PATH = "v1/systemone"

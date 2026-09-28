@@ -22,6 +22,9 @@ import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTargetWithSimulatorTests
 import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest
+import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin
@@ -454,6 +457,18 @@ tasks.named<Test>("jvmTest") {
         events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
         exceptionFormat = TestExceptionFormat.FULL
     }
+}
+
+// PlatformEnvTest checks that platformGetenv really reads the environment, on every platform, so every test task
+// sets this variable; the Makefile's docker-linux-tests passes it to its containers too. simctl hands a simulator
+// test only the variables prefixed SIMCTL_CHILD_, with the prefix removed, and KGP doesn't add it.
+val envProbeName = "JEV4K_ENV_PROBE"
+val envProbeValue = "present"
+tasks.withType<Test>().configureEach { environment(envProbeName, envProbeValue) }
+tasks.withType<KotlinJsTest>().configureEach { environment(envProbeName, envProbeValue) }
+tasks.withType<KotlinNativeTest>().configureEach {
+    environment(envProbeName, envProbeValue)
+    if (this is KotlinNativeSimulatorTest) environment("SIMCTL_CHILD_$envProbeName", envProbeValue)
 }
 
 // Gradle fails a test task that discovers no tests, so a target whose test binary lost its specs (after a Kotest,

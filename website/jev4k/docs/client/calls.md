@@ -114,4 +114,9 @@ exercise the real client without a network, give it a Ktor `MockEngine` through 
 
 Build what the fake returns with `jevResult(body, questions)`, which maps a response body exactly as the client
 does, and `jevApiException(status)` for the error path. Recording a real response and replaying it keeps a
-fixture honest, and a malformed one still raises `JevResponseValidationException`.
+fixture honest, and a malformed one, or text that isn't a JSON object at all, still raises
+`JevResponseValidationException`.
+
+A result answers only the handles of the question set it was built for. Code that builds its questions on every
+call (inline handles, or a `JevQuery` class) sends a new set each time, so a MockK mock should build the result from
+the set it received, `answers { jevResult(body, secondArg()) }`, rather than return one built in advance.
