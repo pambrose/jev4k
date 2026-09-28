@@ -52,7 +52,8 @@ A few things differ by platform:
 !!! warning "Upgrading from 0.1.0? The Maven coordinates have changed"
 
     From 0.2.0 the group is `com.pambrose.jev4k` (0.1.0 was `com.pambrose:jev4k`), so update the dependency as
-    shown below. That is the only breaking change: the API and the client's behavior are exactly as in 0.1.0. The
+    shown below. Code written for 0.1.0 otherwise works unchanged, unless its `baseUrl` is a plain `http://` URL on
+    another host, which now needs `allowInsecureHttp = true`. The
     [release notes](https://github.com/pambrose/jev4k/blob/master/RELEASE_NOTES.md) have the details, including how
     to exclude 0.1.0 if another library still brings it in.
 

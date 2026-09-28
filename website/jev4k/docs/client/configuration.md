@@ -21,17 +21,19 @@ With `TYPESAFE_API_KEY` set, a no-argument `JevClient()` is ready to use:
 ```
 
 Each setting resolves in this order: the explicit value, then the environment variable, then the default.
-Blank environment variables are ignored.
+String settings are trimmed, so the trailing newline of a value read from a file is harmless, and a value that is
+blank after trimming counts as unset.
 
-| Setting        | Environment variable     | Default                                                                        |
-|----------------|--------------------------|--------------------------------------------------------------------------------|
-| `apiKey`       | `TYPESAFE_API_KEY`       | none; required                                                                 |
-| `baseUrl`      | `TYPESAFE_BASE_URL`      | `https://api.typesafe.ai`                                                      |
-| `defaultModel` | `TYPESAFE_DEFAULT_MODEL` | `jev-latest`                                                                   |
-| `timeout`      |                          | 10 seconds per HTTP attempt                                                    |
-| `retry`        |                          | `RetryPolicy()`, matching the official SDKs; see [Retries & Errors](errors.md) |
-| `engine`       |                          | the platform's default engine, created by the client (CIO on the JVM)          |
-| `headers`      |                          | none; extra headers sent with every request                                    |
+| Setting             | Environment variable     | Default                                                                        |
+|---------------------|--------------------------|--------------------------------------------------------------------------------|
+| `apiKey`            | `TYPESAFE_API_KEY`       | none; required                                                                 |
+| `baseUrl`           | `TYPESAFE_BASE_URL`      | `https://api.typesafe.ai`                                                      |
+| `defaultModel`      | `TYPESAFE_DEFAULT_MODEL` | `jev-latest`                                                                   |
+| `timeout`           |                          | 10 seconds per HTTP attempt                                                    |
+| `retry`             |                          | `RetryPolicy()`, matching the official SDKs; see [Retries & Errors](errors.md) |
+| `engine`            |                          | the platform's default engine, created by the client (CIO on the JVM)          |
+| `headers`           |                          | none; extra headers sent with every request                                    |
+| `allowInsecureHttp` |                          | `false`; allows a plain `http://` `baseUrl` on a host other than this machine  |
 
 A missing API key throws a `JevConfigException` that names `TYPESAFE_API_KEY`. `JevConfig.toString()` redacts
 the key, so it's safe to log.
@@ -45,6 +47,9 @@ client at it with three environment variables:
 ```bash
 --8<-- "ClientConfig.txt:ollaya"
 ```
+
+For an Ollaya server on another host, such as `http://ollaya:11435` in Docker, also set `allowInsecureHttp = true`:
+plain `http://` is accepted without it only for this machine (`localhost`, `127.x.x.x`, `::1`).
 
 ## Retry policies
 
@@ -66,8 +71,16 @@ The client doesn't close an engine you pass in, so one engine can be shared by s
 yourself when you're done with it. `timeout` still bounds each whole attempt, but the connect and socket
 timeouts are left to an engine you supply, so settings like `endpoint.connectTimeout` above take effect.
 
-`baseUrl` must carry a scheme, and `timeout` must be at least a millisecond; anything else is a
-`JevConfigException` from the builder, with every problem it found listed at once.
+The builder checks the settings Ktor would otherwise reject on every request, and throws a `JevConfigException`
+listing every problem it found at once:
+
+- `baseUrl` must be an absolute `https://` URL with a host and, optionally, a path. Plain `http://` is accepted
+  for this machine, or anywhere with `allowInsecureHttp = true`. Credentials, a query or a fragment are refused;
+  send what a gateway needs in `headers` instead.
+- `apiKey` must not contain control characters, and `headers` must be valid HTTP names and values.
+- `timeout` must be at least a millisecond.
+
+The messages never quote the key, a header value, or a URL that could hold credentials.
 
 ## Security
 

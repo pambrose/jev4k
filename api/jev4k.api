@@ -137,6 +137,7 @@ public final class com/pambrose/jev4k/JevConfig {
 public final class com/pambrose/jev4k/JevConfigBuilder {
 	public fun <init> ()V
 	public final fun build ()Lcom/pambrose/jev4k/JevConfig;
+	public final fun getAllowInsecureHttp ()Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getDefaultModel ()Ljava/lang/String;
@@ -144,6 +145,7 @@ public final class com/pambrose/jev4k/JevConfigBuilder {
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getRetry ()Lcom/pambrose/jev4k/RetryPolicy;
 	public final fun getTimeout-UwyO8pc ()J
+	public final fun setAllowInsecureHttp (Z)V
 	public final fun setApiKey (Ljava/lang/String;)V
 	public final fun setBaseUrl (Ljava/lang/String;)V
 	public final fun setDefaultModel (Ljava/lang/String;)V

@@ -166,6 +166,9 @@ final class com.pambrose.jev4k/JevConfigBuilder { // com.pambrose.jev4k/JevConfi
     final val headers // com.pambrose.jev4k/JevConfigBuilder.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/MutableMap<kotlin/String, kotlin/String> // com.pambrose.jev4k/JevConfigBuilder.headers.<get-headers>|<get-headers>(){}[0]
 
+    final var allowInsecureHttp // com.pambrose.jev4k/JevConfigBuilder.allowInsecureHttp|{}allowInsecureHttp[0]
+        final fun <get-allowInsecureHttp>(): kotlin/Boolean // com.pambrose.jev4k/JevConfigBuilder.allowInsecureHttp.<get-allowInsecureHttp>|<get-allowInsecureHttp>(){}[0]
+        final fun <set-allowInsecureHttp>(kotlin/Boolean) // com.pambrose.jev4k/JevConfigBuilder.allowInsecureHttp.<set-allowInsecureHttp>|<set-allowInsecureHttp>(kotlin.Boolean){}[0]
     final var apiKey // com.pambrose.jev4k/JevConfigBuilder.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // com.pambrose.jev4k/JevConfigBuilder.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
         final fun <set-apiKey>(kotlin/String?) // com.pambrose.jev4k/JevConfigBuilder.apiKey.<set-apiKey>|<set-apiKey>(kotlin.String?){}[0]

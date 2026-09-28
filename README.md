@@ -71,9 +71,10 @@ JevClient().use { jev ->
 
 > [!WARNING]
 > **Upgrading from 0.1.0? The Maven coordinates have changed.** From 0.2.0 the group is `com.pambrose.jev4k`
-> (0.1.0 was `com.pambrose:jev4k`), so update the dependency as shown below. That is the only breaking change: the
-> API and the client's behavior are exactly as in 0.1.0. The [release notes](RELEASE_NOTES.md) have the details,
-> including how to exclude 0.1.0 if another library still brings it in.
+> (0.1.0 was `com.pambrose:jev4k`), so update the dependency as shown below. Code written for 0.1.0 otherwise works
+> unchanged, unless its `baseUrl` is a plain `http://` URL on another host, which now needs `allowInsecureHttp = true`.
+> The [release notes](RELEASE_NOTES.md) have the details, including how to exclude 0.1.0 if another library still
+> brings it in.
 
 jev4k is on Maven Central. `com.pambrose.jev4k:jev4k` is the multiplatform module, and Gradle resolves it to the right
 artifact for each target, so a JVM project and a Kotlin Multiplatform project (in `commonMain`) use the same line:
@@ -396,8 +397,10 @@ val jev = JevClient {
 }
 ```
 
-Each setting resolves as: the explicit value, then the environment variable, then the default. Blank environment
-variables are ignored, and `JevConfig.toString()` never prints the key.
+Each setting resolves as: the explicit value, then the environment variable, then the default. String settings are
+trimmed, and a blank one counts as unset. `baseUrl` must be `https://` (plain `http://` is for `localhost`, or
+anywhere with `allowInsecureHttp = true`) and carry no credentials or query. The builder reports every problem at
+once in a `JevConfigException`, and neither its messages nor `JevConfig.toString()` print the key.
 
 ### Running with Ollaya
 
@@ -410,6 +413,8 @@ TYPESAFE_API_KEY=demo
 TYPESAFE_BASE_URL=http://localhost:11435
 TYPESAFE_DEFAULT_MODEL=laya
 ```
+
+For an Ollaya server on another host, such as `http://ollaya:11435` in Docker, also set `allowInsecureHttp = true`.
 
 ### Retries and timeouts
 

@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 20 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 26 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -28,9 +28,9 @@ Every issue has a number. Tick its box when it's fixed, and update the count bel
   `CancellationException`
 - [ ] [#7](#issue-7) **Client.** `JevApiException.headers` is case-sensitive, and key casing differs by engine
 - [x] [#8](#issue-8) **Client.** Deeply nested JSON (a state, or a response) overflows the stack
-- [ ] [#9](#issue-9) **Config.** An API key or header with a control character leaks the full key in a raw Ktor
+- [x] [#9](#issue-9) **Config.** An API key or header with a control character leaks the full key in a raw Ktor
   exception on every call
-- [ ] [#10](#issue-10) **Config.** A `baseUrl` with trailing whitespace or a bad port passes validation, then every
+- [x] [#10](#issue-10) **Config.** A `baseUrl` with trailing whitespace or a bad port passes validation, then every
   call throws `URLParserException`
 - [ ] [#11](#issue-11) **Results.** `enumChoice<E>(id)` doesn't check E against the declared options, so a caller
   mistake is blamed on the server
@@ -53,7 +53,7 @@ Client and HTTP
 - [ ] [#19](#issue-19) `JevResponseValidationException` from mapping drops the headers and holds re-serialized JSON,
   not the raw body
 - [ ] [#20](#issue-20) `models()` discards the `x-typesafe-request-id` of a successful call
-- [ ] [#21](#issue-21) A blank per-call model is sent as `"model": ""`
+- [x] [#21](#issue-21) A blank per-call model is sent as `"model": ""`
 - [ ] [#22](#issue-22) A `Retry-After` HTTP-date is ignored, unlike the official Python SDK
 - [x] [#23](#issue-23) With a supplied engine, `JevTimeoutException` quotes `config.timeout` even when the engine's
   own connect timeout fired
@@ -66,10 +66,10 @@ Client and HTTP
 
 Configuration and validation
 
-- [ ] [#28](#issue-28) A `baseUrl` with userinfo or a query string is accepted, then credentials leak into messages
+- [x] [#28](#issue-28) A `baseUrl` with userinfo or a query string is accepted, then credentials leak into messages
   and queries are corrupted
-- [ ] [#29](#issue-29) Plain `http://` is accepted for any host, so a mistyped URL sends the key in cleartext
-- [ ] [#30](#issue-30) `RetryPolicy.retryStatuses` aliases the caller's set, so a built client can change later
+- [x] [#29](#issue-29) Plain `http://` is accepted for any host, so a mistyped URL sends the key in cleartext
+- [x] [#30](#issue-30) `RetryPolicy.retryStatuses` aliases the caller's set, so a built client can change later
 - [ ] [#31](#issue-31) A number or boolean state, and empty `{}`/`[]` instructions, pass local validation
 - [ ] [#32](#issue-32) `QuestionSet.toJson()` throws a raw kotlinx exception for a non-finite number
 - [ ] [#33](#issue-33) `jsonOf` rejects primitive arrays (`IntArray`, `DoubleArray`), though its KDoc promises arrays
@@ -421,6 +421,10 @@ recursively (`BodyReader.fail`, `JevResult.invalid`), which is a second, shallow
 **Medium** · Config / security · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevConfig.kt:103`,
 `src/commonMain/kotlin/com/pambrose/jev4k/internal/HttpClientFactory.kt:63`
 
+**Fixed.** `build()` trims the key and rejects any control character left in it with a `JevConfigException` that
+gives the index, never the key. It also checks header names and values with Ktor's own rules, without quoting a
+value. A key read with a trailing newline now just works.
+
 **What's wrong.** `build()` rejects only a blank key. It never trims the key or checks its characters, and it
 doesn't validate `headers`. A key with a trailing newline builds fine. Common sources:
 - a secret created with `echo`;
@@ -445,6 +449,10 @@ doesn't validate `headers`. A key with a trailing newline builds fine. Common so
 #### 10. A `baseUrl` with trailing whitespace or a bad port passes validation, then every call fails
 
 **Medium** · Config · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevConfig.kt:108`
+
+**Fixed.** `apiKey`, `baseUrl` and `defaultModel` are trimmed, and one that is blank after trimming counts as unset.
+The base URL is parsed once in `build()`, so a bad port, a missing host or embedded whitespace is a
+`JevConfigException` at build time, with no quoted URL when it could hold a secret.
 
 **What's wrong.** `build()` strips trailing `/` and checks the scheme prefix, but never parses the URL. Ktor parses
 it on every request. Because jev4k appends `/`, a trailing newline or space ends up inside the authority, and a
@@ -674,6 +682,9 @@ does, through `JevResult.requestId`. `models()` returns a bare `List<ModelInfo>`
 
 **Low** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:61`
 
+**Fixed.** A blank per-call `model` falls back to the configured default, as a blank `defaultModel` does.
+`JevApi.evaluate`'s KDoc says so, and a ClientTest case pins it.
+
 **What's wrong.** The builder treats a blank `defaultModel` as unset. `evaluate`, though, uses
 `model ?: config.defaultModel`, so `model = ""` sends `"model": ""`. That most likely gets a 4xx back after a wasted
 round trip.
@@ -790,6 +801,9 @@ This isn't recorded as deliberate.
 
 **Low** · Config / security · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevConfig.kt:117`
 
+**Fixed.** A `baseUrl` with userinfo, a query or a fragment is rejected. The message points to `headers` for gateway
+credentials and never quotes the URL. The configuration page states the rule.
+
 **What's wrong.** Only the scheme prefix is checked.
 - **Userinfo** (`https://user:pass@proxy`). CIO drops it, so an authenticating proxy answers 401. The credentials
   then appear in the exception message and in `JevConfig.toString()`, which the docs call safe to log.
@@ -806,6 +820,10 @@ This isn't recorded as deliberate.
 
 **Low** · Config / security · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevConfig.kt:117`
 
+**Fixed.** Plain `http://` is accepted without an opt-in only for loopback hosts (`localhost`, `*.localhost`,
+`127.x.x.x`, `::1`); anywhere else it needs the new `JevConfigBuilder.allowInsecureHttp`. The ABI dumps, README,
+configuration page and release notes document it, including for an Ollaya server on another host.
+
 **What's wrong.** http needs no opt-in, yet the only documented need for it is Ollaya on localhost. A dropped "s" in
 `TYPESAFE_BASE_URL` sends the bearer key and every state in cleartext on each call. This is a design trade-off: the
 official SDKs accept any URL.
@@ -821,6 +839,8 @@ official SDKs accept any URL.
 #### 30. `RetryPolicy.retryStatuses` aliases the caller's set
 
 **Low** · Config · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevConfig.kt:129`
+
+**Fixed.** `build()` stores the retry policy with a copy of its status set.
 
 **What's wrong.** `build()` takes a copy of `headers` but stores `retry` by reference, and `retryStatuses` can be
 the caller's `MutableSet`. The retry predicate re-reads it on every response. Mutating the set afterwards changes a

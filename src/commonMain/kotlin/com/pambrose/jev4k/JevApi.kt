@@ -9,7 +9,10 @@ import kotlin.jvm.JvmSynthetic
  * on top of it, so application code that depends on [JevApi] can be tested with a fake or mock.
  */
 interface JevApi {
-    /** Asks [questions] about [state] (`POST /v1/systemone`), using the default model unless [model] is given. */
+    /**
+     * Asks [questions] about [state] (`POST /v1/systemone`), using the default model unless [model] is given. A blank
+     * [model] counts as not given.
+     */
     suspend fun evaluate(
         state: JsonElement,
         questions: QuestionSet,

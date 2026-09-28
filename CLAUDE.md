@@ -77,9 +77,19 @@ There are two DSL layers over one core model. Both produce a validated `Question
       JVM, throws on bytes that aren't UTF-8.
     - A `JevTimeoutException` quotes `timeout` only when it is the limit that fired. A supplied engine gets only the
       request timeout, so its own connect or socket timeout is named instead.
-- **Config** (`JevConfig.kt`). Each setting resolves as explicit value, then env var, then default; blank env values are
-  ignored. The env vars are `TYPESAFE_API_KEY` (required), `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal
-  hooks (`env`, `retryDelay`, `random`) make tests deterministic; `env` defaults to `platformGetenv`.
+- **Config** (`JevConfig.kt`). Each setting resolves as explicit value, then env var, then default. String settings
+  are trimmed, and one that is blank after trimming counts as unset. The env vars are `TYPESAFE_API_KEY` (required),
+  `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal hooks (`env`, `retryDelay`, `random`) make tests
+  deterministic; `env` defaults to `platformGetenv`.
+    - `build()` checks what Ktor would otherwise reject on every request, with an exception that isn't a
+      `JevException` and whose message quotes the value. `baseUrl` is parsed once: http(s), a host, no userinfo,
+      query or fragment, and plain `http://` only for a loopback host unless `allowInsecureHttp`. The API key may
+      not contain control characters. Header names and values follow Ktor's `checkHeaderName`/`checkHeaderValue`.
+      Every problem goes into one `JevConfigException`, whose messages never quote the key, a header value, or a
+      URL that could hold credentials.
+    - The retry policy is stored with a copy of its status set, since the caller's set may be mutable and the
+      client re-reads it on every response. A blank per-call model falls back to the default, as a blank
+      `defaultModel` does.
 - **Platforms** (`internal/Platform.kt` and its actuals). Everything that differs between platforms is an `internal`
   expect: `platformGetenv`, `defaultEngine` (the engine factory; `JevConfig.toString` reports its class name),
   `isPlatformConnectionError`, and `Enum<*>.enumTypeName()` (which keeps `enumChoiceRef`'s `@PublishedApi` signature

@@ -68,7 +68,8 @@ class JevClient(
         if (state.nestsTooDeep()) {
             throw JevValidationException(listOf("state is nested more than $MAX_JSON_DEPTH levels deep"))
         }
-        val resolvedModel = model ?: config.defaultModel
+        // A blank model is treated as unset, as the builder treats a blank defaultModel.
+        val resolvedModel = model?.trim()?.takeIf { it.isNotEmpty() } ?: config.defaultModel
         val request = SystemOneRequest(state, resolvedModel, questions.toWire())
         return send(HttpMethod.Post, SYSTEM_ONE_PATH, {
             contentType(ContentType.Application.Json)

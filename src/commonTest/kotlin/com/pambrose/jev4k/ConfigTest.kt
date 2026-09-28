@@ -127,6 +127,121 @@ class ConfigTest : StringSpec() {
             e.message shouldContain "baseUrl"
         }
 
+        // A value read from a file often ends in a newline; trimmed, it is the value that was meant.
+        "surrounding whitespace is trimmed from every string setting" {
+            val cfg = config(env = mapOf("TYPESAFE_BASE_URL" to "https://api.typesafe.ai/\n")) {
+                apiKey = "secret-key\n"
+                defaultModel = " jev-latest "
+            }
+            cfg.apiKey shouldBe "secret-key"
+            cfg.baseUrl shouldBe "https://api.typesafe.ai"
+            cfg.defaultModel shouldBe "jev-latest"
+        }
+
+        // Ktor would reject these on every request, with a message that quotes the whole key.
+        "an API key with a control character inside is rejected without being echoed" {
+            for (key in listOf("secret\u0000key", "secret\r\nkey", "secret\tkey", "secret\u007Fkey")) {
+                val e = shouldThrow<JevConfigException> { config { apiKey = key } }
+                e.message shouldContain "apiKey contains a control character at index 6"
+                e.message shouldNotContain "secret"
+            }
+        }
+
+        "a configured header Ktor would reject is reported without its value" {
+            val e = shouldThrow<JevConfigException> {
+                config {
+                    apiKey = "k"
+                    headers["X-Token"] = "gateway-secret\n"
+                    headers["Bad Name"] = "fine"
+                }
+            }
+            e.message shouldContain "header 'X-Token' has a control character in its value"
+            e.message shouldContain "header name 'Bad Name' contains a character HTTP doesn't allow in a name"
+            e.message shouldNotContain "gateway-secret"
+        }
+
+        // Ktor parses the base URL on every request, so these used to fail every call instead of the build.
+        "a base URL Ktor can't use is rejected when the config is built" {
+            val cases = listOf(
+                "http://localhost:99999" to "not a valid URL",
+                "http://localhost:1x" to "not a valid URL",
+                "https://api .typesafe.ai" to "not a valid URL",
+            )
+            for ((url, problem) in cases) {
+                withClue(url) {
+                    val e = shouldThrow<JevConfigException> {
+                        config {
+                            apiKey = "k"
+                            baseUrl = url
+                        }
+                    }
+                    e.message shouldContain problem
+                }
+            }
+        }
+
+        // CIO drops userinfo, which would then show up in messages and toString; a query is corrupted by the "/"
+        // jev4k appends. Neither is quoted back, since both can hold secrets.
+        "a base URL with credentials, a query or a fragment is rejected without echoing them" {
+            val cases = listOf(
+                "https://user:pass-secret@proxy.example" to "must not carry credentials",
+                "https://gw.example/jev?token=abc-secret" to "must not have a query or a fragment",
+                "https://gw.example/jev#abc-secret" to "must not have a query or a fragment",
+            )
+            for ((url, problem) in cases) {
+                withClue(problem) {
+                    val e = shouldThrow<JevConfigException> {
+                        config {
+                            apiKey = "k"
+                            baseUrl = url
+                        }
+                    }
+                    e.message shouldContain problem
+                    e.message shouldNotContain "secret"
+                }
+            }
+        }
+
+        // Without TLS the key crosses the network in cleartext, so plain http is for this machine unless opted in.
+        "plain http:// is accepted on loopback, and elsewhere only with allowInsecureHttp" {
+            val loopback = listOf(
+                "http://localhost:11435",
+                "http://127.0.0.1:8080",
+                "http://[::1]:8080",
+                "http://ollaya.localhost",
+            )
+            for (url in loopback) {
+                withClue(url) {
+                    config {
+                        apiKey = "k"
+                        baseUrl = url
+                    }.baseUrl shouldBe url
+                }
+            }
+            val e = shouldThrow<JevConfigException> {
+                config {
+                    apiKey = "k"
+                    baseUrl = "http://api.typesafe.ai"
+                }
+            }
+            e.message shouldContain "allowInsecureHttp"
+            config {
+                apiKey = "k"
+                baseUrl = "http://ollaya:11435"
+                allowInsecureHttp = true
+            }.baseUrl shouldBe "http://ollaya:11435"
+        }
+
+        "a built config keeps its own copy of the retry statuses" {
+            val statuses = mutableSetOf(429)
+            val cfg = config {
+                apiKey = "k"
+                retry = RetryPolicy(retryStatuses = statuses)
+            }
+            statuses += 503
+            cfg.retry.retryStatuses shouldBe setOf(429)
+        }
+
         "a trailing slash on the base URL is trimmed" {
             config {
                 apiKey = "k"

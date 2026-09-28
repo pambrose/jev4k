@@ -3,6 +3,8 @@ package com.pambrose.jev4k
 import com.pambrose.jev4k.internal.defaultEngine
 import com.pambrose.jev4k.internal.platformGetenv
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -67,13 +69,20 @@ data class RetryPolicy(
     }
 }
 
-/** Builder for [JevConfig]. Each setting resolves as: explicit value, then environment variable, then default. */
+/**
+ * Builder for [JevConfig]. Each setting resolves as: explicit value, then environment variable, then default. String
+ * settings are trimmed, so the trailing newline of a value read from a file is harmless, and a value that is blank
+ * after trimming counts as unset. [build] reports every problem it finds at once, without echoing a secret.
+ */
 @JevDsl
 class JevConfigBuilder {
     /** API key; falls back to `TYPESAFE_API_KEY`. Required. */
     var apiKey: String? = null
 
-    /** API root; falls back to `TYPESAFE_BASE_URL`, then `https://api.typesafe.ai`. */
+    /**
+     * API root; falls back to `TYPESAFE_BASE_URL`, then `https://api.typesafe.ai`. It must be an absolute `https://`
+     * URL (or `http://` to this machine) with a host and optionally a path, and no credentials, query or fragment.
+     */
     var baseUrl: String? = null
 
     /** Model used when a call doesn't name one; falls back to `TYPESAFE_DEFAULT_MODEL`, then `jev-latest`. */
@@ -93,40 +102,47 @@ class JevConfigBuilder {
     /** Extra headers sent with every request. */
     val headers: MutableMap<String, String> = linkedMapOf()
 
+    /**
+     * Allows a plain `http://` [baseUrl] on a host other than this machine, such as an Ollaya server elsewhere on the
+     * network. Off by default: without TLS, the API key and every state cross the network in cleartext. A loopback
+     * host (`localhost`, `127.x.x.x`, `::1`) never needs it.
+     */
+    var allowInsecureHttp: Boolean = false
+
     internal var env: (String) -> String? = ::platformGetenv
     internal var retryDelay: suspend (Long) -> Unit = { delay(it.milliseconds) }
     internal var random: Random = Random.Default
 
     fun build(): JevConfig {
-        fun fromEnv(name: String) = env(name)?.takeIf { it.isNotBlank() }
+        fun fromEnv(name: String) = env(name).setting()
 
-        val key = apiKey?.takeIf { it.isNotBlank() } ?: fromEnv(JevDefaults.API_KEY_ENV)
-        ?: throw JevConfigException(
-            "No TypeSafe API key: set apiKey or the ${JevDefaults.API_KEY_ENV} environment variable",
-        )
-        // A blank explicit value is ignored exactly like a blank environment value.
-        val url = (baseUrl?.takeIf { it.isNotBlank() } ?: fromEnv(JevDefaults.BASE_URL_ENV) ?: JevDefaults.BASE_URL)
-            .trimEnd('/')
+        val key = apiKey.setting() ?: fromEnv(JevDefaults.API_KEY_ENV)
+            ?: throw JevConfigException(
+                "No TypeSafe API key: set apiKey or the ${JevDefaults.API_KEY_ENV} environment variable",
+            )
+        val url = (baseUrl.setting() ?: fromEnv(JevDefaults.BASE_URL_ENV) ?: JevDefaults.BASE_URL).trimEnd('/')
 
+        // Checked here, not left to Ktor: Ktor validates them on every request, so a bad value would build a client
+        // that fails every call with an exception that isn't a JevException, and its message echoes the value.
         val problems = buildList {
             // The factory truncates with inWholeMilliseconds, so anything under a millisecond reaches Ktor as 0,
             // which HttpTimeout rejects outright.
             if (timeout.inWholeMilliseconds < 1) add("timeout must be at least 1 millisecond (was $timeout)")
-            // Ktor reads a scheme-less value as a relative path, which turns into a puzzling connection error
-            // much later instead of a configuration error here.
-            if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                add("baseUrl must start with http:// or https:// (was '$url')")
-            }
+            addAll(baseUrlProblems(url, allowInsecureHttp))
+            val badChar = key.indexOfFirst { it.isControlCharacter() }
+            if (badChar >= 0) add("apiKey contains a control character at index $badChar")
+            headers.forEach { (name, value) -> headerProblem(name, value)?.let(::add) }
         }
         if (problems.isNotEmpty()) throw JevConfigException("Invalid configuration: ${problems.joinToString("; ")}")
 
         return JevConfig(
             apiKey = key,
             baseUrl = url,
-            defaultModel = defaultModel?.takeIf { it.isNotBlank() }
-                ?: fromEnv(JevDefaults.DEFAULT_MODEL_ENV) ?: JevDefaults.MODEL,
+            defaultModel = defaultModel.setting() ?: fromEnv(JevDefaults.DEFAULT_MODEL_ENV) ?: JevDefaults.MODEL,
             timeout = timeout,
-            retry = retry,
+            // A copy: the policy's status set may be the caller's mutable set, and the client re-reads it on every
+            // response, so a later change to it would otherwise change a built client.
+            retry = retry.copy(retryStatuses = retry.retryStatuses.toSet()),
             engine = engine,
             headers = headers.toMap(),
             retryDelay = retryDelay,
@@ -134,6 +150,77 @@ class JevConfigBuilder {
         )
     }
 }
+
+/** A string setting as given, trimmed, or null when it is unset or blank. */
+private fun String?.setting(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
+
+private fun Char.isControlCharacter(): Boolean = this < ' ' || this == '\u007F'
+
+/**
+ * What is wrong with [url] as a base URL. It is parsed here once, so a value Ktor would reject on every request is a
+ * configuration error instead. Messages quote the URL only when it can't hold a secret.
+ */
+private fun baseUrlProblems(
+    url: String,
+    allowInsecureHttp: Boolean,
+): List<String> {
+    val quoted = url.takeUnless { '@' in it || '?' in it || '#' in it }?.let { " (was '$it')" }.orEmpty()
+    // Ktor reads a scheme-less value as a relative path, which would turn into a puzzling connection error much
+    // later instead of a configuration error here.
+    if (!url.startsWith("http://", ignoreCase = true) && !url.startsWith("https://", ignoreCase = true)) {
+        return listOf("baseUrl must start with http:// or https://$quoted")
+    }
+    // Ktor's own message (for a bad port, say) would quote the whole URL, so only the fact is reported.
+    val parsed = runCatching { Url("$url/") }.getOrNull() ?: return listOf("baseUrl is not a valid URL$quoted")
+    return buildList {
+        if (parsed.host.isEmpty()) add("baseUrl has no host$quoted")
+        if (parsed.user != null || parsed.password != null) {
+            add("baseUrl must not carry credentials; send what a gateway needs in headers instead")
+        }
+        if (!parsed.parameters.isEmpty() || parsed.trailingQuery || parsed.fragment.isNotEmpty()) {
+            add("baseUrl must not have a query or a fragment")
+        }
+        if (parsed.protocol.name == "http" && !allowInsecureHttp && !parsed.host.isLoopback()) {
+            add(
+                "baseUrl uses plain http:// for '${parsed.host}', so the API key would be sent unencrypted; use " +
+                    "https://, or set allowInsecureHttp for a trusted network (localhost never needs it)",
+            )
+        }
+    }
+}
+
+private val LOOPBACK_IPV4 = Regex("""127\.\d{1,3}\.\d{1,3}\.\d{1,3}""")
+
+private fun String.isLoopback(): Boolean {
+    val host = lowercase().removePrefix("[").removeSuffix("]")
+    return host == "localhost" ||
+        host.endsWith(".localhost") ||
+        host == "::1" ||
+        host == "0:0:0:0:0:0:0:1" ||
+        LOOPBACK_IPV4.matches(host)
+}
+
+/** What is wrong with a configured header, by Ktor's rules, without echoing its value, which may be a secret. */
+private fun headerProblem(
+    name: String,
+    value: String,
+): String? {
+    val badName = runCatching { HttpHeaders.checkHeaderName(name) }.isFailure
+    val badValue = runCatching { HttpHeaders.checkHeaderValue(value) }.isFailure
+    return when {
+        badName -> "header name '${name.escapeControls()}' contains a character HTTP doesn't allow in a name"
+        badValue -> "header '$name' has a control character in its value"
+        else -> null
+    }
+}
+
+/** A header name made printable for a message: each control character becomes a `\uXXXX` escape. */
+private fun String.escapeControls(): String =
+    buildString {
+        for (c in this@escapeControls) {
+            if (c.isControlCharacter()) append("\\u" + c.code.toString(16).padStart(4, '0')) else append(c)
+        }
+    }
 
 /** Resolved client settings. Build one with [JevConfigBuilder] or the `JevClient { }` constructor. */
 class JevConfig internal constructor(

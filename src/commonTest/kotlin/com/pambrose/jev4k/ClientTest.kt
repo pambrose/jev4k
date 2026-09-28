@@ -458,6 +458,18 @@ class ClientTest : StringSpec() {
             jev.requests.shouldBeEmpty()
         }
 
+        "a trimmed API key is what reaches the Authorization header" {
+            val jev = testJev(configure = { apiKey = "test-key\n" }) { respondJson(TRIAGE_RESPONSE) }
+            jev.client.ask(Triage, state = PAYOUT_TICKET)
+            jev.requests.single().headers[HttpHeaders.Authorization] shouldBe "Bearer test-key"
+        }
+
+        "a blank per-call model falls back to the configured default" {
+            val jev = triageJev()
+            jev.client.ask(Triage, state = PAYOUT_TICKET, model = "  ")
+            jev.requests.single().bodyJson().jsonObject["model"] shouldBe JsonPrimitive("jev-latest")
+        }
+
         // bodyAsText() parses the Content-Type to pick a charset, so a malformed one used to escape as a raw Ktor
         // exception; the body is now read as UTF-8 bytes whatever the header says.
         "a malformed Content-Type doesn't stop the body being read" {

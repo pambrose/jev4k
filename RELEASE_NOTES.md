@@ -11,9 +11,10 @@ Narrative notes for each jev4k release, newest first. The itemized list of chang
 > `com.pambrose.jev4k:jev4k-jvm:0.2.0`. 0.1.0 stays at `com.pambrose:jev4k`, and nothing newer will be published
 > there.
 >
-> **Nothing else changes.** On the JVM, 0.2.0 has 0.1.0's public API, Java surface, dependencies and Java 17
-> bytecode, and requests, retries, timeouts and errors behave exactly as before. Code written against 0.1.0 needs
-> only the new coordinates.
+> **Little else changes.** On the JVM, 0.2.0 keeps 0.1.0's public API (and adds to it), Java surface, dependencies and
+> Java 17 bytecode. Code written against 0.1.0 needs only the new coordinates, unless its `baseUrl` is a plain
+> `http://` URL on a host other than this machine: that now needs `allowInsecureHttp = true`. Some failures that
+> used to escape as raw Ktor or JDK exceptions are now `JevException`s; the changelog lists them.
 
 jev4k is now a Kotlin Multiplatform library. The same questions, handles and typed answers work on the JVM, on
 Apple platforms, on Linux and Windows, and on Node.js.

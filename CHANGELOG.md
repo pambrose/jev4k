@@ -25,6 +25,7 @@ unchanged; the other platforms are new.
   caller-supplied engine or a `MockEngine` handler; the JVM and Apple platforms rethrow those unchanged.
 - ABI validation. `api/jev4k.api` (the JVM surface) and `api/jev4k.klib.api` (the other targets) record the public
   API; `make tests` and CI fail when it changes, and `make abi-update` rewrites them after an intended change.
+- `JevConfigBuilder.allowInsecureHttp`, which allows a plain `http://` `baseUrl` on a host other than this machine.
 - `LiveProbeTest`, two opt-in calls to the real API that spend no tokens, run on every platform: an invalid key must
   come back as `JevAuthenticationException` and a 1 ms timeout as `JevTimeoutException`.
 - `make docker-linux-tests` runs the linuxX64 and linuxArm64 tests in Docker containers, so any host with Docker can
@@ -61,6 +62,15 @@ unchanged; the other platforms are new.
   release is published, so it never shows a version that isn't on Maven Central yet.
 
 ### Fixed
+
+- `JevConfigBuilder.build()` rejects what Ktor would otherwise refuse on every request, with an exception that
+  wasn't a `JevException` and whose message quoted the value: an API key with a control character in it (which
+  leaked the whole key), an invalid header name or value, and a `baseUrl` Ktor can't parse. String settings are
+  trimmed first, so a value read from a file with a trailing newline just works. A `baseUrl` with credentials, a
+  query or a fragment is rejected too, and plain `http://` is accepted only for a loopback host unless
+  `allowInsecureHttp` is set. No message quotes the key, a header value, or a URL that could hold credentials.
+- A blank per-call `model` falls back to the default instead of being sent as `""`.
+- A `RetryPolicy` built from a mutable set of statuses no longer changes a built client when the set changes.
 
 - Failures that escaped as raw Ktor or JDK exceptions are now `JevException`s:
   - a malformed `Content-Type` header, which the body is no longer decoded by;
