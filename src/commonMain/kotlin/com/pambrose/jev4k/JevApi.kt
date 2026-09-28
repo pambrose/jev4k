@@ -19,8 +19,25 @@ interface JevApi {
         model: String? = null,
     ): JevResult
 
-    /** The model names this account can use (`GET /v1/models`). */
-    suspend fun models(): List<ModelInfo>
+    /**
+     * [evaluate] with [options] overriding the client's settings for this one call.
+     *
+     * The default implementation ignores [options] and calls the three-argument [evaluate], so a fake written before
+     * this member existed keeps compiling. [JevClient] applies them; a [JevApi] that wraps another should override
+     * this and pass them on.
+     */
+    suspend fun evaluate(
+        state: JsonElement,
+        questions: QuestionSet,
+        model: String?,
+        options: JevCallOptions,
+    ): JevResult = evaluate(state, questions, model)
+
+    /** The models this account can use (`GET /v1/models`), with the call's request id. */
+    suspend fun models(): ModelList
+
+    /** [models] with [options] overriding the client's settings. The default implementation ignores them. */
+    suspend fun models(options: JevCallOptions): ModelList = models()
 }
 
 /** Asks inline questions about a text [state]. */

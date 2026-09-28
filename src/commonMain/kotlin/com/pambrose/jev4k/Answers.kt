@@ -5,7 +5,13 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.math.roundToInt
 
-/** A typed answer to one question. */
+/**
+ * A typed answer to one question.
+ *
+ * New subtypes may be added in a minor release when TypeSafe adds a kind of question, and [UnknownAnswer] holds any
+ * answer of a type this version doesn't know. A `when` over [Answer] that must keep compiling across upgrades should
+ * therefore end in an `else` branch.
+ */
 sealed interface Answer
 
 /**
@@ -104,6 +110,22 @@ data class ModelInfo(
     val description: String?,
     val releaseDate: String?,
 )
+
+/**
+ * What `GET /v1/models` returned: the models, in the server's order, as a `List<ModelInfo>`, plus the call's
+ * [requestId][ModelList.requestId] (the `x-typesafe-request-id` header). It equals any list holding the same models,
+ * whatever its request id, so a test can compare it with `listOf(...)`.
+ */
+class ModelList(
+    private val models: List<ModelInfo>,
+    val requestId: String? = null,
+) : List<ModelInfo> by models {
+    override fun equals(other: Any?): Boolean = models == other
+
+    override fun hashCode(): Int = models.hashCode()
+
+    override fun toString(): String = models.toString()
+}
 
 /** Raised by a question's decoder when the server's answer doesn't fit the question that was asked. */
 internal class AnswerDecodingException(

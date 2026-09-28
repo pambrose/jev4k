@@ -28,6 +28,9 @@ const val MAX_SCORE_LEVELS = 10
  * What one question asks, independent of its id: instructions plus criteria, each arbitrary JSON
  * (usually a string). Named after the TypeSafe JS SDK's `Question` / `NoulQuestion` / `ChoiceQuestion`
  * / `ScoreQuestion`. A [QuestionRef] pairs one with an id.
+ *
+ * As with [Answer], new subtypes may be added in a minor release when TypeSafe adds a kind of question, so a `when`
+ * over [Question] that must keep compiling across upgrades should end in an `else` branch.
  */
 sealed interface Question {
     val instructions: JsonElement

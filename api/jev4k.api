@@ -10,15 +10,21 @@ public final class com/pambrose/jev4k/BlockingJev {
 	public static synthetic fun ask$default (Lcom/pambrose/jev4k/BlockingJev;Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
 	public final fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;)Lcom/pambrose/jev4k/JevResult;
 	public final fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
+	public final fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lcom/pambrose/jev4k/JevCallOptions;)Lcom/pambrose/jev4k/JevResult;
 	public static synthetic fun evaluate$default (Lcom/pambrose/jev4k/BlockingJev;Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
 	public final fun getApi ()Lcom/pambrose/jev4k/JevApi;
-	public final fun models ()Ljava/util/List;
+	public final fun models ()Lcom/pambrose/jev4k/ModelList;
+	public final fun models (Lcom/pambrose/jev4k/JevCallOptions;)Lcom/pambrose/jev4k/ModelList;
 	public final fun query (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/JevResult;
 	public final fun query (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/JevResult;
 	public final fun query (Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/JevResult;
 	public final fun query (Lkotlinx/serialization/json/JsonElement;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/JevResult;
 	public static synthetic fun query$default (Lcom/pambrose/jev4k/BlockingJev;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
 	public static synthetic fun query$default (Lcom/pambrose/jev4k/BlockingJev;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
+}
+
+public final class com/pambrose/jev4k/BlockingJevKt {
+	public static final fun blocking (Lcom/pambrose/jev4k/JevApi;)Lcom/pambrose/jev4k/BlockingJev;
 }
 
 public final class com/pambrose/jev4k/BuildersKt {
@@ -74,13 +80,17 @@ public final class com/pambrose/jev4k/EntriesKt {
 }
 
 public abstract interface class com/pambrose/jev4k/JevApi {
+	public fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lcom/pambrose/jev4k/JevCallOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun evaluate$default (Lcom/pambrose/jev4k/JevApi;Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun models (Lcom/pambrose/jev4k/JevCallOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun models (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/pambrose/jev4k/JevApi$DefaultImpls {
+	public static fun evaluate (Lcom/pambrose/jev4k/JevApi;Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lcom/pambrose/jev4k/JevCallOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun evaluate$default (Lcom/pambrose/jev4k/JevApi;Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static fun models (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevCallOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public class com/pambrose/jev4k/JevApiException : com/pambrose/jev4k/JevException {
@@ -111,15 +121,43 @@ public final class com/pambrose/jev4k/JevAuthenticationException : com/pambrose/
 public final class com/pambrose/jev4k/JevBadRequestException : com/pambrose/jev4k/JevApiException {
 }
 
+public final class com/pambrose/jev4k/JevCallOptions {
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public final fun getExtraBody ()Ljava/util/Map;
+	public final fun getHeaders ()Ljava/util/Map;
+	public final fun getRetry ()Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun getTimeout-FghU774 ()Lkotlin/time/Duration;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pambrose/jev4k/JevCallOptionsBuilder {
+	public fun <init> ()V
+	public final fun build ()Lcom/pambrose/jev4k/JevCallOptions;
+	public final fun getExtraBody ()Ljava/util/Map;
+	public final fun getHeaders ()Ljava/util/Map;
+	public final fun getRetry ()Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun getTimeout-FghU774 ()Lkotlin/time/Duration;
+	public final fun getTimeoutMillis ()Ljava/lang/Long;
+	public final fun setRetry (Lcom/pambrose/jev4k/RetryPolicy;)V
+	public final fun setTimeout-BwNAW2A (Lkotlin/time/Duration;)V
+	public final fun setTimeoutMillis (Ljava/lang/Long;)V
+}
+
+public final class com/pambrose/jev4k/JevCallOptionsKt {
+	public static final fun withOptions (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevCallOptions;)Lcom/pambrose/jev4k/JevApi;
+}
+
 public final class com/pambrose/jev4k/JevClient : com/pambrose/jev4k/JevApi, java/lang/AutoCloseable {
 	public fun <init> ()V
 	public fun <init> (Lcom/pambrose/jev4k/JevConfig;)V
 	public fun <init> (Lkotlin/jvm/functions/Function1;)V
 	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close ()V
+	public fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lcom/pambrose/jev4k/JevCallOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getBlocking ()Lcom/pambrose/jev4k/BlockingJev;
 	public final fun getConfig ()Lcom/pambrose/jev4k/JevConfig;
+	public fun models (Lcom/pambrose/jev4k/JevCallOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun models (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -145,6 +183,7 @@ public final class com/pambrose/jev4k/JevConfigBuilder {
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getRetry ()Lcom/pambrose/jev4k/RetryPolicy;
 	public final fun getTimeout-UwyO8pc ()J
+	public final fun getTimeoutMillis ()J
 	public final fun setAllowInsecureHttp (Z)V
 	public final fun setApiKey (Ljava/lang/String;)V
 	public final fun setBaseUrl (Ljava/lang/String;)V
@@ -152,6 +191,7 @@ public final class com/pambrose/jev4k/JevConfigBuilder {
 	public final fun setEngine (Lio/ktor/client/engine/HttpClientEngine;)V
 	public final fun setRetry (Lcom/pambrose/jev4k/RetryPolicy;)V
 	public final fun setTimeout-LRDsOJo (J)V
+	public final fun setTimeoutMillis (J)V
 }
 
 public final class com/pambrose/jev4k/JevConfigException : com/pambrose/jev4k/JevException {
@@ -172,6 +212,7 @@ public final class com/pambrose/jev4k/JevDefaults {
 	public static final field MODEL Ljava/lang/String;
 	public static final field REQUEST_ID_HEADER Ljava/lang/String;
 	public static final field RETRY_AFTER_MS_HEADER Ljava/lang/String;
+	public static final field TIMEOUT_MILLIS J
 	public final fun getTIMEOUT-UwyO8pc ()J
 }
 
@@ -226,6 +267,7 @@ public abstract class com/pambrose/jev4k/JevQuery {
 
 public final class com/pambrose/jev4k/JevRateLimitException : com/pambrose/jev4k/JevApiException {
 	public final fun getRetryAfter-FghU774 ()Lkotlin/time/Duration;
+	public final fun getRetryAfterMillis ()Ljava/lang/Long;
 }
 
 public final class com/pambrose/jev4k/JevResponseValidationException : com/pambrose/jev4k/JevApiException {
@@ -279,6 +321,49 @@ public final class com/pambrose/jev4k/ModelInfo {
 	public final fun getName ()Ljava/lang/String;
 	public final fun getReleaseDate ()Ljava/lang/String;
 	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pambrose/jev4k/ModelList : java/util/List, kotlin/jvm/internal/markers/KMappedMarker {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun add (ILcom/pambrose/jev4k/ModelInfo;)V
+	public synthetic fun add (ILjava/lang/Object;)V
+	public fun add (Lcom/pambrose/jev4k/ModelInfo;)Z
+	public synthetic fun add (Ljava/lang/Object;)Z
+	public fun addAll (ILjava/util/Collection;)Z
+	public fun addAll (Ljava/util/Collection;)Z
+	public fun clear ()V
+	public fun contains (Lcom/pambrose/jev4k/ModelInfo;)Z
+	public final fun contains (Ljava/lang/Object;)Z
+	public fun containsAll (Ljava/util/Collection;)Z
+	public fun equals (Ljava/lang/Object;)Z
+	public fun get (I)Lcom/pambrose/jev4k/ModelInfo;
+	public synthetic fun get (I)Ljava/lang/Object;
+	public final fun getRequestId ()Ljava/lang/String;
+	public fun getSize ()I
+	public fun hashCode ()I
+	public fun indexOf (Lcom/pambrose/jev4k/ModelInfo;)I
+	public final fun indexOf (Ljava/lang/Object;)I
+	public fun isEmpty ()Z
+	public fun iterator ()Ljava/util/Iterator;
+	public fun lastIndexOf (Lcom/pambrose/jev4k/ModelInfo;)I
+	public final fun lastIndexOf (Ljava/lang/Object;)I
+	public fun listIterator ()Ljava/util/ListIterator;
+	public fun listIterator (I)Ljava/util/ListIterator;
+	public fun remove (I)Lcom/pambrose/jev4k/ModelInfo;
+	public synthetic fun remove (I)Ljava/lang/Object;
+	public fun remove (Ljava/lang/Object;)Z
+	public fun removeAll (Ljava/util/Collection;)Z
+	public fun replaceAll (Ljava/util/function/UnaryOperator;)V
+	public fun retainAll (Ljava/util/Collection;)Z
+	public fun set (ILcom/pambrose/jev4k/ModelInfo;)Lcom/pambrose/jev4k/ModelInfo;
+	public synthetic fun set (ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun size ()I
+	public fun sort (Ljava/util/Comparator;)V
+	public fun subList (II)Ljava/util/List;
+	public fun toArray ()[Ljava/lang/Object;
+	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -406,6 +491,15 @@ public final class com/pambrose/jev4k/RetryPolicy {
 	public final fun getRetryStatuses ()Ljava/util/Set;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+	public final fun withInitialBackoffMillis (J)Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun withJitter (D)Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun withMaxBackoffMillis (J)Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun withMaxRetries (I)Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun withMaxRetryAfterMillis (J)Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun withRespectRetryAfter (Z)Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun withRetryOnConnectionError (Z)Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun withRetryOnTimeout (Z)Lcom/pambrose/jev4k/RetryPolicy;
+	public final fun withRetryStatuses (Ljava/util/Set;)Lcom/pambrose/jev4k/RetryPolicy;
 }
 
 public final class com/pambrose/jev4k/RetryPolicy$Companion {
@@ -458,10 +552,14 @@ public final class com/pambrose/jev4k/TestingKt {
 	public static final fun jevApiException (I)Lcom/pambrose/jev4k/JevApiException;
 	public static final fun jevApiException (ILjava/lang/String;)Lcom/pambrose/jev4k/JevApiException;
 	public static final fun jevApiException (ILjava/lang/String;Ljava/lang/String;)Lcom/pambrose/jev4k/JevApiException;
-	public static final fun jevApiException-51bEbmg (ILjava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;Ljava/util/Map;)Lcom/pambrose/jev4k/JevApiException;
-	public static synthetic fun jevApiException-51bEbmg$default (ILjava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;Ljava/util/Map;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevApiException;
-	public static final fun jevApiException-Q2Q30fc (ILjava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;)Lcom/pambrose/jev4k/JevApiException;
+	public static final fun jevApiException (ILjava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/pambrose/jev4k/JevApiException;
+	public static final fun jevApiException-jSaE0eg (ILjava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/time/Duration;)Lcom/pambrose/jev4k/JevApiException;
+	public static synthetic fun jevApiException-jSaE0eg$default (ILjava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/time/Duration;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevApiException;
+	public static final fun jevResult (Ljava/lang/String;Lcom/pambrose/jev4k/QuestionSet;)Lcom/pambrose/jev4k/JevResult;
+	public static final fun jevResult (Ljava/lang/String;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
 	public static final fun jevResult (Ljava/lang/String;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
+	public static final fun jevResult (Lkotlinx/serialization/json/JsonObject;Lcom/pambrose/jev4k/QuestionSet;)Lcom/pambrose/jev4k/JevResult;
+	public static final fun jevResult (Lkotlinx/serialization/json/JsonObject;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
 	public static final fun jevResult (Lkotlinx/serialization/json/JsonObject;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
 	public static synthetic fun jevResult$default (Ljava/lang/String;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
 	public static synthetic fun jevResult$default (Lkotlinx/serialization/json/JsonObject;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
@@ -491,9 +589,5 @@ public final class com/pambrose/jev4k/Usage {
 	public final fun getOutputTokens ()Ljava/lang/Long;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/pambrose/jev4k/internal/WireKt {
-	public static final fun getValueJson ()Lkotlinx/serialization/json/Json;
 }
 

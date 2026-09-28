@@ -20,13 +20,22 @@ object JevDefaults {
     const val MODEL = "jev-latest"
     const val REQUEST_ID_HEADER = "x-typesafe-request-id"
     const val RETRY_AFTER_MS_HEADER = "retry-after-ms"
-    val TIMEOUT: Duration = 10.seconds
+
+    /** [TIMEOUT] in milliseconds, for Java, which can't read a `Duration` constant. */
+    const val TIMEOUT_MILLIS = 10_000L
+
+    /** The default timeout for each HTTP attempt. */
+    val TIMEOUT: Duration = TIMEOUT_MILLIS.milliseconds
 }
 
 /**
  * When and how failed requests are retried. The defaults match the official Python and JS SDKs:
  * two retries, 0.5 s backoff doubling to a 5 s cap with up to 25% subtracted as jitter, and
  * server `retry-after-ms` / `Retry-After` hints honored up to [maxRetryAfter][RetryPolicy.maxRetryAfter].
+ *
+ * Java can't call the constructor or `copy`, whose `Duration` parameters Kotlin hides from it. It starts from
+ * `new RetryPolicy()` and changes one setting at a time with the `with…` methods, which take milliseconds:
+ * `new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250)`.
  */
 data class RetryPolicy(
     val maxRetries: Int = 2,
@@ -63,6 +72,40 @@ data class RetryPolicy(
         return base * (1.0 - jitter * random)
     }
 
+    /** A copy with [maxRetries][RetryPolicy.maxRetries] changed. */
+    fun withMaxRetries(maxRetries: Int): RetryPolicy = copy(maxRetries = maxRetries)
+
+    /** A copy with [initialBackoff][RetryPolicy.initialBackoff] changed, in milliseconds. */
+    fun withInitialBackoffMillis(millis: Long): RetryPolicy = copy(initialBackoff = millis.milliseconds)
+
+    /** A copy with [maxBackoff][RetryPolicy.maxBackoff] changed, in milliseconds. */
+    fun withMaxBackoffMillis(millis: Long): RetryPolicy = copy(maxBackoff = millis.milliseconds)
+
+    /** A copy with [jitter][RetryPolicy.jitter] changed. */
+    fun withJitter(jitter: Double): RetryPolicy = copy(jitter = jitter)
+
+    /** A copy with [retryStatuses][RetryPolicy.retryStatuses] changed. */
+    fun withRetryStatuses(retryStatuses: Set<Int>): RetryPolicy = copy(retryStatuses = retryStatuses)
+
+    /** A copy with [respectRetryAfter][RetryPolicy.respectRetryAfter] changed. */
+    fun withRespectRetryAfter(respectRetryAfter: Boolean): RetryPolicy = copy(respectRetryAfter = respectRetryAfter)
+
+    /** A copy with [maxRetryAfter][RetryPolicy.maxRetryAfter] changed, in milliseconds. */
+    fun withMaxRetryAfterMillis(millis: Long): RetryPolicy = copy(maxRetryAfter = millis.milliseconds)
+
+    /** A copy with [retryOnConnectionError][RetryPolicy.retryOnConnectionError] changed. */
+    fun withRetryOnConnectionError(retryOnConnectionError: Boolean): RetryPolicy =
+        copy(retryOnConnectionError = retryOnConnectionError)
+
+    /** A copy with [retryOnTimeout][RetryPolicy.retryOnTimeout] changed. */
+    fun withRetryOnTimeout(retryOnTimeout: Boolean): RetryPolicy = copy(retryOnTimeout = retryOnTimeout)
+
+    /**
+     * A copy whose status set is a snapshot. The set may be the caller's mutable one, and the client re-reads it on
+     * every response, so a later change to it would otherwise change a built client.
+     */
+    internal fun snapshot(): RetryPolicy = copy(retryStatuses = retryStatuses.toSet())
+
     companion object {
         /** Never retry. */
         val NONE = RetryPolicy(maxRetries = 0)
@@ -90,6 +133,13 @@ class JevConfigBuilder {
 
     /** Timeout for each HTTP attempt. */
     var timeout: Duration = JevDefaults.TIMEOUT
+
+    /** [timeout] in milliseconds, for Java, which can't call its `Duration` setter. */
+    var timeoutMillis: Long
+        get() = timeout.inWholeMilliseconds
+        set(value) {
+            timeout = value.milliseconds
+        }
 
     var retry: RetryPolicy = RetryPolicy()
 
@@ -125,9 +175,7 @@ class JevConfigBuilder {
         // Checked here, not left to Ktor: Ktor validates them on every request, so a bad value would build a client
         // that fails every call with an exception that isn't a JevException, and its message echoes the value.
         val problems = buildList {
-            // The factory truncates with inWholeMilliseconds, so anything under a millisecond reaches Ktor as 0,
-            // which HttpTimeout rejects outright.
-            if (timeout.inWholeMilliseconds < 1) add("timeout must be at least 1 millisecond (was $timeout)")
+            timeoutProblem(timeout)?.let(::add)
             addAll(baseUrlProblems(url, allowInsecureHttp))
             val badChar = key.indexOfFirst { it.isControlCharacter() }
             if (badChar >= 0) add("apiKey contains a control character at index $badChar")
@@ -140,9 +188,7 @@ class JevConfigBuilder {
             baseUrl = url,
             defaultModel = defaultModel.setting() ?: fromEnv(JevDefaults.DEFAULT_MODEL_ENV) ?: JevDefaults.MODEL,
             timeout = timeout,
-            // A copy: the policy's status set may be the caller's mutable set, and the client re-reads it on every
-            // response, so a later change to it would otherwise change a built client.
-            retry = retry.copy(retryStatuses = retry.retryStatuses.toSet()),
+            retry = retry.snapshot(),
             engine = engine,
             headers = headers.toMap(),
             retryDelay = retryDelay,
@@ -150,6 +196,13 @@ class JevConfigBuilder {
         )
     }
 }
+
+/**
+ * What is wrong with a timeout. The client truncates it with inWholeMilliseconds, so anything under a millisecond
+ * would reach Ktor as 0, which HttpTimeout rejects outright.
+ */
+internal fun timeoutProblem(timeout: Duration): String? =
+    "timeout must be at least 1 millisecond (was $timeout)".takeIf { timeout.inWholeMilliseconds < 1 }
 
 /** A string setting as given, trimmed, or null when it is unset or blank. */
 private fun String?.setting(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
@@ -201,7 +254,7 @@ private fun String.isLoopback(): Boolean {
 }
 
 /** What is wrong with a configured header, by Ktor's rules, without echoing its value, which may be a secret. */
-private fun headerProblem(
+internal fun headerProblem(
     name: String,
     value: String,
 ): String? {

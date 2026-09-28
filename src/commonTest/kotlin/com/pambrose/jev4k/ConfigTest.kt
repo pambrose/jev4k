@@ -303,5 +303,35 @@ class ConfigTest : StringSpec() {
         "RetryPolicy.NONE is zero retries" {
             RetryPolicy.NONE.maxRetries shouldBe 0
         }
+
+        // Java can't call a member that takes or returns a Duration, so each Duration setting has a millisecond twin.
+        "the millisecond members for Java match their Duration counterparts" {
+            JevDefaults.TIMEOUT_MILLIS shouldBe JevDefaults.TIMEOUT.inWholeMilliseconds
+            val builder = JevConfigBuilder().apply { timeoutMillis = 2500 }
+            builder.timeout shouldBe 2500.milliseconds
+            builder.timeoutMillis shouldBe 2500
+            val e = shouldThrow<JevConfigException> {
+                config {
+                    apiKey = "k"
+                    timeoutMillis = 0
+                }
+            }
+            e.message shouldContain "timeout must be at least 1 millisecond"
+        }
+
+        "RetryPolicy's with methods each change one setting, and are validated like the constructor" {
+            RetryPolicy()
+                .withMaxRetries(4)
+                .withInitialBackoffMillis(250)
+                .withMaxBackoffMillis(2000)
+                .withJitter(0.1)
+                .withRetryStatuses(setOf(503))
+                .withRespectRetryAfter(false)
+                .withMaxRetryAfterMillis(30_000)
+                .withRetryOnConnectionError(false)
+                .withRetryOnTimeout(false) shouldBe
+                RetryPolicy(4, 250.milliseconds, 2.seconds, 0.1, setOf(503), false, 30.seconds, false, false)
+            shouldThrow<JevConfigException> { RetryPolicy().withMaxRetries(-1) }
+        }
     }
 }

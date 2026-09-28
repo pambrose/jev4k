@@ -20,7 +20,6 @@ internal val JevJson = Json {
 }
 
 /** JSON for caller-supplied values (state, entries): fields equal to their defaults are kept so the model sees them. */
-@PublishedApi
 internal val ValueJson = Json { encodeDefaults = true }
 
 /** Body of `POST /v1/systemone`. */

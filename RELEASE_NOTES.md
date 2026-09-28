@@ -11,10 +11,19 @@ Narrative notes for each jev4k release, newest first. The itemized list of chang
 > `com.pambrose.jev4k:jev4k-jvm:0.2.0`. 0.1.0 stays at `com.pambrose:jev4k`, and nothing newer will be published
 > there.
 >
-> **Little else changes.** On the JVM, 0.2.0 keeps 0.1.0's public API (and adds to it), Java surface, dependencies and
-> Java 17 bytecode. Code written against 0.1.0 needs only the new coordinates, unless its `baseUrl` is a plain
-> `http://` URL on a host other than this machine: that now needs `allowInsecureHttp = true`. Some failures that
-> used to escape as raw Ktor or JDK exceptions are now `JevException`s; the changelog lists them.
+> **Most code needs nothing else.** The client behaves as before, with the same dependencies and Java 17 bytecode.
+> Since every build has to change anyway, 0.2.0 also makes a few small API changes, each of which affects only some
+> code:
+>
+> - A plain `http://` `baseUrl` on a host other than this machine now needs `allowInsecureHttp = true`.
+> - `JevApiException.headers` has lowercased names on every platform: look up `"retry-after"`, not `"Retry-After"`.
+> - `models()` returns a `ModelList`, which is a `List<ModelInfo>`. A fake or mock `JevApi` returns
+>   `ModelList(listOf(...))`.
+> - Java code calling `BlockingJev` catches or declares `InterruptedException`, which every blocking call now
+>   declares.
+> - `jevApiException` takes `headers` before `retryAfter`; calls that name their arguments are unaffected.
+>
+> Some failures that used to escape as raw Ktor or JDK exceptions are now `JevException`s; the changelog lists them.
 
 jev4k is now a Kotlin Multiplatform library. The same questions, handles and typed answers work on the JVM, on
 Apple platforms, on Linux and Windows, and on Node.js.
@@ -49,6 +58,27 @@ configurations.all {
     exclude(group = "com.pambrose", module = "jev4k")
 }
 ```
+
+### New in the API
+
+- **Per-call options.** `JevCallOptions` overrides the timeout, retry policy and headers for the calls that need
+  something else, as both official SDKs allow, without a second client:
+
+  ```kotlin
+  val interactive = JevCallOptions {
+      timeout = 2.seconds
+      retry = RetryPolicy.NONE
+  }
+  val result = jev.withOptions(interactive).ask(Triage, state = ticket)
+  ```
+
+- **Request ids for `models()`.** It returns a `ModelList`, which carries the call's `requestId` as `evaluate`'s
+  result does.
+- **Blocking calls for any `JevApi`.** `api.blocking()` wraps a fake as readily as a client, so blocking and Java
+  code can be tested without HTTP.
+- **Java reaches every setting.** Each `Duration` setting has a millisecond counterpart (`setTimeoutMillis`,
+  `RetryPolicy.withInitialBackoffMillis`, `getRetryAfterMillis`, …), and `RetryPolicy`'s `with…` methods build any
+  policy.
 
 ### Platforms
 

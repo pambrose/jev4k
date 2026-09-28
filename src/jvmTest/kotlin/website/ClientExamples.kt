@@ -1,9 +1,12 @@
 package website
 
 import com.pambrose.jev4k.JevApi
+import com.pambrose.jev4k.JevCallOptions
 import com.pambrose.jev4k.JevClient
 import com.pambrose.jev4k.RetryPolicy
 import com.pambrose.jev4k.ask
+import com.pambrose.jev4k.blocking
+import com.pambrose.jev4k.withOptions
 import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -91,6 +94,14 @@ fun callsBlocking() {
     // --8<-- [end:blocking]
 }
 
+fun callsBlockingApi(api: JevApi) {
+    // --8<-- [start:blocking-api]
+    // Code handed a JevApi, such as a fake in a test, gets the same blocking calls from blocking().
+    val result = api.blocking().ask(Triage, state = "Our dashboard has been down for an hour.")
+    // --8<-- [end:blocking-api]
+    println(result)
+}
+
 suspend fun callsModel(jev: JevApi) {
     // --8<-- [start:model]
     // Override the model per call. Pin a versioned model once you've tuned thresholds against it,
@@ -98,8 +109,10 @@ suspend fun callsModel(jev: JevApi) {
     val pinned = jev.ask(Triage, state = "The API returns 500s.", model = "jev-1.13.0")
     println("answered by ${pinned.model}")
 
-    // List the model names this account can use.
-    jev.models().forEach { println("${it.name} (${it.releaseDate}): ${it.description}") }
+    // List the models this account can use. The list also carries the call's request id.
+    val models = jev.models()
+    models.forEach { println("${it.name} (${it.releaseDate}): ${it.description}") }
+    println("request ${models.requestId}")
     // --8<-- [end:model]
 }
 
@@ -108,6 +121,28 @@ suspend fun callsEvaluate(jev: JevApi) {
     // evaluate is the one network call everything else builds on.
     val result = jev.evaluate(JsonPrimitive("Refund me now!"), Triage.questions, model = null)
     // --8<-- [end:evaluate]
+    println(result)
+}
+
+suspend fun callsOptions(
+    jev: JevApi,
+    traceId: String,
+) {
+    // --8<-- [start:options]
+    // A tight budget for the interactive path, on the same client as everything else.
+    val interactive =
+        JevCallOptions {
+            timeout = 2.seconds             // per attempt, instead of the client's
+            retry = RetryPolicy.NONE        // replaces the client's whole policy
+            headers["X-Trace-Id"] = traceId // over the client's and the built-in headers
+        }
+    val urgent = jev.withOptions(interactive).ask(Triage, state = "Checkout fails for every customer.")
+
+    // Or for one evaluate call, adding a top-level body field that jev4k doesn't model.
+    val tuned = JevCallOptions { extraBody["beam_width"] = JsonPrimitive(4) }
+    val result = jev.evaluate(JsonPrimitive("Refund me now!"), Triage.questions, model = null, options = tuned)
+    // --8<-- [end:options]
+    println(urgent)
     println(result)
 }
 

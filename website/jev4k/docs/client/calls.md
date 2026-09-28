@@ -17,7 +17,9 @@ icon: lucide/send
 | `evaluate(state, questions, model?)` | sends a `QuestionSet` about a JSON state; everything else builds on it |
 | `query(state, model?) { ... }`       | builds questions inline, then evaluates them                           |
 | `ask(query, state, model?)`          | evaluates a `JevQuery`'s questions                                     |
-| `models()`                           | lists the model names your account can use                             |
+| `models()`                           | lists the models your account can use, with the call's request id      |
+
+`evaluate` and `models` also take [per-call options](#per-call-options).
 
 `query` and `ask` are extension functions on `JevApi`. Import them with
 `import com.pambrose.jev4k.query` and `import com.pambrose.jev4k.ask`; IDEs add these automatically.
@@ -34,8 +36,16 @@ On the JVM, `jev.blocking` mirrors every call without coroutines, for scripts, `
 --8<-- "ClientExamples.kt:blocking"
 ```
 
-Blocking calls block the calling thread. Don't use them from inside a coroutine. They exist on the JVM only; on
-every other platform `BlockingJev` has no members. Kotlin/JS and Kotlin/Wasm can't block a thread at all, and
+Any other `JevApi`, such as a fake or a [per-call options](#per-call-options) view, has the same blocking calls
+through `blocking()`:
+
+```kotlin
+--8<-- "ClientExamples.kt:blocking-api"
+```
+
+Blocking calls block the calling thread. Don't use them from inside a coroutine. An interrupted thread gets an
+`InterruptedException`, which every blocking call declares, so Java code can catch it. They exist on the JVM only;
+on every other platform `BlockingJev` has no members. Kotlin/JS and Kotlin/Wasm can't block a thread at all, and
 Kotlin/Native code that needs to can wrap the suspend calls in `runBlocking` itself.
 
 ## Choosing a model
@@ -49,6 +59,27 @@ Every call takes an optional `model`, which overrides the client's `defaultModel
 `jev-latest` always points at the newest stable model, so its answers can shift when TypeSafe ships a release.
 Once you've tuned thresholds against a model, pin its version (for example `jev-1.13.0`) and move to a new one
 deliberately.
+
+## Per-call options
+
+The client's timeout, retry policy and headers suit most calls. `JevCallOptions` changes them for the calls that
+need something else, as both official SDKs allow, without a second client:
+
+```kotlin
+--8<-- "ClientExamples.kt:options"
+```
+
+| Option      | Effect                                                                                             |
+|-------------|----------------------------------------------------------------------------------------------------|
+| `timeout`   | the timeout for each attempt, instead of the client's                                              |
+| `retry`     | a `RetryPolicy` that replaces the client's as a whole                                              |
+| `headers`   | headers that replace the client's and the built-in ones of the same name, `Authorization` included |
+| `extraBody` | top-level fields added to the `evaluate` request body, other than `state`, `model` and `questions` |
+
+A setting left unset keeps the client's value. `jev.withOptions(options)` returns a `JevApi` that applies them to
+every call, `query`, `ask` and `blocking()` included; options passed to a call on it are merged over its own.
+Options are checked when they're built, and a problem is a `JevConfigException`. `extraBody` is an escape hatch for
+API parameters jev4k doesn't model yet; whether the service accepts a field is up to TypeSafe.
 
 ## Concurrency
 
@@ -76,7 +107,10 @@ Depend on the `JevApi` interface rather than `JevClient`, and pass it in:
 
 `query` and `ask` both go through `JevApi.evaluate`, so a fake or mock that implements `evaluate` covers all
 three, without a network. `models()` is the interface's other network call; stub it too if your code lists
-models. To exercise the real client without a network, give it a Ktor `MockEngine` through the `engine` setting.
+models, returning a `ModelList`. The members that take `JevCallOptions` have default implementations that ignore
+the options and call the plain ones, so a fake needn't implement them. A MockK mock does need them stubbed if the
+code under test passes options or uses `withOptions`: `coEvery { jev.evaluate(any(), any(), any(), any()) }`. To
+exercise the real client without a network, give it a Ktor `MockEngine` through the `engine` setting.
 
 Build what the fake returns with `jevResult(body, questions)`, which maps a response body exactly as the client
 does, and `jevApiException(status)` for the error path. Recording a real response and replaying it keeps a

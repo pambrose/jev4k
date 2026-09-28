@@ -6,7 +6,7 @@ README, documentation site and release documents. The method is described at the
 
 Every issue has a number. Tick its box when it's fixed, and update the count below in the same change.
 
-**Status: 26 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
+**Status: 36 of 85 fixed.** 1 high, 15 medium, 65 low, 4 nit.
 
 ## Summary
 
@@ -26,7 +26,7 @@ Every issue has a number. Tick its box when it's fixed, and update the count bel
 - [x] [#5](#issue-5) **Client.** A call on a closed `JevClient` fails with a bare `CancellationException`
 - [x] [#6](#issue-6) **Client.** A call cancelled because a sibling failed is reported as a Jev error instead of
   `CancellationException`
-- [ ] [#7](#issue-7) **Client.** `JevApiException.headers` is case-sensitive, and key casing differs by engine
+- [x] [#7](#issue-7) **Client.** `JevApiException.headers` is case-sensitive, and key casing differs by engine
 - [x] [#8](#issue-8) **Client.** Deeply nested JSON (a state, or a response) overflows the stack
 - [x] [#9](#issue-9) **Config.** An API key or header with a control character leaks the full key in a raw Ktor
   exception on every call
@@ -34,7 +34,7 @@ Every issue has a number. Tick its box when it's fixed, and update the count bel
   call throws `URLParserException`
 - [ ] [#11](#issue-11) **Results.** `enumChoice<E>(id)` doesn't check E against the declared options, so a caller
   mistake is blamed on the server
-- [ ] [#12](#issue-12) **Java interop.** Java can't reach any `Duration`-typed API (timeout, `RetryPolicy`,
+- [x] [#12](#issue-12) **Java interop.** Java can't reach any `Duration`-typed API (timeout, `RetryPolicy`,
   `retryAfter`), yet the docs say "everything else is callable"
 - [x] [#13](#issue-13) **CI.** The docs site and KDocs are never built on PRs, and Zensical runs without `--strict`
 - [x] [#14](#issue-14) **Release.** Install snippets name the unpublished 0.2.0 coordinates, and the docs deploy
@@ -52,7 +52,7 @@ Client and HTTP
 - [ ] [#18](#issue-18) The response mapper accepts NaN/Infinity and out-of-range Score level keys
 - [ ] [#19](#issue-19) `JevResponseValidationException` from mapping drops the headers and holds re-serialized JSON,
   not the raw body
-- [ ] [#20](#issue-20) `models()` discards the `x-typesafe-request-id` of a successful call
+- [x] [#20](#issue-20) `models()` discards the `x-typesafe-request-id` of a successful call
 - [x] [#21](#issue-21) A blank per-call model is sent as `"model": ""`
 - [ ] [#22](#issue-22) A `Retry-After` HTTP-date is ignored, unlike the official Python SDK
 - [x] [#23](#issue-23) With a supplied engine, `JevTimeoutException` quotes `config.timeout` even when the engine's
@@ -62,7 +62,7 @@ Client and HTTP
 - [ ] [#25](#issue-25) Redirects are followed by default: custom headers go to another host, and Node re-sends
   POST bodies
 - [ ] [#26](#issue-26) Response bodies are read whole into memory, with no size cap
-- [ ] [#27](#issue-27) No per-call timeout, retry or header overrides, unlike both official SDKs
+- [x] [#27](#issue-27) No per-call timeout, retry or header overrides, unlike both official SDKs
 
 Configuration and validation
 
@@ -83,18 +83,18 @@ DSL and results
 - [ ] [#37](#issue-37) `QueryBuilder.question(id, q)` uses an identity decoder, so reads never check the answer type
 - [ ] [#38](#issue-38) `QueryBuilder.question()` keeps the caller's `Map`/`List` by reference after validation
 - [ ] [#39](#issue-39) A string-keyed Choice returns an undeclared option as is, while the enum path rejects it
-- [ ] [#40](#issue-40) Inline and typed builders take id and instructions in opposite order, so a swapped call
+- [x] [#40](#issue-40) Inline and typed builders take id and instructions in opposite order, so a swapped call
   compiles
-- [ ] [#41](#issue-41) No stated policy for adding subtypes to the sealed `Answer` and `Question` types
+- [x] [#41](#issue-41) No stated policy for adding subtypes to the sealed `Answer` and `Question` types
 
 Java interop and public API
 
-- [ ] [#42](#issue-42) `BlockingJev` throws an undeclared checked `InterruptedException`
-- [ ] [#43](#issue-43) `JevApiException` isn't Java-serializable with a JSON body, nor is `JevRateLimitException`
+- [x] [#42](#issue-42) `BlockingJev` throws an undeclared checked `InterruptedException`
+- [x] [#43](#issue-43) `JevApiException` isn't Java-serializable with a JSON body, nor is `JevRateLimitException`
   with a retry hint
-- [ ] [#44](#issue-44) `BlockingJev` can only be built by `JevClient`, so blocking code can't wrap a fake `JevApi`
+- [x] [#44](#issue-44) `BlockingJev` can only be built by `JevClient`, so blocking code can't wrap a fake `JevApi`
 - [ ] [#45](#issue-45) The docs say Java has "no route" to enum Choices, but the `@PublishedApi` members are callable
-- [ ] [#46](#issue-46) `@PublishedApi` on `ValueJson` does nothing, and puts an internal `Json` into both ABI dumps
+- [x] [#46](#issue-46) `@PublishedApi` on `ValueJson` does nothing, and puts an internal `Json` into both ABI dumps
 - [ ] [#47](#issue-47) The testing docs show only a fixed-QuestionSet mock, which fails for per-call handles
 - [ ] [#48](#issue-48) `jevResult(String)` skips the client's body-level validation, contrary to its docs
 - [ ] [#49](#issue-49) `RetryPolicy`'s docs say the defaults match both SDKs; Python also has a 30 s total budget
@@ -370,6 +370,10 @@ alerts for Jev outages then fire for an unrelated failure.
 **Medium** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:89`,
 `src/commonMain/kotlin/com/pambrose/jev4k/Errors.kt:36`, `src/commonTest/kotlin/com/pambrose/jev4k/ClientTest.kt:403`
 
+**Fixed.** `JevApiException` lowercases header names in its constructor, merging the values of names that differ only in
+case, so every engine and `jevApiException` agree. The KDoc, the README and the errors page state the contract, and the
+client test sends `X-Trace` and reads `x-trace`.
+
 **What's wrong.** `response.headers.toMap()` copies Ktor's case-insensitive `Headers` into a plain `LinkedHashMap`.
 The engines then differ:
 - CIO keeps the server's spelling.
@@ -492,6 +496,12 @@ README.md:544 says misuse is an `IllegalArgumentException`.
 #### 12. Java can't reach any `Duration`-typed API, yet the docs say everything else is callable
 
 **Medium** · Java interop · medium · `README.md:506`, `src/commonMain/kotlin/com/pambrose/jev4k/JevConfig.kt:83`
+
+**Fixed.** Each `Duration` setting has a millisecond twin: `JevConfigBuilder.timeoutMillis`,
+`JevCallOptionsBuilder.timeoutMillis`, `JevDefaults.TIMEOUT_MILLIS`, a `with…` method per `RetryPolicy` setting and
+`JevRateLimitException.retryAfterMillis`. `jevApiException` takes `headers` before `retryAfter` and reads the hint from
+them, and `jevResult` has `@JvmOverloads`. `JavaInterop.java` calls each, and the README and the Installation page name
+the `Duration` getters as the only part left Kotlin-only.
 
 **What's wrong.** `kotlin.time.Duration` is an inline class. Members that take or return one get mangled JVM names
 that javac can't call, and constructors with `Duration` defaults become synthetic. From Java you can't:
@@ -668,6 +678,9 @@ Alternatively, correct the docs. Passing them also removes the re-serialization 
 
 **Low** · Client · small · `src/commonMain/kotlin/com/pambrose/jev4k/JevClient.kt:69`
 
+**Fixed.** `models()` returns a `ModelList`, a `List<ModelInfo>` carrying `requestId`, which equals any list of the same
+models. The README, the calls page, the mocks and the ABI dumps are updated.
+
 **What's wrong.** The spec and both SDKs expose `x-typesafe-request-id` on success as well as on error. `evaluate`
 does, through `JevResult.requestId`. `models()` returns a bare `List<ModelInfo>`.
 
@@ -779,6 +792,10 @@ within the 10 s timeout.
 #### 27. No per-call timeout, retry or header overrides
 
 **Low** · API design · medium · `src/commonMain/kotlin/com/pambrose/jev4k/JevApi.kt:13`
+
+**Fixed.** `JevCallOptions` overrides the timeout, retry policy and headers per call and adds `extraBody` fields,
+through new `JevApi` members with default implementations and `JevApi.withOptions`. Headers moved from `DefaultRequest`,
+which merges rather than replaces, to each request. `CallOptionsTest` covers each option.
 
 **What's wrong.** Both SDKs accept per-call timeout, retry and header options, and Python can add extra body
 fields. jev4k fixes all three per `JevClient`, and its request DTO has no room for extra fields. So:
@@ -991,6 +1008,10 @@ neither documented nor tested.
 
 **Low** · DSL · medium · `src/commonMain/kotlin/com/pambrose/jev4k/JevQuery.kt:50`
 
+**Fixed.** `typed.md` no longer says the typed builders are the inline ones minus the id; it says instructions come
+first, and a warning tells readers to pass `id` by name. The `JevQuery` KDoc says the same. Making a positional id
+impossible is left for before 1.0.
+
 **What's wrong.** `QueryBuilder` builders take `(id, instructions)`. `JevQuery`'s take `(instructions, id = null)`.
 Both are strings, so moving an inline question into a `JevQuery` with the id still first compiles and validates.
 Jev then receives the id, say "urgent", as the question. `website/jev4k/docs/queries/typed.md:30` calls the typed
@@ -1006,6 +1027,9 @@ builders the inline ones "minus the id argument".
 
 **Low** · API design · small · `src/commonMain/kotlin/com/pambrose/jev4k/Answers.kt:9`,
 `src/commonMain/kotlin/com/pambrose/jev4k/Questions.kt:30`
+
+**Fixed.** The KDoc on `Answer` and `Question` and the CHANGELOG state the policy: new subtypes may come in a minor
+release, so a `when` that must keep compiling ends in `else`.
 
 **What's wrong.** Adding a subtype, for example when TypeSafe adds a question kind, breaks consumers' exhaustive
 `when` expressions. No policy says whether that can happen in a minor release. `UnknownAnswer` handles forward
@@ -1024,6 +1048,10 @@ compatibility on the wire only, not in consumers' source.
 
 **Low** · Java interop · small · `src/jvmMain/kotlin/com/pambrose/jev4k/BlockingJev.jvm.kt:15`
 
+**Fixed.** Every `BlockingJev` method is `@Throws(InterruptedException::class)`. `JavaInterop.java` catches it,
+`BlockingJevTest` interrupts a blocked call and checks every public method declares it, and the CHANGELOG and release
+notes list it as a Java source change.
+
 **What's wrong.** Interrupting a thread blocked in `BlockingJev` makes `runBlocking` rethrow `InterruptedException`.
 That's a checked exception, and no method declares it:
 - Java callers can't write `catch (InterruptedException e)`; javac rejects it.
@@ -1039,6 +1067,10 @@ That's a checked exception, and no method declares it:
 #### 43. API exceptions aren't Java-serializable
 
 **Low** · Java interop · small · `src/commonMain/kotlin/com/pambrose/jev4k/Errors.kt:46`, `:94`
+
+**Fixed.** `bodyJson` is a plain getter, and `JevRateLimitException` stores its hint as nanoseconds behind the
+`retryAfter` getter, so both exceptions serialize. `ErrorsJvmTest` round-trips a rate-limit error built by
+`jevApiException` and one built by the client.
 
 **What's wrong.** On the JVM every `Throwable` is `Serializable`, but two fields break that:
 - `JevApiException.bodyJson` is a `by lazy`. Serializing it forces the parse and writes a `JsonElement`, which
@@ -1060,6 +1092,9 @@ affected: RMI/EJB, JMS, and session or cache replication.
 #### 44. Blocking code can't wrap a fake `JevApi`
 
 **Low** · API design · small · `src/commonMain/kotlin/com/pambrose/jev4k/BlockingJev.kt:10`
+
+**Fixed.** `fun JevApi.blocking(): BlockingJev` (`BlockingJevKt.blocking(api)` from Java) returns a client's own view,
+or wraps any other `JevApi`. The calls page and the README document it.
 
 **What's wrong.** `BlockingJev`'s constructor is internal, and only `JevClient.blocking` returns one. So blocking and
 Java code can't depend on a `JevApi` and be handed a fake, which is what `website/jev4k/docs/client/calls.md`
@@ -1086,6 +1121,9 @@ offer them: `enumChoiceRef`, `QueryBuilder.add` and `JevResult.enumChoiceOf`.
 #### 46. `@PublishedApi` on `ValueJson` does nothing useful
 
 **Low** · API design · small · `src/commonMain/kotlin/com/pambrose/jev4k/internal/Wire.kt:23`
+
+**Fixed.** The annotation is gone, and `ValueJson` with it from both ABI dumps; `encodeValue`, the `@PublishedApi`
+function that uses it, isn't inline.
 
 **What's wrong.** No inline function references `ValueJson`. The annotation only puts a getter for an internal
 kotlinx `Json` instance into both ABI dumps, where it's the only symbol from the `internal` package. Renaming it

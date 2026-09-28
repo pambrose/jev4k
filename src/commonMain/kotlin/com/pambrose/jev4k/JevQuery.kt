@@ -36,6 +36,11 @@ interface JevOption {
  * ```
  *
  * Questions are validated the first time [questions] is used, so an invalid definition fails on first use.
+ *
+ * The builders take the instructions first and an optional `id` second, the reverse of the inline [QueryBuilder]'s
+ * `(id, instructions)`. Both are strings, so pass `id` by name (`noul("Is this urgent?", id = "urgent")`): a
+ * question moved from an inline query with its arguments unchanged would otherwise compile and send its id as the
+ * instructions.
  */
 abstract class JevQuery {
     private val registered = mutableListOf<QuestionRef<*>>()

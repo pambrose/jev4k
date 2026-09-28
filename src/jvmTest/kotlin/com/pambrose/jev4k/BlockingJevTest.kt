@@ -1,13 +1,23 @@
 package com.pambrose.jev4k
 
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.lang.reflect.Modifier
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.thread
 
 /**
  * [BlockingJev] only wraps [JevApi] in `runBlocking`, so what matters is that every overload forwards the state
@@ -71,10 +81,58 @@ class BlockingJevTest : StringSpec() {
         }
 
         "models is forwarded too" {
-            val listed = listOf(ModelInfo("jev-latest", null, null))
+            val listed = ModelList(listOf(ModelInfo("jev-latest", null, null)), requestId = "req-1")
             val api = mockk<JevApi> { coEvery { models() } returns listed }
-            BlockingJev(api).models() shouldBe listed
+            BlockingJev(api).models().requestId shouldBe "req-1"
             coVerify(exactly = 1) { api.models() }
+        }
+
+        "the calls that take options forward them" {
+            val options = JevCallOptions { headers["X-Trace-Id"] = "t-1" }
+            val api = mockk<JevApi> {
+                coEvery { evaluate(any(), any(), any(), any()) } returns jevResult(TRIAGE_RESPONSE, Triage.questions)
+                coEvery { models(any()) } returns ModelList(emptyList())
+            }
+            val blocking = api.blocking()
+            blocking.evaluate(jsonState, Triage.questions, "m1", options)
+            blocking.models(options)
+            coVerify(exactly = 1) { api.evaluate(jsonState, Triage.questions, "m1", options) }
+            coVerify(exactly = 1) { api.models(options) }
+        }
+
+        "blocking() wraps any JevApi, and gives a client its own blocking view" {
+            val (api, _) = answering()
+            api.blocking().ask(Triage, "text state")
+            coVerify(exactly = 1) { api.evaluate(JsonPrimitive("text state"), Triage.questions, null) }
+
+            JevClient { testDefaults(mutableListOf()) }.use { client ->
+                client.blocking() shouldBeSameInstanceAs client.blocking
+            }
+        }
+
+        "an interrupted call throws InterruptedException, which every Java-visible call declares" {
+            val started = CountDownLatch(1)
+            val api = mockk<JevApi> {
+                coEvery { evaluate(any(), any(), any()) } coAnswers {
+                    started.countDown()
+                    awaitCancellation()
+                }
+            }
+            val thrown = AtomicReference<Throwable>()
+            val caller = thread {
+                runCatching { api.blocking().evaluate(jsonState, Triage.questions) }.onFailure(thrown::set)
+            }
+            started.await(10, TimeUnit.SECONDS) shouldBe true
+            caller.interrupt()
+            caller.join(10_000)
+            thrown.get().shouldBeInstanceOf<InterruptedException>()
+
+            // javac only lets Java code catch a checked exception that a method declares.
+            val calls = BlockingJev::class.java.declaredMethods.filter {
+                Modifier.isPublic(it.modifiers) && !it.isSynthetic && it.name != "getApi"
+            }
+            calls.map { it.name }.toSet() shouldBe setOf("evaluate", "models", "query", "ask")
+            calls.forEach { withClue(it) { it.exceptionTypes.toList() shouldContain InterruptedException::class.java } }
         }
     }
 }

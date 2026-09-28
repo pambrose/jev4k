@@ -71,10 +71,9 @@ JevClient().use { jev ->
 
 > [!WARNING]
 > **Upgrading from 0.1.0? The Maven coordinates have changed.** From 0.2.0 the group is `com.pambrose.jev4k`
-> (0.1.0 was `com.pambrose:jev4k`), so update the dependency as shown below. Code written for 0.1.0 otherwise works
-> unchanged, unless its `baseUrl` is a plain `http://` URL on another host, which now needs `allowInsecureHttp = true`.
-> The [release notes](RELEASE_NOTES.md) have the details, including how to exclude 0.1.0 if another library still
-> brings it in.
+> (0.1.0 was `com.pambrose:jev4k`), so update the dependency as shown below. Most code written for 0.1.0 then works
+> unchanged. The [release notes](RELEASE_NOTES.md) list the few API changes that came with the move, and how to
+> exclude 0.1.0 if another library still brings it in.
 
 jev4k is on Maven Central. `com.pambrose.jev4k:jev4k` is the multiplatform module, and Gradle resolves it to the right
 artifact for each target, so a JVM project and a Kotlin Multiplatform project (in `commonMain`) use the same line:
@@ -376,13 +375,31 @@ calls for scripts, `main`, and tests.
 | `jev.models()`                     | `jev.blocking.models()`                     |
 
 `evaluate` is the single call the others build on. It takes a JSON state and a `QuestionSet` from `questions { ... }` or
-`someQuery.questions`. `models()` lists the model names your account can use.
+`someQuery.questions`. `models()` lists the models your account can use, as a `ModelList`: a `List<ModelInfo>` that
+also carries the call's `requestId`. Any other `JevApi`, a fake say, gets the blocking calls from `api.blocking()`.
 
 Each call accepts `model = "..."` to override the default for that request. `jev-latest` points at the newest stable
 model. If you've tuned thresholds against a particular version, pin it by name, e.g. `jev-1.13.0`, because an alias can
 move to a new model.
 
 Close the client when done. `use { }` does this for you.
+
+### Per-call options
+
+`JevCallOptions` overrides the client's timeout, retry policy or headers for the calls that need something else,
+and can add top-level fields to the `evaluate` body. `withOptions` applies them to every call made through the
+result, `query` and `ask` included:
+
+```kotlin
+val interactive = JevCallOptions {
+    timeout = 2.seconds             // per attempt, instead of the client's
+    retry = RetryPolicy.NONE        // replaces the client's whole policy
+    headers["X-Trace-Id"] = traceId // over the client's and the built-in headers
+}
+val result = jev.withOptions(interactive).ask(Triage, state = ticket)
+```
+
+`evaluate` and `models` also take options directly. A setting left unset keeps the client's value.
 
 ### Configuration
 
@@ -495,6 +512,21 @@ double urgency = r.noul("urgent").getNoul();
 That exact code is [`JavaInterop.java`](src/jvmTest/java/website/JavaInterop.java), compiled with the JVM test
 sources so it can't drift.
 
+Kotlin's `Duration` doesn't cross to Java either, so each setting of that type has a counterpart in milliseconds:
+`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, `with…` methods on `RetryPolicy` (whose constructor
+Java can't call), `JevCallOptionsBuilder.setTimeoutMillis`, and `JevRateLimitException.getRetryAfterMillis()`:
+
+```java
+return new JevClient(builder -> {
+    builder.setTimeoutMillis(2 * JevDefaults.TIMEOUT_MILLIS);
+    builder.setRetry(new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250));
+    return Unit.INSTANCE;
+});
+```
+
+Every blocking call declares `InterruptedException`, so Java code catches it or declares it, and
+`BlockingJevKt.blocking(api)` gives any `JevApi` the blocking calls.
+
 Two Kotlin features don't cross to Java: property delegates, which a typed `JevQuery` is built from, and
 `inline reified` functions, which the Kotlin compiler emits as synthetic members that javac can't resolve. So
 four things are out of reach from Java:
@@ -509,7 +541,8 @@ four things are out of reach from Java:
   option string.
 
 Everything else is callable: `evaluate`, `models`, the inline `noul`, `choice` and `score` builders, the other
-result accessors, and enums implementing `JevOption`.
+result accessors, and enums implementing `JevOption`. Only the getters that return a `Duration`, such as
+`JevConfig.timeout` and `RetryPolicy.initialBackoff`, stay Kotlin-only.
 
 ### Module name
 
@@ -539,7 +572,7 @@ Every failure of a request or a response is a `JevException`:
 | ↳ `JevPermissionDeniedException`    | 403                                                                                                                   |
 | ↳ `JevNotFoundException`            | 404                                                                                                                   |
 | ↳ `JevUnprocessableEntityException` | 422: the server rejected the request; `body` names the field                                                          |
-| ↳ `JevRateLimitException`           | 429; `retryAfter` is the server's hint                                                                                |
+| ↳ `JevRateLimitException`           | 429; `retryAfter` (`retryAfterMillis` from Java) is the server's hint                                                 |
 | ↳ `JevInternalServerException`      | 5xx                                                                                                                   |
 | ↳ ↳ `JevOverloadedException`        | 529: TypeSafe is temporarily overloaded                                                                               |
 | ↳ `JevResponseValidationException`  | A 2xx body that was malformed or didn't match the questions; `fieldPath` locates it                                   |
@@ -548,6 +581,9 @@ Every failure of a request or a response is a `JevException`:
 
 On Linux and Windows, any bare `IllegalStateException` raised during a call is also a `JevConnectionException`,
 because that is how the Curl and WinHttp engines report a failed connection; the original is kept as its cause.
+
+Header names in `JevApiException.headers` are lowercased, so `e.headers["retry-after"]` finds the header however the
+server spelled it and whichever engine read it.
 
 Misusing a result is a programming error, not a `JevException`: asking for an id or handle that wasn't in the
 request, or reading a Noul as a Choice, throws `IllegalArgumentException`.
@@ -573,6 +609,8 @@ route(jev, ticket) shouldBe Team.TECHNICAL
 coEvery { jev.evaluate(any(), any(), any()) } throws jevApiException(429, retryAfter = 2.seconds)
 ```
 
+A mock of `JevApi` needs `evaluate(any(), any(), any(), any())` stubbed as well when the code under test passes
+`JevCallOptions` or uses `withOptions`; a fake that implements only the three-argument `evaluate` needs nothing more.
 To exercise the real client without the network, pass a Ktor `MockEngine` as`JevClient { engine = MockEngine { ... } }`.
 This project's own tests do both.
 

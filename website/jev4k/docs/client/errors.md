@@ -40,14 +40,15 @@ Every failure of a request or a response is a `JevException`:
 | ↳ `JevPermissionDeniedException`    | 403                                                                                                            |
 | ↳ `JevNotFoundException`            | 404                                                                                                            |
 | ↳ `JevUnprocessableEntityException` | 422: the server rejected the request; `body` names the field                                                   |
-| ↳ `JevRateLimitException`           | 429; `retryAfter` is the server's hint, if it sent one                                                         |
+| ↳ `JevRateLimitException`           | 429; `retryAfter` (`retryAfterMillis` from Java) is the server's hint, if it sent one                          |
 | ↳ `JevInternalServerException`      | 5xx                                                                                                            |
 | ↳ ↳ `JevOverloadedException`        | 529: TypeSafe is temporarily overloaded                                                                        |
 | ↳ `JevResponseValidationException`  | a 2xx response that was malformed or didn't match the questions; `fieldPath` locates it                        |
 | `JevConnectionException`            | no complete response: DNS, TLS, a refused or dropped connection, or a body cut short                           |
 | ↳ `JevTimeoutException`             | an attempt exceeded `timeout`, or a supplied engine's own connect or socket timeout (the message names which)  |
 
-Messages include the status and request id, and never the API key.
+Messages include the status and request id, and never the API key. Header names in `headers` are lowercased, so
+`e.headers["retry-after"]` finds the header however the server spelled it and whichever engine read it.
 
 On Linux and Windows, any bare `IllegalStateException` raised during a call is also a `JevConnectionException`,
 because that is how the Curl and WinHttp engines report a failed connection; the original is kept as its cause.

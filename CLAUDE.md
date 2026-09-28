@@ -27,7 +27,9 @@ It pairs an id with a `Question` (`ref.question`) and a decoder for the typed an
 
 There are two DSL layers over one core model. Both produce a validated `QuestionSet`, and
 `JevApi.evaluate(state, questionSet, model)` is the only call that sends questions to the network. `JevApi.models()`
-(`GET v1/models`) is the other network call.
+(`GET v1/models`, returning a `ModelList`: a `List<ModelInfo>` carrying the request id) is the other network call.
+Each has an overload taking `JevCallOptions`, with a default implementation that ignores the options, so fakes written
+without them keep compiling.
 
 - **Inline layer** (`Builders.kt`). `jev.query(state) { noul("id", "...") ... }` uses string ids. `QueryBuilder`
   functions return `QuestionRef<A>` handles, and `include(query)` merges a `JevQuery` into the same request.
@@ -60,8 +62,19 @@ There are two DSL layers over one core model. Both produce a validated `Question
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.
     - `HttpRequestRetry` must be installed **before** `HttpTimeout`, otherwise one timeout cancels every retry.
     - `expectSuccess = false`: non-2xx responses map to `JevApiException` subclasses (`apiException` in `Errors.kt`)
-      after retries run out, keeping the raw body and the `x-typesafe-request-id` header.
-    - `BlockingJev` (`jev.blocking`) wraps the suspend API in `runBlocking`, on the JVM only (see Platforms).
+      after retries run out, keeping the raw body and the `x-typesafe-request-id` header. `JevApiException` lowercases
+      header names in its constructor (CIO keeps the server's spelling, fetch lowercases) and holds only
+      `Serializable` state: `bodyJson` is a plain getter, and `JevRateLimitException` stores its hint as nanoseconds.
+    - `BlockingJev` (`jev.blocking`, or `api.blocking()` for any `JevApi`) wraps the suspend API in `runBlocking`, on
+      the JVM only (see Platforms). Every method is `@Throws(InterruptedException::class)`.
+    - Headers are set on each request (`JevClient.setHeaders`: built-in, then the client's, then the call's), not
+      through `DefaultRequest`, which only sets the URL. `DefaultRequest` merges its headers with a request's own
+      (KTOR-6946), so a header named in both would be sent twice.
+    - `JevCallOptions` (`JevCallOptions.kt`) overrides a call's timeout and retry policy through Ktor's per-request
+      `timeout {}` and `retry {}`, which `HttpClientFactory`'s `limitTo` and `follow` fill in exactly as the plugins
+      are configured; a per-request retry config replaces the plugin's except for its `delay`. `extraBody` is merged
+      into the encoded request inside the call, so an unencodable state still becomes `JevValidationException`, and
+      can't set `state`, `model` or `questions`. `JevApi.withOptions` wraps an API so `query`/`ask` use the options.
     - `JevClient.execute` classifies a failed call in one place. `SerializationException` becomes
       `JevValidationException`. A `CancellationException` is caught next (first among the rest, because on
       Kotlin/Native it is also an `IllegalStateException`): a cancelled caller gets its own cancellation through
@@ -303,6 +316,12 @@ There are two DSL layers over one core model. Both produce a validated `Question
   new reified member so the set stays uniform. Because Java can reach neither `QueryBuilder.choice<E>()` nor the
   `internal` `enumChoiceRef`, a Java caller can only get an enum-backed Choice by building a `ChoiceQuestion` and
   passing it to `QueryBuilder.question(id, question)`; the README and the Installation page say so.
+  Kotlin's inline `Duration` mangles every member that takes or returns one, and makes `RetryPolicy`'s constructor
+  and `copy` synthetic, so each `Duration` setting has a millisecond twin for Java: `JevConfigBuilder.timeoutMillis`,
+  `JevCallOptionsBuilder.timeoutMillis`, `JevDefaults.TIMEOUT_MILLIS`, `RetryPolicy.with…` (one per setting) and
+  `JevRateLimitException.retryAfterMillis`. Add one alongside any new `Duration` setting. The `Duration` getters stay
+  Kotlin-only. `JavaInterop.java` calls each twin, catches `BlockingJev`'s `InterruptedException` (javac rejects that
+  catch if `@Throws` is dropped), and uses `BlockingJevKt.blocking` and `JevCallOptionsKt.withOptions`.
 - The JVM jar's manifest carries `Implementation-Version` and
   `Automatic-Module-Name: com.pambrose.jev4k`, which pins the JPMS module name for consumers instead of letting it
   derive from the jar's file name. The README and the site's Installation page document what an embedding app inherits:

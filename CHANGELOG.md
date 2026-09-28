@@ -8,8 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [0.2.0] — unreleased
 
-jev4k is now a Kotlin Multiplatform library, published under the new group `com.pambrose.jev4k`. The JVM API is
-unchanged; the other platforms are new.
+jev4k is now a Kotlin Multiplatform library, published under the new group `com.pambrose.jev4k`. The other platforms
+are new, and the JVM API grows. Since every build has to change its coordinates anyway, 0.2.0 also carries a few
+small breaking changes, listed first under Changed.
 
 ### Added
 
@@ -26,6 +27,17 @@ unchanged; the other platforms are new.
 - ABI validation. `api/jev4k.api` (the JVM surface) and `api/jev4k.klib.api` (the other targets) record the public
   API; `make tests` and CI fail when it changes, and `make abi-update` rewrites them after an intended change.
 - `JevConfigBuilder.allowInsecureHttp`, which allows a plain `http://` `baseUrl` on a host other than this machine.
+- `JevCallOptions`, which overrides the timeout, retry policy and headers for single calls and can add top-level
+  fields to the `evaluate` request body, as both official SDKs allow. Pass it to `evaluate` or `models`, or wrap an
+  API with `JevApi.withOptions(options)` so `query`, `ask` and the blocking calls use it too. The new `JevApi`
+  members have default implementations that ignore the options, so an existing fake keeps compiling.
+- `ModelList`, which `models()` now returns: a `List<ModelInfo>` that also carries the call's `requestId`.
+- `JevApi.blocking()` (`BlockingJevKt.blocking(api)` from Java), which gives any `JevApi` the blocking calls, so
+  blocking and Java code can be handed a fake.
+- Millisecond counterparts of the `Duration` settings, which Java can't reach: `JevConfigBuilder.timeoutMillis`,
+  `JevDefaults.TIMEOUT_MILLIS`, `RetryPolicy`'s `with…` methods (`withMaxRetries`, `withInitialBackoffMillis`, and
+  one for each other setting), `JevCallOptionsBuilder.timeoutMillis` and `JevRateLimitException.retryAfterMillis`.
+  `jevResult` has `@JvmOverloads`.
 - `LiveProbeTest`, two opt-in calls to the real API that spend no tokens, run on every platform: an invalid key must
   come back as `JevAuthenticationException` and a 1 ms timeout as `JevTimeoutException`.
 - `make docker-linux-tests` runs the linuxX64 and linuxArm64 tests in Docker containers, so any host with Docker can
@@ -36,12 +48,25 @@ unchanged; the other platforms are new.
 
 ### Changed
 
+- **Breaking, for code that implements or mocks `JevApi`:** `models()` returns `ModelList`. Code that reads the list
+  is unaffected; an implementation or a mock returns `ModelList(listOf(...))`. `BlockingJev.models()`'s JVM
+  signature changes with it, so code compiled against 0.1.0 that calls it must be recompiled.
+- **Breaking, for Java:** every `BlockingJev` method declares `InterruptedException`, which `runBlocking` has always
+  thrown when the waiting thread is interrupted. Java callers now catch or declare it; before, javac wouldn't let them
+  catch it at all.
+- **Breaking, for header lookups:** `JevApiException.headers` has lowercased names on every platform, so
+  `e.headers["retry-after"]` works whatever the engine and the server's spelling. Before, CIO kept the server's
+  spelling while the Js engine lowercased. Values of names that differ only in case are merged.
+- **Breaking, for positional calls:** `jevApiException` takes `headers` before `retryAfter`, so Java can pass
+  headers, and reads a rate-limit hint from the headers when `retryAfter` isn't given. Calls that name their
+  arguments are unaffected.
+- New subtypes of the sealed `Answer` and `Question` types may be added in a minor release, when TypeSafe adds a kind
+  of question. A `when` over either that must keep compiling across upgrades should end in an `else` branch.
 - **Breaking: Maven coordinates.** The group is now `com.pambrose.jev4k`, so every artifact sits under one group, as
   common-utils' do. `com.pambrose.jev4k:jev4k` is the multiplatform root module: Gradle builds depend on it and get
   the right artifact for each target, and Maven builds depend on `com.pambrose.jev4k:jev4k-jvm`. 0.1.0 stays at
   `com.pambrose:jev4k`, and nothing newer is published there.
-- The JVM API is unchanged: its ABI dump matches 0.1.0's, `JavaInterop.java` compiles as before, and the
-  `jev4k-jvm` POM lists the same seven dependencies. The published metadata still carries
+- The `jev4k-jvm` POM lists the same seven dependencies as 0.1.0's, and the published metadata still carries
   `org.gradle.jvm.version = 17`.
 - `JevClient.blocking` has its methods on the JVM only. On the other platforms `BlockingJev` has no members:
   Kotlin/JS and Kotlin/Wasm can't block a thread, and Kotlin/Native callers can wrap the suspend calls in
@@ -86,6 +111,9 @@ unchanged; the other platforms are new.
   `JevValidationException` or `JevResponseValidationException` instead of overflowing the stack.
 - With a caller-supplied engine, a `JevTimeoutException` from that engine's own connect or socket timeout names it
   instead of quoting `timeout`, which jev4k sets only as the request timeout for such an engine.
+- `JevApiException` and `JevRateLimitException` are Java-serializable, as a `Throwable` is expected to be: serializing
+  one with a JSON body, or a rate-limit error with a hint, threw `NotSerializableException`. `bodyJson` is now parsed
+  on each read rather than cached.
 
 ## [0.1.0] - 2026-09-20
 

@@ -57,6 +57,9 @@ plain `http://` is accepted without it only for this machine (`localhost`, `127.
 --8<-- "ClientExamples.kt:retry"
 ```
 
+To use a different timeout, retry policy or headers for some calls only, pass
+[per-call options](calls.md#per-call-options) rather than building a second client.
+
 ## A custom HTTP engine
 
 The client creates its own engine unless you pass one: CIO on the JVM, Darwin on Apple platforms, Curl on Linux,

@@ -52,10 +52,9 @@ A few things differ by platform:
 !!! warning "Upgrading from 0.1.0? The Maven coordinates have changed"
 
     From 0.2.0 the group is `com.pambrose.jev4k` (0.1.0 was `com.pambrose:jev4k`), so update the dependency as
-    shown below. Code written for 0.1.0 otherwise works unchanged, unless its `baseUrl` is a plain `http://` URL on
-    another host, which now needs `allowInsecureHttp = true`. The
-    [release notes](https://github.com/pambrose/jev4k/blob/master/RELEASE_NOTES.md) have the details, including how
-    to exclude 0.1.0 if another library still brings it in.
+    shown below. Most code written for 0.1.0 then works unchanged. The
+    [release notes](https://github.com/pambrose/jev4k/blob/master/RELEASE_NOTES.md) list the few API changes that
+    came with the move, and how to exclude 0.1.0 if another library still brings it in.
 
 jev4k is published to Maven Central. `com.pambrose.jev4k:jev4k` is the multiplatform module, and Gradle resolves it to
 the right artifact for each target, so a JVM project and a Kotlin Multiplatform project use the same coordinates.
@@ -139,6 +138,22 @@ jev4k is a Kotlin library, but the inline builder DSL works from Java through `j
 --8<-- "JavaInterop.java:basics"
 ```
 
+Kotlin's `Duration` doesn't cross to Java either, so each setting of that type has a counterpart in milliseconds:
+`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, and `with…` methods on `RetryPolicy`, whose
+constructor Java can't call:
+
+```java title="Settings in milliseconds"
+--8<-- "JavaInterop.java:settings"
+```
+
+[Per-call options](../client/calls.md#per-call-options) work the same way, and `BlockingJevKt.blocking(api)` gives
+any `JevApi` the blocking calls. Every blocking call declares `InterruptedException`, and a rate-limit error's hint
+is `getRetryAfterMillis()`:
+
+```java title="Per-call options from Java"
+--8<-- "JavaInterop.java:per-call"
+```
+
 Two Kotlin features don't cross to Java: property delegates, which a typed `JevQuery` is built from, and
 `inline reified` functions, which the Kotlin compiler emits as synthetic members that javac can't resolve. So
 four things are out of reach from Java:
@@ -153,7 +168,8 @@ four things are out of reach from Java:
   option string.
 
 Everything else is callable: `evaluate`, `models`, the inline `noul`, `choice` and `score` builders, the other
-result accessors, and enums implementing `JevOption`.
+result accessors, and enums implementing `JevOption`. Only the getters that return a `Duration`, such as
+`JevConfig.timeout` and `RetryPolicy.initialBackoff`, stay Kotlin-only.
 
 ### Module name
 

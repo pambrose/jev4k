@@ -27,8 +27,8 @@ A handle only works on results of requests that included it. Reading one from an
 
 ## The builder functions
 
-A `JevQuery` has the same builders as the [inline DSL](inline.md), minus the id argument, which comes from the
-property name:
+A `JevQuery` has the same builders as the [inline DSL](inline.md), but the id comes from the property name, so
+instructions are the first argument:
 
 | Function                       | Returns a handle to    |
 |--------------------------------|------------------------|
@@ -44,6 +44,13 @@ property name:
 ```kotlin
 --8<-- "TypedQueryExamples.kt:id-override"
 ```
+
+!!! warning "Always pass `id` by name"
+
+    The inline builders take the id first, `noul("urgent", "Is this urgent?")`, while a `JevQuery`'s take the
+    instructions first and the id second. Both are strings, so a question moved from an inline query into a
+    `JevQuery` with its arguments unchanged still compiles, and Jev is asked "urgent" as its question. Writing
+    `id = "urgent"` makes the call read the same either way.
 
 ## Inheritance
 

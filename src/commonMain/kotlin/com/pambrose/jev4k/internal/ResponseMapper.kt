@@ -6,6 +6,7 @@ import com.pambrose.jev4k.ChoiceQuestion
 import com.pambrose.jev4k.JevResponseValidationException
 import com.pambrose.jev4k.JevResult
 import com.pambrose.jev4k.ModelInfo
+import com.pambrose.jev4k.ModelList
 import com.pambrose.jev4k.NoulAnswer
 import com.pambrose.jev4k.QuestionSet
 import com.pambrose.jev4k.Question
@@ -57,15 +58,15 @@ internal fun mapSystemOne(
     )
 }
 
-/** Turns a `/v1/models` body into [ModelInfo]s. */
+/** Turns a `/v1/models` body into a [ModelList]. */
 internal fun mapModels(
     body: JsonObject,
     requestId: String?,
     endpoint: String,
-): List<ModelInfo> {
+): ModelList {
     val reader = BodyReader(body, requestId, endpoint)
     val models = body["models"] as? JsonArray ?: reader.fail("models", "expected an array")
-    return models.mapIndexed { i, element ->
+    val infos = models.mapIndexed { i, element ->
         val path = "models[$i]"
         val model = element as? JsonObject ?: reader.fail(path, "expected an object")
         ModelInfo(
@@ -74,6 +75,7 @@ internal fun mapModels(
             releaseDate = reader.optionalString(model, "release_date", "$path.release_date"),
         )
     }
+    return ModelList(infos, requestId)
 }
 
 private class BodyReader(

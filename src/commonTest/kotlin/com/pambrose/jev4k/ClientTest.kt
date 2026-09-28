@@ -134,13 +134,16 @@ class ClientTest : StringSpec() {
             jev.requests.shouldBeEmpty()
         }
 
-        "models lists the available models" {
+        "models lists the available models, with the call's request id" {
             val jev = testJev {
                 respondJson(
                     """{"models":[{"name":"jev-latest","description":"Latest stable","release_date":"2026-09-01"}]}""",
+                    extraHeaders = mapOf(JevDefaults.REQUEST_ID_HEADER to "req-models"),
                 )
             }
-            jev.client.models() shouldBe listOf(ModelInfo("jev-latest", "Latest stable", "2026-09-01"))
+            val models = jev.client.models()
+            models shouldBe listOf(ModelInfo("jev-latest", "Latest stable", "2026-09-01"))
+            models.requestId shouldBe "req-models"
             jev.requests.single().method shouldBe HttpMethod.Get
             jev.requests.single().url.toString() shouldBe "https://api.typesafe.ai/v1/models"
         }
@@ -417,7 +420,8 @@ class ClientTest : StringSpec() {
             }
             val e = shouldThrow<JevInternalServerException> { jev.client.ask(Triage, state = PAYOUT_TICKET) }
             e.endpoint shouldBe "POST https://api.typesafe.ai/v1/systemone"
-            e.headers["X-Trace"] shouldBe listOf("abc")
+            // Sent as X-Trace, read back lowercased, as every engine now reports it.
+            e.headers["x-trace"] shouldBe listOf("abc")
             e.message shouldContain "HTTP 502 from POST https://api.typesafe.ai/v1/systemone"
             // The body is kept whole, and only the copy in the message is trimmed, since that is what is logged.
             e.body!!.length shouldBe long.length + 2

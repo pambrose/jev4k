@@ -2,6 +2,8 @@ package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.JevJson
 import com.pambrose.jev4k.internal.mapSystemOne
+import com.pambrose.jev4k.internal.retryHint
+import io.ktor.http.headersOf
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlin.jvm.JvmOverloads
@@ -26,6 +28,7 @@ private const val TEST_ENDPOINT = "POST (test)"
  * [JevResponseValidationException] here too. Recording a real response and replaying it is a good way to keep a
  * fixture honest.
  */
+@JvmOverloads
 fun jevResult(
     body: JsonObject,
     questions: QuestionSet,
@@ -34,6 +37,7 @@ fun jevResult(
 ): JevResult = mapSystemOne(body, model, questions, requestId, TEST_ENDPOINT)
 
 /** The same, from the response body as JSON text. */
+@JvmOverloads
 fun jevResult(
     body: String,
     questions: QuestionSet,
@@ -46,14 +50,20 @@ fun jevResult(
  * 429 gives a [JevRateLimitException], 401 a [JevAuthenticationException], and so on.
  *
  * ```
- * coEvery { jev.evaluate(any(), any(), any()) } throws jevApiException(429)
+ * coEvery { jev.evaluate(any(), any(), any()) } throws jevApiException(429, retryAfter = 2.seconds)
  * ```
+ *
+ * A rate-limit error's hint is [retryAfter] when given, and otherwise read from a `retry-after-ms` or `Retry-After`
+ * entry in [headers], as the client reads it. Java, which can't pass a `Duration`, sets it through [headers].
  */
 @JvmOverloads
 fun jevApiException(
     status: Int,
     body: String? = null,
     requestId: String? = null,
-    retryAfter: Duration? = null,
     headers: Map<String, List<String>> = emptyMap(),
-): JevApiException = apiException(status, body, headers, requestId, TEST_ENDPOINT, retryAfter)
+    retryAfter: Duration? = null,
+): JevApiException {
+    val hint = retryAfter ?: retryHint(headersOf(*headers.toList().toTypedArray()))
+    return apiException(status, body, headers, requestId, TEST_ENDPOINT, hint)
+}

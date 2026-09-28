@@ -5,6 +5,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.nanoseconds
 
 /** Base class for every error raised by jev4k. */
 sealed class JevException(
@@ -30,11 +31,13 @@ class JevValidationException(
  * The API answered with an error, or with a body jev4k couldn't use. [body][JevApiException.body] is
  * the raw response body, [requestId][JevApiException.requestId] the `x-typesafe-request-id` header,
  * and [endpoint][JevApiException.endpoint] the method and URL called.
+ *
+ * On the JVM it is `Serializable`, as every `Throwable` is, provided any `headers` map passed in is.
  */
 open class JevApiException(
     val status: Int,
     val body: String?,
-    val headers: Map<String, List<String>>,
+    headers: Map<String, List<String>>,
     val requestId: String?,
     val endpoint: String,
     message: String,
@@ -43,17 +46,29 @@ open class JevApiException(
     internal constructor(response: ErrorResponse) :
         this(response.status, response.body, response.headers, response.requestId, response.endpoint, response.message)
 
-    /** [body][JevApiException.body] parsed as JSON, or null if it isn't JSON or nests implausibly deep. */
-    val bodyJson: JsonElement? by lazy {
-        body?.takeUnless { it.nestsTooDeep() }?.let {
+    /**
+     * The response headers, with every name lowercased, so `headers["retry-after"]` finds the header however the
+     * server spelled it and whichever engine read it (CIO keeps the server's spelling, fetch lowercases). Values of
+     * names that differ only in case are merged, in order.
+     */
+    val headers: Map<String, List<String>> = headers.lowercaseNames()
+
+    /**
+     * [body][JevApiException.body] parsed as JSON, or null if it isn't JSON or nests implausibly deep. It is parsed on
+     * each read, so the exception holds nothing that isn't `Serializable`.
+     */
+    val bodyJson: JsonElement?
+        get() = body?.takeUnless { it.nestsTooDeep() }?.let {
             try {
                 Json.parseToJsonElement(it)
             } catch (_: SerializationException) {
                 null
             }
         }
-    }
 }
+
+private fun Map<String, List<String>>.lowercaseNames(): Map<String, List<String>> =
+    entries.groupBy({ it.key.lowercase() }, { it.value }).mapValues { (_, values) -> values.flatten() }
 
 /** A non-2xx response, as handed to the status-specific exception constructors. */
 internal class ErrorResponse(
@@ -92,9 +107,24 @@ class JevUnprocessableEntityException internal constructor(
 
 /** 429: rate limited. [retryAfter][JevRateLimitException.retryAfter] is the server's hint, when it sent one. */
 class JevRateLimitException internal constructor(
-    val retryAfter: Duration?,
+    retryAfter: Duration?,
     response: ErrorResponse,
-) : JevApiException(response)
+) : JevApiException(response) {
+    // Nanoseconds, not a Duration: a boxed Duration isn't Serializable on the JVM. inWholeNanoseconds saturates at
+    // Long.MAX_VALUE, which reads back as INFINITE; any hint that long is one to ignore anyway.
+    private val retryAfterNanos: Long? = retryAfter?.inWholeNanoseconds
+
+    /** How long the server asked callers to wait, from `retry-after-ms` or `Retry-After`, or null if it didn't say. */
+    val retryAfter: Duration?
+        get() = retryAfterNanos?.let { if (it == Long.MAX_VALUE) Duration.INFINITE else it.nanoseconds }
+
+    /**
+     * [retryAfter][JevRateLimitException.retryAfter] in whole milliseconds, for Java, which can't call a getter
+     * that returns a `Duration`.
+     */
+    val retryAfterMillis: Long?
+        get() = retryAfter?.inWholeMilliseconds
+}
 
 /** 5xx: a server-side failure. */
 open class JevInternalServerException internal constructor(
