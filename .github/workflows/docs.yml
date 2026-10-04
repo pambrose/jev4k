@@ -46,7 +46,7 @@ jobs:
             # Build the Zensical documentation site from website/uv.lock, the same resolution `make site`
             # uses locally. uv reads website/.python-version and installs that Python itself. --strict turns
             # warnings, such as a link to a missing anchor, into failures.
-            -   uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+            -   uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
             -   run: uv run --locked zensical build --clean --strict
                 working-directory: website/jev4k
 
@@ -55,7 +55,7 @@ jobs:
                 with:
                     distribution: temurin
                     java-version: 25
-            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            -   uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
             # Dokka documents every source set, the native ones included, so it needs the Kotlin/Native toolchain;
             # setup-gradle doesn't cache it. This only restores ci.yml's cache, under the same key: Dokka finishes
             # first and never downloads the compiler's dependencies, so a save here would claim the key with a
