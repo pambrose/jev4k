@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-## [0.2.1] — unreleased
+## [0.2.1] - 2026-10-04
 
 A maintenance release. The library's API, behavior and dependencies are unchanged from 0.2.0; everything below is
 build and CI tooling, so upgrading needs only the new version number.

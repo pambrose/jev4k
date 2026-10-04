@@ -3,7 +3,7 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
-## v0.2.1 — unreleased
+## v0.2.1 — 2026-10-04
 
 A maintenance release with no changes to the library: its API, behavior and dependencies are exactly as in 0.2.0.
 Upgrading means changing the version number and nothing else:
