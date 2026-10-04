@@ -8,7 +8,7 @@ Dokka includes only `docs/packages.md` (the `includes.from("docs/packages.md")` 
 
 ## Current state
 
-Verified 2026-09-20.
+Verified 2026-09-20; the release rows on 2026-10-04.
 
 | Item                                  | State                                                       |
 |---------------------------------------|-------------------------------------------------------------|
@@ -21,11 +21,12 @@ Verified 2026-09-20.
 | Published site                        | ✅ live at <https://jev4k.com/>, KDocs included             |
 | Site deploys                          | on a published GitHub release, or a manual `docs.yml` run   |
 | Required checks on `master`           | `ci-ok`, `docs` and GitGuardian                             |
-| Git tags                              | ✅ `0.1.0` at `b7c2b5e`, with a `v0.1.0` GitHub release      |
-| `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                   |
-| `gradle.properties` version           | `0.2.0`, the next release number (the multiplatform move)   |
+| Git tags                              | ✅ `0.1.0` at `b7c2b5e` and `0.2.0` at `57a1dca`, released  |
+| `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                  |
+| `com.pambrose.jev4k:jev4k` on Central | ✅ 0.2.0 published, signed, and resolvable                  |
+| `gradle.properties` version           | `0.2.1`, the next release number                            |
 | `gradle.properties` group             | `com.pambrose.jev4k` from 0.2.0 (0.1.0 was `com.pambrose`)  |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.1.0 dated 2026-09-20; 0.2.0 dated 2026-09-28              |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.2.0 dated 2026-09-28; changelog has an Unreleased section |
 
 ## Before the first release, once
 
