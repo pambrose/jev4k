@@ -29,7 +29,7 @@ jobs:
                 with:
                     distribution: temurin
                     java-version: 25
-            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            -   uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
             # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
             # downloads. The toolchain depends only on the Kotlin version, so that is the whole key: an exact hit, or
             # a fresh download saved under the new version. No restore-keys, which would carry every older toolchain
@@ -107,7 +107,7 @@ jobs:
                     java-version: |
                         ${{ matrix.java }}
                         25
-            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            -   uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
             # Gradle doesn't scan the runner's tool cache, so point it at what setup-java installed. The names
             # are setup-java's JAVA_HOME_<major>_<arch> variables, hence X64 for ubuntu-latest. If a lookup ever
@@ -155,7 +155,7 @@ jobs:
                 with:
                     distribution: temurin
                     java-version: 25
-            -   uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+            -   uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
             # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
             # downloads. The toolchain depends only on the Kotlin version, so that is the whole key: an exact hit, or
             # a fresh download saved under the new version. No restore-keys, which would carry every older toolchain
