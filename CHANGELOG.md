@@ -6,9 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-## [Unreleased]
+## [0.2.1] — unreleased
 
-Nothing yet.
+A maintenance release. The library's API, behavior and dependencies are unchanged from 0.2.0; everything below is
+build and CI tooling, so upgrading needs only the new version number.
+
+### Changed
+
+- The default `User-Agent` is `jev4k/0.2.1`.
+- The build runs on Gradle 9.8.0 (from 9.7.1), with Kover 0.9.11 (from 0.9.9) and the author's convention plugins
+  (`com.pambrose.kotlinter`, `com.pambrose.envvar`) at 1.1.6 (from 1.1.5).
+- CI uses `gradle/actions/setup-gradle` 6.4.0 (from 6.3.0) and `astral-sh/setup-uv` 10.2.0 (from 10.1.0).
+- The documentation site builds with Zensical 0.0.67 (from 0.0.65) and MarkupSafe 3.0.4 (from 3.0.3).
+
+### Fixed
+
+- Configuring the build no longer warns that Dokka's `suppressInheritedMembers` is deprecated. The setting moved into
+  the HTML publication, where Dokka 2.2.0 expects it; the KDocs are unchanged.
 
 ## [0.2.0] - 2026-09-28
 
@@ -271,6 +285,6 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
-[Unreleased]: https://github.com/pambrose/jev4k/compare/0.2.0...HEAD
+[0.2.1]: https://github.com/pambrose/jev4k/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/pambrose/jev4k/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/pambrose/jev4k/releases/tag/0.1.0

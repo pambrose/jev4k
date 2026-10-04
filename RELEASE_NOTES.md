@@ -3,6 +3,20 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
+## v0.2.1 — unreleased
+
+A maintenance release with no changes to the library: its API, behavior and dependencies are exactly as in 0.2.0.
+Upgrading means changing the version number and nothing else:
+
+- Gradle builds: `com.pambrose.jev4k:jev4k:0.2.1`
+- Maven builds: `com.pambrose.jev4k:jev4k-jvm:0.2.1`
+
+The build behind it has moved forward: Gradle 9.8.0, Kover 0.9.11, newer CI actions, and a newer Zensical for the
+documentation site. It also no longer warns about Dokka's deprecated `suppressInheritedMembers` setting. The
+changelog lists each version change.
+
+**Full Changelog**: https://github.com/pambrose/jev4k/compare/0.2.0...0.2.1
+
 ## v0.2.0 — 2026-09-28
 
 > [!WARNING]
