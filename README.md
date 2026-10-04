@@ -80,7 +80,7 @@ artifact for each target, so a JVM project and a Kotlin Multiplatform project (i
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.0")
+    implementation("com.pambrose.jev4k:jev4k:0.2.1")
 }
 ```
 
@@ -90,7 +90,7 @@ Maven doesn't read Gradle's module metadata, so a Maven build depends on the JVM
 <dependency>
     <groupId>com.pambrose.jev4k</groupId>
     <artifactId>jev4k-jvm</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
 </dependency>
 ```
 
@@ -491,7 +491,7 @@ dropped:
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.0") {
+    implementation("com.pambrose.jev4k:jev4k:0.2.1") {
         exclude(group = "io.ktor", module = "ktor-client-cio-jvm")
     }
     implementation("io.ktor:ktor-client-okhttp:3.6.0")
