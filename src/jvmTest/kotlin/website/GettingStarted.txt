@@ -6,7 +6,7 @@ export TYPESAFE_API_KEY=ts-...
 // --8<-- [start:dependency-gradle]
 // build.gradle.kts
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.0")
+    implementation("com.pambrose.jev4k:jev4k:0.2.1")
 }
 // --8<-- [end:dependency-gradle]
 
@@ -15,7 +15,7 @@ dependencies {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.pambrose.jev4k:jev4k:0.2.0") // Gradle picks the artifact for each target
+            implementation("com.pambrose.jev4k:jev4k:0.2.1") // Gradle picks the artifact for each target
         }
     }
 }
@@ -25,7 +25,7 @@ kotlin {
 <dependency>
     <groupId>com.pambrose.jev4k</groupId>
     <artifactId>jev4k-jvm</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
 </dependency>
 <!-- --8<-- [end:dependency-maven] -->
 
@@ -47,7 +47,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.0") // the version in the checkout's gradle.properties
+    implementation("com.pambrose.jev4k:jev4k:0.2.1") // the version in the checkout's gradle.properties
 }
 
 kotlin {
@@ -62,7 +62,7 @@ make example      # runs src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageEx
 
 // --8<-- [start:exclude-cio]
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.0") {
+    implementation("com.pambrose.jev4k:jev4k:0.2.1") {
         // Only if you pass your own engine: drops ktor-client-cio and ktor-network-tls. ktor-network
         // itself stays, because ktor-client-core depends on it through ktor-http-cio.
         exclude(group = "io.ktor", module = "ktor-client-cio-jvm")

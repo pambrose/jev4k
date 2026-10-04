@@ -272,7 +272,7 @@ val yarnResolutions =
         "ws" to "8.21.0",
         "serialize-javascript" to "7.0.5",
         "diff" to "8.0.3",
-        "brace-expansion" to "2.1.4",
+        "brace-expansion" to "2.1.7",
         "js-yaml" to "4.3.2",
     )
 
@@ -295,11 +295,11 @@ val repoUrl = "https://github.com/pambrose/jev4k"
 dokka {
     moduleName = "jev4k"
     moduleVersion = project.version.toString()
-    // Hide members inherited from supertypes (e.g. Throwable's message/cause on every exception);
-    // each page links to its supertype instead.
-    suppressInheritedMembers = true
 
     dokkaPublications.html {
+        // Hide members inherited from supertypes (e.g. Throwable's message/cause on every exception);
+        // each page links to its supertype instead.
+        suppressInheritedMembers = true
         outputDirectory = layout.buildDirectory.dir("dokka/html")
         includes.from("docs/packages.md")
     }
