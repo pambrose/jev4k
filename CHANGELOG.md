@@ -19,6 +19,11 @@ build and CI tooling, so upgrading needs only the new version number.
 - CI uses `gradle/actions/setup-gradle` 6.4.0 (from 6.3.0) and `astral-sh/setup-uv` 10.2.0 (from 10.1.0).
 - The documentation site builds with Zensical 0.0.67 (from 0.0.65) and MarkupSafe 3.0.4 (from 3.0.3).
 
+### Security
+
+- The js and wasmJs test toolchains pin `brace-expansion` to 2.1.7 (from 2.1.4), which fixes three denial-of-service
+  advisories. It comes in through the Node.js test tooling and isn't part of any published artifact.
+
 ### Fixed
 
 - Configuring the build no longer warns that Dokka's `suppressInheritedMembers` is deprecated. The setting moved into

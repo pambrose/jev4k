@@ -11,9 +11,9 @@ Upgrading means changing the version number and nothing else:
 - Gradle builds: `com.pambrose.jev4k:jev4k:0.2.1`
 - Maven builds: `com.pambrose.jev4k:jev4k-jvm:0.2.1`
 
-The build behind it has moved forward: Gradle 9.8.0, Kover 0.9.11, newer CI actions, and a newer Zensical for the
-documentation site. It also no longer warns about Dokka's deprecated `suppressInheritedMembers` setting. The
-changelog lists each version change.
+The build behind it has moved forward: Gradle 9.8.0, Kover 0.9.11, newer CI actions, a newer Zensical for the
+documentation site, and a patched `brace-expansion` in the Node.js test toolchain. It also no longer warns about
+Dokka's deprecated `suppressInheritedMembers` setting. The changelog lists each version change.
 
 **Full Changelog**: https://github.com/pambrose/jev4k/compare/0.2.0...0.2.1
 

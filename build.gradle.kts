@@ -272,7 +272,7 @@ val yarnResolutions =
         "ws" to "8.21.0",
         "serialize-javascript" to "7.0.5",
         "diff" to "8.0.3",
-        "brace-expansion" to "2.1.4",
+        "brace-expansion" to "2.1.7",
         "js-yaml" to "4.3.2",
     )
 
