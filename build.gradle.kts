@@ -295,11 +295,11 @@ val repoUrl = "https://github.com/pambrose/jev4k"
 dokka {
     moduleName = "jev4k"
     moduleVersion = project.version.toString()
-    // Hide members inherited from supertypes (e.g. Throwable's message/cause on every exception);
-    // each page links to its supertype instead.
-    suppressInheritedMembers = true
 
     dokkaPublications.html {
+        // Hide members inherited from supertypes (e.g. Throwable's message/cause on every exception);
+        // each page links to its supertype instead.
+        suppressInheritedMembers = true
         outputDirectory = layout.buildDirectory.dir("dokka/html")
         includes.from("docs/packages.md")
     }
