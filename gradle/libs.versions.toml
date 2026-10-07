@@ -3,7 +3,7 @@ coroutines = "1.11.0"
 detekt = "2.0.0-alpha.6"
 dokka = "2.2.0"
 gradle-plugins = "1.1.6"
-gradle-wrapper = "9.8.0"
+gradle-wrapper = "9.8.1"
 jvm-toolchain = "25"  # the JDK this project builds with
 jvm-target = "17"     # bytecode floor: the oldest JDK a consumer can run
 kotest = "6.2.5"
@@ -15,7 +15,7 @@ maven-publish = "0.37.0"
 ktor = "3.6.0"
 mockk = "1.14.11"
 serialization = "1.11.0"
-versions = "0.64.0"
+versions = "0.65.0"
 
 [libraries]
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
