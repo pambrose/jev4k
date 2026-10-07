@@ -235,7 +235,7 @@ without them keep compiling.
 
 ## Build
 
-- Gradle 9.8.0 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
+- Gradle 9.8.1 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
   `gradle.properties`; the version is always a release number, and `-PoverrideVersion=...` replaces it for snapshots.
 - Kotlin Multiplatform (`kotlin-multiplatform` plugin; `java-library` is incompatible with it). Targets: `jvm`,
   `js { nodejs() }`, `wasmJs { nodejs() }`, `macosArm64`, `iosArm64`, `iosX64`, `iosSimulatorArm64`, `tvosArm64`,
