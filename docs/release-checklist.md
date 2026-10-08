@@ -70,6 +70,7 @@ Verified 2026-09-20; the release rows on 2026-10-07.
 - [ ] `make docker-linux-tests` — linuxX64 and linuxArm64 in Docker. linuxArm64 has no Gradle test task, so this
   and CI's QEMU step are the only places its tests run.
 - [ ] `make coverage-verify` — the line and branch floors in `build.gradle.kts`.
+- [ ] `make zizmor` — no findings in the workflows or `dependabot.yml`, with the online audits on (a `gh` login).
 - [ ] `cd website/jev4k && uv run zensical build --clean --strict` — must report "No issues found".
 - [ ] `make site-build` — the site plus Dokka KDocs under `/kdocs`.
 - [ ] Optional: `make live-tests` and `make example`, which call the real API and spend tokens. Worth doing
@@ -94,7 +95,8 @@ Verified 2026-09-20; the release rows on 2026-10-07.
 
 - [ ] Commit the version bump and the release documents together, on a branch.
 - [ ] Open a PR and wait for the required checks: `ci-ok` (build, tests, Kover, Codecov, the JDK matrix and the
-  native jobs), `docs` (Zensical and Dokka) and GitGuardian. Don't publish from a tree that CI hasn't accepted.
+  native jobs), `docs` (Zensical and Dokka) and GitGuardian. The `zizmor` check isn't required, but should pass
+  too. Don't publish from a tree that CI hasn't accepted.
 - [ ] Don't merge yet. Merging puts the new version's install lines in the README on GitHub, so the artifacts
   go to Central first (step 5).
 

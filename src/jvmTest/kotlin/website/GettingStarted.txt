@@ -42,8 +42,8 @@ includeBuild("../jev4k")
 // --8<-- [start:composite-dependency]
 // build.gradle.kts of your project
 plugins {
-    kotlin("jvm") version "2.4.20"
-    kotlin("plugin.serialization") version "2.4.20" // only needed for @Serializable state
+    kotlin("jvm") version "2.4.21"
+    kotlin("plugin.serialization") version "2.4.21" // only needed for @Serializable state
 }
 
 dependencies {

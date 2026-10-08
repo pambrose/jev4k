@@ -34,6 +34,11 @@ To run a single test class:
 - **Coverage.** `make coverage-open` builds the Kover report and opens it; `make coverage-verify` checks the
   line and branch floors. CI uploads the same report to
   [Codecov](https://codecov.io/gh/pambrose/jev4k).
+- **Workflow audits.** `make zizmor` runs [zizmor](https://docs.zizmor.sh) over the GitHub Actions workflows and
+  `dependabot.yml` (`brew install zizmor` first). Its online audits, which catch a known-vulnerable action or a
+  pinned SHA that isn't a commit of its action, use `GH_TOKEN` or the gh CLI's login, and are skipped without
+  either. CI runs the same audits: a pull request fails on any finding, while pushes to `master` and a weekly run
+  report to the repository's code scanning alerts.
 - **No traffic leaves the machine in unit tests.** They exercise the client through Ktor's `MockEngine`, apart
   from one timeout test that drives the real CIO engine against a loopback socket, and one test per platform
   that dials a loopback port nothing listens on, to check how that platform's default engine reports a refused
@@ -79,7 +84,7 @@ The site is published to GitHub Pages at <https://jev4k.com/> by `.github/workfl
 and push to `master` it builds the site from the locked `website/uv.lock` in strict mode, builds the KDocs with Dokka
 and copies them under `/kdocs`: the same steps as `make site-build`. It deploys the result only when a release is
 published, or when run by hand from the Actions tab, so the site never shows a version that isn't on Maven Central
-yet.
+yet. The workflow restores nothing from a cache, so an entry written by another run can't change what gets published.
 
 The repository needs one setting before the first deploy: under **Settings → Pages → Build and deployment**, set
 **Source** to **GitHub Actions**. After a failed deploy, re-run just the failed deploy job; the build job's artifact

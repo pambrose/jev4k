@@ -10,6 +10,7 @@ make test-jdk JDK=17    # run the JVM tests on one JDK, as CI's matrix does
 make all-tests          # tests + the JDK matrix + coverage floors + Docker Linux tests + live tests
 make abi-update         # rewrite the API dumps in api/ after an intended API change (macOS only)
 make lint               # kotlinter + detekt only
+make zizmor             # audit the GitHub Actions workflows and dependabot.yml with zizmor
 make format             # auto-format Kotlin sources with ktlint
 make kdocs              # API docs in build/dokka/html
 make coverage           # Kover HTML + XML coverage reports
