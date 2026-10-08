@@ -31,6 +31,11 @@ jobs:
     # NOT re-upload the artifact. actions/deploy-pages hard-fails when a run contains more than one artifact named
     # "github-pages", which is what re-running a combined build+deploy job did. Its check, "docs", is required by
     # branch protection.
+    #
+    # It restores nothing from a cache. This workflow publishes the site, and a cache entry written by another run
+    # (even of a trusted workflow, through a compromised action or dependency) could change what gets deployed:
+    # zizmor's cache-poisoning audit. zizmor accepts caching only when it is off for every run of a publishing
+    # workflow, not just the deploying ones, so the build-only runs go without too. They are still shorter than CI.
     docs:
         runs-on: ubuntu-latest
         permissions:
@@ -41,12 +46,19 @@ jobs:
         steps:
             -   uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
                 if: env.DEPLOY == 'true'
+            # Nothing here pushes, so checkout doesn't leave the token in .git/config, where a later step could
+            # read it (zizmor's artipacked audit).
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+                with:
+                    persist-credentials: false
 
             # Build the Zensical documentation site from website/uv.lock, the same resolution `make site`
             # uses locally. uv reads website/.python-version and installs that Python itself. --strict turns
             # warnings, such as a link to a missing anchor, into failures.
             -   uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+                with:
+                    # Its "auto" default skips the cache on a release but not on a manual run, which deploys too.
+                    enable-cache: false
             -   run: uv run --locked zensical build --clean --strict
                 working-directory: website/jev4k
 
@@ -56,19 +68,10 @@ jobs:
                     distribution: temurin
                     java-version: 25
             -   uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-            # Dokka documents every source set, the native ones included, so it needs the Kotlin/Native toolchain;
-            # setup-gradle doesn't cache it. This only restores ci.yml's cache, under the same key: Dokka finishes
-            # first and never downloads the compiler's dependencies, so a save here would claim the key with a
-            # toolchain too incomplete for the build job, which would then never save its own.
-            -   id: kotlin
-                run: |
-                    version=$(sed -n 's/^kotlin = "\(.*\)"/\1/p' gradle/libs.versions.toml)
-                    test -n "$version"
-                    echo "version=$version" >> "$GITHUB_OUTPUT"
-            -   uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
                 with:
-                    path: ~/.konan
-                    key: konan-${{ runner.os }}-${{ steps.kotlin.outputs.version }}
+                    cache-disabled: true
+            # Dokka documents every source set, the native ones included, so it downloads the Kotlin/Native
+            # toolchain; ci.yml's ~/.konan cache isn't restored here, for the reason above.
             -   run: ./gradlew dokkaGeneratePublicationHtml
 
             # Copy KDocs into the Zensical site output; the site's "KDocs" page links to /kdocs/.

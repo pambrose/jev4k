@@ -383,9 +383,17 @@ without them keep compiling.
       windows-latest. A final `ci-ok` job passes only when every other job succeeded; branch protection on `master`
       requires it, the `docs` check and GitGuardian, so the JDK matrix and the native jobs gate a merge.
     - Every job that compiles native code caches `~/.konan`, keyed on the Kotlin version alone (read from the
-      catalog) with no `restore-keys`, so an old toolchain is never carried forward. `docs.yml` only restores that
-      cache, because Dokka, which resolves the native source sets, finishes first and would otherwise save a
-      toolchain without the compiler's dependencies under the build job's key.
+      catalog) with no `restore-keys`, so an old toolchain is never carried forward. `docs.yml` uses no cache at
+      all, neither that one nor setup-gradle's or setup-uv's: it publishes the site, and zizmor's `cache-poisoning`
+      audit accepts caching only when it is off for every run of a publishing workflow. Dokka downloads the
+      Kotlin/Native toolchain itself, and the job still finishes before CI does.
+    - `.github/workflows/zizmor.yml` audits the workflows and `dependabot.yml` with zizmor, as `make zizmor` does
+      locally (with the brew-installed binary, and the gh CLI's token for the online audits). On a pull request
+      its `zizmor` job fails on any finding and annotates the diff; pushes to `master`, a weekly run and manual runs
+      upload SARIF to code scanning instead. The action's pinned SHA fixes the zizmor version (1.30.1 at
+      zizmor-action v0.6.4). The rules it holds every workflow to: `persist-credentials: false` on each checkout
+      (`artipacked`), a 7-day Dependabot `cooldown`, actions pinned to SHAs, and least-privilege `permissions`.
+      Run `make zizmor` after editing anything under `.github`.
     - A `test` job in the same workflow runs `jvmTest` on JDK 17, 21 and 25. Tests otherwise run on the
       toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints `jvmTest`'s `javaLauncher`.
       `-XX:+EnableDynamicAgentLoading` is passed on every JDK: 21 introduced the warning it silences, not the
@@ -422,6 +430,7 @@ make publish-maven-central                            # sign and release <versio
 make format                                           # auto-format sources with ktlint (formatKotlin)
 make detekt                                           # detekt static analysis only
 make detekt-baseline                                  # regenerate config/detekt/baseline.xml
+make zizmor                                           # audit .github's workflows and dependabot.yml, as CI does
 make abi-check                                        # check the public API against api/
 make abi-update                                       # rewrite the api/ dumps after an intended change (macOS)
 make example                                          # run TriageExample against the live API (needs TYPESAFE_API_KEY)
