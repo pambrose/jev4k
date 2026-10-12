@@ -23,7 +23,11 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 60
         steps:
+            # Nothing here pushes, so checkout doesn't leave the token in .git/config, where a later step could
+            # read it (zizmor's artipacked audit).
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+                with:
+                    persist-credentials: false
             # JDK 25 is the toolchain in the catalog.
             -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
                 with:
@@ -97,6 +101,8 @@ jobs:
                 java: [ 17, 21, 25 ]
         steps:
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+                with:
+                    persist-credentials: false
 
             # Two JDKs: the matrix one runs the tests, and 25 is the toolchain that compiles them. The last
             # entry becomes JAVA_HOME, so Gradle itself always runs on 25. On the 25 row both entries are 25,
@@ -151,6 +157,8 @@ jobs:
                 shell: bash
         steps:
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+                with:
+                    persist-credentials: false
             -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
                 with:
                     distribution: temurin

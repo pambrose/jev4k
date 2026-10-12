@@ -1,5 +1,7 @@
 # Every action in .github/workflows is pinned to a commit SHA, which no human is going to update by hand.
-# Dependabot rewrites the SHA and the trailing version comment together, so the pins keep receiving fixes.
+# Dependabot rewrites the SHA and the trailing version comment together, so the pins keep receiving fixes. Each
+# update waits 7 days after its release (zizmor's dependabot-cooldown audit), so a compromised release is usually
+# pulled before it reaches a pull request; security updates aren't held back.
 #
 # Gradle dependencies are deliberately not listed here: the version catalog is reviewed with `make versions`
 # (the ben-manes plugin), which reports updates without opening pull requests. The docs site's website/uv.lock is
@@ -10,6 +12,8 @@ updates:
         directory: /
         schedule:
             interval: weekly
+        cooldown:
+            default-days: 7
         # One pull request for all of them, rather than one per action.
         groups:
             actions:

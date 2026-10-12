@@ -5,7 +5,7 @@
 [![CI](https://github.com/pambrose/jev4k/actions/workflows/ci.yml/badge.svg)](https://github.com/pambrose/jev4k/actions/workflows/ci.yml)
 [![Documentation](https://github.com/pambrose/jev4k/actions/workflows/docs.yml/badge.svg)](https://jev4k.com/)
 [![codecov](https://codecov.io/gh/pambrose/jev4k/branch/master/graph/badge.svg)](https://codecov.io/gh/pambrose/jev4k)
-[![Kotlin version](https://img.shields.io/badge/kotlin-2.4.20-red?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin version](https://img.shields.io/badge/kotlin-2.4.21-red?logo=kotlin)](http://kotlinlang.org)
 [![ktlint](https://img.shields.io/badge/ktlint%20code--style-%E2%9D%A4-FF4081)](https://pinterest.github.io/ktlint/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
@@ -80,7 +80,7 @@ artifact for each target, so a JVM project and a Kotlin Multiplatform project (i
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.1")
+    implementation("com.pambrose.jev4k:jev4k:0.2.2")
 }
 ```
 
@@ -90,7 +90,7 @@ Maven doesn't read Gradle's module metadata, so a Maven build depends on the JVM
 <dependency>
     <groupId>com.pambrose.jev4k</groupId>
     <artifactId>jev4k-jvm</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
 </dependency>
 ```
 
@@ -491,7 +491,7 @@ dropped:
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.1") {
+    implementation("com.pambrose.jev4k:jev4k:0.2.2") {
         exclude(group = "io.ktor", module = "ktor-client-cio-jvm")
     }
     implementation("io.ktor:ktor-client-okhttp:3.6.0")
@@ -664,6 +664,7 @@ make build                  # compile every target and the doc examples, lint, c
 make tests                  # kotlinter + detekt + ABI check + every test this host can run
 make jvm-tests              # the JVM tests only, the quickest loop
 make lint                   # kotlinter + detekt only
+make zizmor                 # audit the GitHub Actions workflows with zizmor, as CI does
 make format                 # auto-format with ktlint
 make kdocs                  # API docs in build/dokka/html
 make example                # run the example against the live API (needs TYPESAFE_API_KEY)

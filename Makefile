@@ -1,10 +1,10 @@
 .PHONY: default help stop clean clean-all build tests jvm-tests js-tests native-tests refresh tree depends kdocs \
-        site site-build clean-site check-site upgrade-site lint format detekt detekt-baseline abi-check abi-update \
-        coverage coverage-html coverage-xml coverage-log \
-        coverage-verify coverage-open coverage-clean versions api-docs example live-tests \
+        site site-build clean-site check-site upgrade-site lint format detekt detekt-baseline zizmor abi-check \
+        abi-update coverage coverage-html coverage-xml coverage-log \
+        coverage-verify coverage-open coverage-clean versions versions-all api-docs example live-tests \
         publish-local publish-local-snapshot publish-snapshot publish-maven-central \
         upgrade-wrapper test-jdk all-tests docker-linux-tests platform-tests _check-gpg-env _require-version \
-        _require-gradle-version _require-jdk _require-macos _require-docker
+        _require-gradle-version _require-jdk _require-macos _require-docker _require-zizmor
 
 VERSION := $(shell sed -n 's/^version=\(.*\)/\1/p' gradle.properties)
 GRADLE_VERSION := $(shell sed -n 's/^gradle-wrapper = "\(.*\)"/\1/p' gradle/libs.versions.toml)
@@ -197,6 +197,14 @@ detekt:  ## Run detekt static analysis
 detekt-baseline:  ## Refresh detekt baseline
 	$(GRADLE) detektBaseline
 
+# The zizmor workflow's audits of the workflows and dependabot.yml. The online audits, which catch a pinned SHA that
+# isn't a commit of its action or a known-vulnerable action, need a GitHub token: GH_TOKEN if it is set, else the gh
+# CLI's. With neither, only the offline audits run. zizmor rejects an empty GH_TOKEN, so it is unset, not passed on.
+zizmor: _require-zizmor  ## Audit the GitHub Actions workflows and dependabot.yml with zizmor, as CI does
+	@GH_TOKEN="$${GH_TOKEN:-$$(gh auth token 2>/dev/null)}"; \
+	if [ -n "$$GH_TOKEN" ]; then export GH_TOKEN; else unset GH_TOKEN; echo "No GitHub token: offline audits only"; fi; \
+	zizmor .
+
 abi-check:  ## Check the public API against the dumps in api/ (also part of `make tests`)
 	$(GRADLE) checkKotlinAbi
 
@@ -225,8 +233,15 @@ coverage-clean:  ## Remove coverage reports and test outputs
 	$(GRADLE) cleanJvmTest
 	rm -rf build/reports/kover build/kover
 
-versions:  ## Check for newer dependency versions
+# dependencyUpdates is marked incompatible with the configuration cache (build.gradle.kts), so a run with the cache on
+# builds an entry only to discard it, and says so. --no-configuration-cache skips the cache for this run instead.
+# build.gradle.kts gives the task a formatter that lists only what is behind; versions-all names the plugin's own plain
+# report, which also lists everything up to date.
+versions:  ## List the dependencies with newer versions, and any that could not be checked
 	$(GRADLE) dependencyUpdates --no-configuration-cache --no-parallel
+
+versions-all:  ## The plugin's full dependency report, up-to-date dependencies included
+	$(GRADLE) dependencyUpdates --no-configuration-cache --no-parallel --output-formatter=plain
 
 api-docs:  ## Re-download the cached TypeSafe docs into jev-docs/pages
 	./jev-docs/refresh.sh
@@ -283,6 +298,9 @@ _require-macos:
 
 _require-docker:
 	@$(DOCKER_UP) || { echo "ERROR: this target needs a running Docker daemon" >&2; exit 1; }
+
+_require-zizmor:
+	@command -v zizmor >/dev/null || { echo "ERROR: this target needs zizmor (brew install zizmor)" >&2; exit 1; }
 
 _require-version:
 	@[ -n "$(VERSION)" ] || { echo "ERROR: Could not determine project version from gradle.properties" >&2; exit 1; }

@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
+## [0.2.2] - 2026-10-12
+
+A maintenance release. The library's API and behavior are unchanged from 0.2.1. The one dependency that moves is
+`kotlin-stdlib`, to 2.4.21; everything else below is build, CI and documentation tooling, so upgrading needs only the
+new version number.
+
+### Added
+
+- `make zizmor` and a zizmor workflow audit the GitHub Actions workflows and `dependabot.yml` with
+  [zizmor](https://docs.zizmor.sh). A pull request fails on any finding; pushes to `master`, a weekly run and manual
+  runs upload the findings to the repository's code scanning alerts instead.
+- `make versions-all` prints the ben-manes plugin's full report, including every dependency that is already up to
+  date.
+
+### Changed
+
+- The default `User-Agent` is `jev4k/0.2.2`.
+- `make versions` lists only the outdated dependencies, plugins and Gradle, and any it could not check.
+- jev4k is built with Kotlin 2.4.21 (from 2.4.20), so its POMs depend on `kotlin-stdlib` 2.4.21.
+- The build runs on Gradle 9.8.1 (from 9.8.0), with the author's convention plugins (`com.pambrose.kotlinter`,
+  `com.pambrose.envvar`) at 1.1.7 (from 1.1.6) and the ben-manes versions plugin at 0.66.0 (from 0.64.0).
+- The documentation site builds with Zensical 0.0.69 (from 0.0.67) and tomli 2.5.0 (from 2.4.1).
+
+### Security
+
+- Every checkout in CI sets `persist-credentials: false`, so the job's token isn't left in `.git/config` for a later
+  step to read.
+- The `docs` workflow, which publishes jev4k.com, restores no cache (Gradle's, uv's or the Kotlin/Native
+  toolchain's), so an entry written by another run can't change what gets deployed. Its build-only runs go without
+  the caches too.
+- Dependabot waits 7 days after an action's release before proposing it, so a compromised release is usually pulled
+  before it reaches a pull request. Security updates aren't held back.
+
 ## [0.2.1] - 2026-10-04
 
 A maintenance release. The library's API, behavior and dependencies are unchanged from 0.2.0; everything below is
@@ -290,6 +323,7 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
+[0.2.2]: https://github.com/pambrose/jev4k/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/pambrose/jev4k/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/pambrose/jev4k/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/pambrose/jev4k/releases/tag/0.1.0

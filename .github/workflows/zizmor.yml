@@ -1,0 +1,56 @@
+name: zizmor
+
+# Audits what runs CI, the workflows and dependabot.yml, with zizmor (https://docs.zizmor.sh): an expression spliced
+# into a shell command, a checkout that leaves its token behind, a cache a publishing workflow could be poisoned
+# through, a pinned SHA that isn't a commit of the action it names, a known-vulnerable action, permissions wider than a
+# job needs, and Dependabot updates without a cooldown. A pull request fails on any finding, which is annotated on the
+# diff. Pushes to master, the weekly run and manual runs upload the findings to the repository's code scanning alerts
+# instead, so a newly vulnerable action surfaces even when no workflow changed. `make zizmor` runs the same audits
+# locally. No event payload is referenced, so nothing here can be injected.
+on:
+    pull_request:
+    push:
+        branches: [ master ]
+    schedule:
+        -   cron: '23 6 * * 1'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+# As in ci.yml: a newer push to a pull request supersedes its run still in progress; other runs are never cancelled.
+concurrency:
+    group: zizmor-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+    # Annotations exit non-zero on a finding, failing the check. They need no write token, so a fork's or
+    # Dependabot's pull request runs this too. The online audits use the job's read-only token.
+    zizmor:
+        if: github.event_name == 'pull_request'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+                with:
+                    persist-credentials: false
+            # The action pins zizmor's image by digest, so its SHA fixes which zizmor runs (1.30.1 at v0.6.4), and
+            # Dependabot moves the two together.
+            -   uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+                with:
+                    advanced-security: false
+                    annotations: true
+
+    # SARIF output never fails the job: the findings become code scanning alerts, which close once fixed.
+    code-scanning:
+        if: github.event_name != 'pull_request'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
+            security-events: write
+        steps:
+            -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+                with:
+                    persist-credentials: false
+            -   uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4

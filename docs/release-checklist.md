@@ -8,7 +8,7 @@ Dokka includes only `docs/packages.md` (the `includes.from("docs/packages.md")` 
 
 ## Current state
 
-Verified 2026-09-20; the release rows on 2026-10-04.
+Verified 2026-09-20; the release rows on 2026-10-12.
 
 | Item                                  | State                                                       |
 |---------------------------------------|-------------------------------------------------------------|
@@ -21,12 +21,12 @@ Verified 2026-09-20; the release rows on 2026-10-04.
 | Published site                        | ✅ live at <https://jev4k.com/>, KDocs included             |
 | Site deploys                          | on a published GitHub release, or a manual `docs.yml` run   |
 | Required checks on `master`           | `ci-ok`, `docs` and GitGuardian                             |
-| Git tags                              | ✅ `0.1.0` at `b7c2b5e` and `0.2.0` at `57a1dca`, released  |
+| Git tags                              | ✅ `0.1.0`, `0.2.0` and `0.2.1` (`b00015f`), all released   |
 | `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                  |
-| `com.pambrose.jev4k:jev4k` on Central | ✅ 0.2.0 published, signed, and resolvable                  |
-| `gradle.properties` version           | `0.2.1`, the next release number                            |
+| `com.pambrose.jev4k:jev4k` on Central | ✅ 0.2.1 published, signed, and resolvable                  |
+| `gradle.properties` version           | `0.2.2`, the next release number                            |
 | `gradle.properties` group             | `com.pambrose.jev4k` from 0.2.0 (0.1.0 was `com.pambrose`)  |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.2.0 dated 2026-09-28; 0.2.1 dated 2026-10-04              |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.2.1 dated 2026-10-04; 0.2.2 dated 2026-10-12              |
 
 ## Before the first release, once
 
@@ -70,6 +70,7 @@ Verified 2026-09-20; the release rows on 2026-10-04.
 - [ ] `make docker-linux-tests` — linuxX64 and linuxArm64 in Docker. linuxArm64 has no Gradle test task, so this
   and CI's QEMU step are the only places its tests run.
 - [ ] `make coverage-verify` — the line and branch floors in `build.gradle.kts`.
+- [ ] `make zizmor` — no findings in the workflows or `dependabot.yml`, with the online audits on (a `gh` login).
 - [ ] `cd website/jev4k && uv run zensical build --clean --strict` — must report "No issues found".
 - [ ] `make site-build` — the site plus Dokka KDocs under `/kdocs`.
 - [ ] Optional: `make live-tests` and `make example`, which call the real API and spend tokens. Worth doing
@@ -94,7 +95,8 @@ Verified 2026-09-20; the release rows on 2026-10-04.
 
 - [ ] Commit the version bump and the release documents together, on a branch.
 - [ ] Open a PR and wait for the required checks: `ci-ok` (build, tests, Kover, Codecov, the JDK matrix and the
-  native jobs), `docs` (Zensical and Dokka) and GitGuardian. Don't publish from a tree that CI hasn't accepted.
+  native jobs), `docs` (Zensical and Dokka) and GitGuardian. The `zizmor` check isn't required, but should pass
+  too. Don't publish from a tree that CI hasn't accepted.
 - [ ] Don't merge yet. Merging puts the new version's install lines in the README on GitHub, so the artifacts
   go to Central first (step 5).
 
