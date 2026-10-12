@@ -436,7 +436,8 @@ make abi-update                                       # rewrite the api/ dumps a
 make example                                          # run TriageExample against the live API (needs TYPESAFE_API_KEY)
 make live-tests                                       # LiveSmokeTest (needs TYPESAFE_API_KEY) + every platform's probes
 make tree                                             # dependency tree
-make versions                                         # report newer dependency/plugin/Gradle versions (ben-manes)
+make versions                                         # list only the outdated dependencies, plugins and Gradle
+make versions-all                                     # the ben-manes plugin's full report, up-to-date entries included
 make upgrade-wrapper                                  # regenerate the wrapper at the catalog's gradle-wrapper version
 ./gradlew jvmTest --tests "com.pambrose.jev4k.DslTest" # run a single test class on the JVM
 ```

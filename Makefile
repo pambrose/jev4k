@@ -1,7 +1,7 @@
 .PHONY: default help stop clean clean-all build tests jvm-tests js-tests native-tests refresh tree depends kdocs \
         site site-build clean-site check-site upgrade-site lint format detekt detekt-baseline zizmor abi-check \
         abi-update coverage coverage-html coverage-xml coverage-log \
-        coverage-verify coverage-open coverage-clean versions api-docs example live-tests \
+        coverage-verify coverage-open coverage-clean versions versions-all api-docs example live-tests \
         publish-local publish-local-snapshot publish-snapshot publish-maven-central \
         upgrade-wrapper test-jdk all-tests docker-linux-tests platform-tests _check-gpg-env _require-version \
         _require-gradle-version _require-jdk _require-macos _require-docker _require-zizmor
@@ -233,8 +233,15 @@ coverage-clean:  ## Remove coverage reports and test outputs
 	$(GRADLE) cleanJvmTest
 	rm -rf build/reports/kover build/kover
 
-versions:  ## Check for newer dependency versions
+# dependencyUpdates is marked incompatible with the configuration cache (build.gradle.kts), so a run with the cache on
+# builds an entry only to discard it, and says so. --no-configuration-cache skips the cache for this run instead.
+# build.gradle.kts gives the task a formatter that lists only what is behind; versions-all names the plugin's own plain
+# report, which also lists everything up to date.
+versions:  ## List the dependencies with newer versions, and any that could not be checked
 	$(GRADLE) dependencyUpdates --no-configuration-cache --no-parallel
+
+versions-all:  ## The plugin's full dependency report, up-to-date dependencies included
+	$(GRADLE) dependencyUpdates --no-configuration-cache --no-parallel --output-formatter=plain
 
 api-docs:  ## Re-download the cached TypeSafe docs into jev-docs/pages
 	./jev-docs/refresh.sh

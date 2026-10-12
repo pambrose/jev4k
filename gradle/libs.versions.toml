@@ -15,7 +15,7 @@ maven-publish = "0.37.0"
 ktor = "3.6.0"
 mockk = "1.14.11"
 serialization = "1.11.0"
-versions = "0.65.0"
+versions = "0.66.0"
 
 [libraries]
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
