@@ -16,7 +16,8 @@ make kdocs              # API docs in build/dokka/html
 make coverage           # Kover HTML + XML coverage reports
 make example            # run the example against the live API (needs TYPESAFE_API_KEY)
 make live-tests         # smoke tests and probes against the live API (needs TYPESAFE_API_KEY)
-make versions           # report newer dependency versions
+make versions           # list the outdated dependencies, plugins and Gradle
+make versions-all       # the full dependency report, up-to-date entries included
 # --8<-- [end:make-targets]
 
 # --8<-- [start:single-test]

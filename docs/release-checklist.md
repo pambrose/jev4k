@@ -8,7 +8,7 @@ Dokka includes only `docs/packages.md` (the `includes.from("docs/packages.md")` 
 
 ## Current state
 
-Verified 2026-09-20; the release rows on 2026-10-07.
+Verified 2026-09-20; the release rows on 2026-10-12.
 
 | Item                                  | State                                                       |
 |---------------------------------------|-------------------------------------------------------------|
@@ -26,7 +26,7 @@ Verified 2026-09-20; the release rows on 2026-10-07.
 | `com.pambrose.jev4k:jev4k` on Central | ✅ 0.2.1 published, signed, and resolvable                  |
 | `gradle.properties` version           | `0.2.2`, the next release number                            |
 | `gradle.properties` group             | `com.pambrose.jev4k` from 0.2.0 (0.1.0 was `com.pambrose`)  |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.2.1 dated 2026-10-04; changelog has an Unreleased section |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.2.1 dated 2026-10-04; 0.2.2 dated 2026-10-12              |
 
 ## Before the first release, once
 

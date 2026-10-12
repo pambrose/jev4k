@@ -3,6 +3,22 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
+## v0.2.2 — 2026-10-12
+
+A maintenance release. The library's API and behavior are exactly as in 0.2.1, and the one dependency that moves is
+`kotlin-stdlib`, to 2.4.21, since jev4k is now built with Kotlin 2.4.21. Upgrading means changing the version number
+and nothing else:
+
+- Gradle builds: `com.pambrose.jev4k:jev4k:0.2.2`
+- Maven builds: `com.pambrose.jev4k:jev4k-jvm:0.2.2`
+
+The rest is tooling. A new zizmor workflow audits the GitHub Actions workflows on every pull request, and fixing
+what it found hardened CI: no checkout leaves its token behind, the workflow that publishes jev4k.com restores no
+cache that another run could have written, and Dependabot waits a week before proposing a new action release. The
+build moves to Gradle 9.8.1, and the documentation site to Zensical 0.0.69. The changelog lists each change.
+
+**Full Changelog**: https://github.com/pambrose/jev4k/compare/0.2.1...0.2.2
+
 ## v0.2.1 — 2026-10-04
 
 A maintenance release with no changes to the library: its API, behavior and dependencies are exactly as in 0.2.0.
