@@ -1,9 +1,9 @@
 # TypeSafe SDKs (Python + JS): notes for jev4k
 
 - Sources: `pages/sdk.md`, `sdk/python*`, `sdk/javascript*`; cross-checked with `api.md` and `models.md`.
-- Versions: Python `typesafe-sdk` **0.7.0** (built on `httpx2` + `pydantic`). JS `@typesafe-ai/sdk` **0.6.0**
-  (`VERSION = "0.6.0"`; `fetch`; Node.js 20+; ESM + CJS + .d.ts).
-- Repos: github.com/typesafe-ai/typesafe-sdk-python, …/typesafe-sdk-js (`src/client.ts`, `src/types.ts` @ v0.6.0).
+- Versions (updated 2026-10-15): Python `typesafe-sdk` **0.7.5** (built on `httpx2` + `pydantic`; extras `http2`,
+  `pil`, `zstd`). JS `@typesafe-ai/sdk` **0.7.0** (`VERSION = "0.7.0"`; `fetch`; Node.js 22+; ESM + CJS + .d.ts).
+- Repos: github.com/typesafe-ai/typesafe-sdk-python, …/typesafe-sdk-js (`src/client.ts`, `src/types.ts` @ v0.7.0).
 
 ## 1. Wire contract as the SDKs show it
 
@@ -11,7 +11,7 @@
 
 **Endpoints**
 
-- `POST /v1/systemone`: api.md, and JS `SystemOneRequestPayload` ("Request body for `POST /v1/systemone`").
+- `POST /v1/systemone`: api.md. JS 0.7.0 stopped exporting its request payload types (`SystemOneRequestPayload`).
 - `GET /v1/models`: **not in the SDK files**; from `models.md` ("currently lists the aliases"; versioned IDs like
   `jev-1.13.0` accepted even if unlisted).
 
@@ -26,6 +26,12 @@
 - **Not mentioned anywhere**: idempotency keys, `x-should-retry`, client-sent request IDs.
 - Custom headers: Python client `headers=` + per-call `extra_headers=`; JS `defaultHeaders` + per-call `headers` (merged
   over).
+- `Content-Encoding: zstd` on bodies of 1 KiB or more, by default since Python 0.7.5 and JS 0.7.0. Python needs the
+  `zstd` extra before 3.14; JS needs Node.js 22.15+ and otherwise sends uncompressed bodies. `compression=False` /
+  `compression: false` turns it off ("non-official APIs may not support this immediately").
+- The SDKs don't send the images opt-in header: callers pass `TypeSafe-Danger-Zone-Images: true` themselves (Python
+  `extra_headers`, JS `defaultHeaders` or per-call `headers`). A request with assets is sent as `multipart/form-data`,
+  each asset's raw bytes in its own part.
 
 **Request**
 
@@ -41,7 +47,8 @@
 - Question id is caller-chosen; the answer returns under the same id. Per api.md the key "is not sent to the underlying
   model".
 - `criteria`: noul optional/`null` (optional `true`/`false` keys); choice required (label → description or `null`);
-  score required **ordered array** (index i = level i, from 0).
+  score required **ordered array** (index i = level i, from 0); box none.
+- Top-level `assets` and `"type": "box"` questions are experimental: see `jev-api.md` §2, "Images and Box".
 - The SDKs always send a resolved `model` (default `jev-latest`). JS `SystemOneRequestPayload.model: string` is
   non-optional.
 - Extra top-level fields: Python `extra_body` (e.g. `{"beam_width": 4}`) is shallow-merged last-write-wins, even over
@@ -77,16 +84,17 @@ Python returns `ListModelsResponse`; JS unwraps to `ModelCard[]`.
 | Topic                        | api.md                                                                      | Python                                                             | JS                                                                                 |
 |------------------------------|-----------------------------------------------------------------------------|--------------------------------------------------------------------|------------------------------------------------------------------------------------|
 | `model`                      | required                                                                    | optional; env or `jev-latest`, always sent                         | same                                                                               |
-| `state`                      | required; str, obj or arr                                                   | `JSONContent`, **not None** (nested None OK)                       | `EntryType`, **null allowed**                                                      |
-| `instructions`               | required; str, obj or arr                                                   | optional, `JSONContent\|None=None`                                 | optional `EntryType` (incl. null)                                                  |
-| noul criteria `true`/`false` | string                                                                      | `JSONContent\|None`                                                | `EntryType`                                                                        |
-| choice criteria values       | `string\|null`                                                              | `JSONContent\|None`                                                | `EntryType`                                                                        |
-| score criteria               | array, ≥2 levels                                                            | `Sequence[JSONContent]`, **nonempty only**, items non-null         | `[EntryType, EntryType, ...EntryType[]]`, **≥2 checked at runtime**, null items OK |
+| `state`                      | required; str, obj or arr                                                   | `Content` (incl. an asset), **not None** (nested None OK)          | `NonNullable<EntryType>`, **null rejected** (0.7.0)                                |
+| `instructions`               | required; str, obj or arr                                                   | optional, `Content\|None=None`                                     | optional `EntryType`; a Noul needs it unless `criteria` describes an outcome       |
+| noul criteria `true`/`false` | `string\|object\|array` (was string)                                        | `Content\|None`                                                    | `EntryType`                                                                        |
+| choice criteria values       | `string\|object\|array\|null` (was `string\|null`); ≤ 255                     | `Content\|None`                                                    | `EntryType`; nonempty map checked                                                  |
+| score criteria               | `array<string\|object\|array>`; "should have ≥2", accepts ≤ 10              | `Sequence[Content]`, **nonempty only**, items non-null             | `[EntryType, EntryType, ...EntryType[]]`, **≥2 checked at runtime**, null items OK |
 | score `legend` values        | string                                                                      | `str\|dict\|list`                                                  | `T[score]` (the criteria entry)                                                    |
 | answer `type`                | required                                                                    | defaulted, not in `required`                                       | required literal                                                                   |
-| `usage.*`                    | integer, required                                                           | `int\|None=None` ("when reported")                                 | `number`, required                                                                 |
+| `usage.*`                    | integer, required                                                           | `int\|None=None` ("when reported")                                 | `number \| null` (0.7.0)                                                           |
 | `answers`                    | required                                                                    | not in the schema's `required` list (only `model` and `usage` are) | required                                                                           |
-| statuses                     | 401, 422, 429, 529                                                          | classes for 400/401/403/404/422/429/5xx; retries 408 too           | same                                                                               |
+| statuses                     | 400, 401, 413, 415, 422, 429, 529                                           | classes for 400/401/403/404/422/429/5xx; retries 408 too           | same                                                                               |
+| non-finite numbers           | rejected with 400                                                           | sent as strings (0.7.4)                                            | not documented                                                                     |
 | error body                   | JSON "describing what went wrong"; a 422 body "details the offending field" | kept raw (JSON, text or None)                                      | JSON, text or undefined                                                            |
 
 ## 2. Client defaults to replicate
@@ -100,6 +108,8 @@ Python returns `ListModelsResponse`; JS unwraps to `ModelCard[]`.
 | `TYPESAFE_DEFAULT_MODEL` | model                                                     | `jev-latest`                                       |
 | `TYPESAFE_LOG_LEVEL`     | log level                                                 | Python: unset (applied once at import). JS: `warn` |
 
+- Python (0.7.1+) strips whitespace around the API key and rejects an empty key, internal whitespace, control
+  characters and non-ASCII, keeping the value out of logged exceptions.
 - Python constants: `API_KEY_ENV`, `BASE_URL_ENV`, `DEFAULT_MODEL_ENV`, `LOG_LEVEL_ENV`, `DEFAULT_BASE_URL`,
   `DEFAULT_MODEL`, `DEFAULT_TIMEOUT = 10.0`. JS: `ENV = {apiKey, baseURL, defaultModel, logLevel}` (var names);
   `EnvVar` = their union.
@@ -154,8 +164,13 @@ Python returns `ListModelsResponse`; JS unwraps to `ModelCard[]`.
   client.
 - JS: injectable `fetch`; `dangerouslyAllowBrowser` (default false) allows browser use, exposing the key. Constructor
   throws if "the API key is missing, configuration is invalid, or the runtime is unsupported".
-- Client-side validation: empty `questions` fails in both; Python `TypeSafeError` on empty score criteria; JS throws
-  on <2 score criteria.
+- Client-side validation: empty `questions` fails in both; Python `TypeSafeError` on empty score criteria (0.7.3 adds
+  unspecified "more request validation checks"). JS 0.7.0 rejects the returned promise, instead of throwing, for a
+  null or missing state, empty questions, <2 score criteria, an empty choice criteria map, a Noul with neither
+  instructions nor a described outcome, a string holding the reference of an unattached asset, a name in `assets` that
+  doesn't appear in the request, or an unreadable `Blob`.
+- Python 0.7.3 keeps pooled connections alive for 30 s; 0.7.2 added the `http2` extra.
+- Both constructors also fail when zstd compression is requested but unavailable.
 
 ## 3. Error model
 
@@ -190,7 +205,8 @@ TypeSafeError(message, options?) extends Error
 ```
 
 - JS has **no** response-validation error class.
-- **Not specified**: which class other statuses (e.g. 408, 409) map to. Presumably the base API error.
+- **Not specified**: which class other statuses (e.g. 408, 409, and the API's new 413 and 415) map to. Presumably the
+  base API error.
 - 529 "Overloaded" (api.md) is a 5xx, so it maps to `InternalServerError` and is retried by default.
 
 ## 4. Typed question/answer design
@@ -198,10 +214,12 @@ TypeSafeError(message, options?) extends Error
 **Value types**
 
 - Python: `JSONValue = str|int|float|bool|Sequence[JSONValue|None]|Mapping[str,JSONValue|None]`;
-  `JSONContent = str|Mapping[str,JSONValue|None]|Sequence[JSONValue|None]`.
-- JS: `JsonValue = string|number|boolean|null|JsonValue[]|{[k]:JsonValue}`;
-  `EntryType = string|{[k:string]:JsonValue}|JsonValue[]|null` (state, instructions, criteria);
-  `Description = EntryType` (null = undescribed).
+  `JSONContent = str|Mapping[str,JSONValue|None]|Sequence[JSONValue|None]`. 0.7.5 adds `ContentValue` (the same, plus
+  `Asset`) and `Content = str|Mapping[str,ContentValue|None]|Sequence[ContentValue|None]|Asset`, used for state,
+  instructions and criteria.
+- JS: `JsonValue = string|number|boolean|null|JsonValue[]|{[k]:JsonValue}`; `ContentValue` = the same plus
+  `Asset|TextWithAssets`; `EntryType = string|Asset|TextWithAssets|{[k:string]:ContentValue}|ContentValue[]|null`
+  (instructions, criteria; state is `NonNullable<EntryType>`); `Description = EntryType` (null = undescribed).
 
 **Python questions**: objects and dicts can be mixed in one request.
 
@@ -212,10 +230,15 @@ TypeSafeError(message, options?) extends Error
     - `Score(criteria: Sequence[JSONContent], instructions=None)`: nonempty and ordered; index = score.
 - TypedDicts `NoulModel`/`ChoiceModel`/`ScoreModel`: required `type` Literal; `instructions` NotRequired; `criteria`
   NotRequired only for noul.
-- Aliases: `QuestionModel = NoulModel|ChoiceModel|ScoreModel`, `Question = Noul|Choice|Score|QuestionModel`,
-  `Questions = Mapping[str, Question]`.
+    - `Box(instructions=None)` (0.7.5) and TypedDict `BoxModel`.
+- Aliases: `QuestionModel = NoulModel|ChoiceModel|ScoreModel|BoxModel`,
+  `Question = Noul|Choice|Score|Box|QuestionModel`, `Questions = Mapping[str, Question]`.
+- Assets (0.7.5): `Image(...)` from bytes, a file path, base64 (`Image.from_base64`) or a PIL image (`Image.from_pil`,
+  `pil` extra). Put one anywhere in the content and the SDK gives it a unique reference (`str(image)`), or pass
+  `assets={reference: image}` to `system_one`, or use `with client.attach_assets(image):` to reference attached assets
+  inside strings.
 -
-`system_one(state, questions, *, model=None, retry=None, timeout=None, extra_headers=None, extra_body=None, response_model=None)` →
+`system_one(state, questions, *, model=None, assets=None, retry=None, timeout=None, extra_headers=None, extra_body=None, response_model=None)` →
 `SystemOneResponse`, or `ResponseT` when `response_model=type[ResponseT]`.
 
 **Python answers** (frozen, strict, extra ignored)
@@ -224,9 +247,11 @@ TypeSafeError(message, options?) extends Error
 - `ChoiceAnswer{type:'choice', choice: str, confidence: float, probabilities: dict[str,float]}`
 -
 `ScoreAnswer{type:'score', score: float, confidence: float, legend: dict[int, str|dict|list], probabilities: dict[int,float]}`
-- `Answer = Annotated[NoulAnswer|ChoiceAnswer|ScoreAnswer, Field(discriminator="type")]`
+- `BoxAnswer{type:'box', box: BoxCoordinates{top, bottom, left, right: float}, confidence: float|None}` (0.7.5)
+- `Answer = Annotated[NoulAnswer|ChoiceAnswer|ScoreAnswer|BoxAnswer, Field(discriminator="type")]`
 - `Usage{input_tokens: int|None=None, output_tokens: int|None=None}`
-- `SystemOneResponse{model: str, usage: Usage, answers: dict[str, Answer]}` + cached views `.nouls`/`.choices`/`.scores`
+- `SystemOneResponse{model: str, usage: Usage, answers: dict[str, Answer]}` + cached views
+  `.nouls`/`.choices`/`.scores`/`.boxes`
   (keyed by question id), `.request_id: str`, `.raw_http_response: httpx2.Response`.
 - `response_model` (0.7.0): subclass `SystemOneResponse` with fields named after question ids (e.g.
   `billing: NoulAnswer`, then `result.billing == result.nouls["billing"]`), or any `BaseModel` mirroring the raw body
@@ -238,7 +263,14 @@ TypeSafeError(message, options?) extends Error
 **JS**: generics carry the criteria keys through to the answers.
 
 ```ts
-function noul(instructions?: EntryType /*=null*/, criteria?: {true?: EntryType; false?: EntryType} | null): NoulQuestion;
+// 0.7.0: noul and score are overloaded consts; a Noul needs instructions or a described outcome
+const noul: { (instructions: NonNullable<EntryType>, criteria?: {true?: EntryType; false?: EntryType} | null): NoulQuestion;
+              (instructions: EntryType | undefined,                 // null or omitted: criteria must describe
+               criteria: {true: NonNullable<EntryType>; false?: EntryType}  //   at least one outcome
+                       | {true?: EntryType; false: NonNullable<EntryType>}): NoulQuestion };
+function box(instructions?: EntryType /*=null*/): BoxQuestion;                  // use with model "jev-preview"
+function image(data: ArrayBuffer | ArrayBufferView | Blob): Image;              // also Image.fromBase64(text)
+const withAssets: { (strings, ...values): TextWithAssets; join(values, separator?): TextWithAssets };
 function choice<T extends ChoiceCriteria>(instructions: EntryType, criteria: T): ChoiceQuestion<T>;
 function score<T extends ScoreCriteria>(instructions: EntryType, criteria: T): ScoreQuestion<T>;
 type ChoiceCriteria = { [label: string]: EntryType };
@@ -246,7 +278,8 @@ type ScoreCriteria  = readonly [EntryType, EntryType, ...EntryType[]];          
 interface NoulQuestion      { type: "noul";   instructions?: EntryType; criteria?: {true?; false?} | null }
 interface ChoiceQuestion<T> { type: "choice"; instructions?: EntryType; criteria: T }
 interface ScoreQuestion<T>  { type: "score";  instructions?: EntryType; criteria: T }
-type Question = NoulQuestion | ScoreQuestion | ChoiceQuestion;  interface Questions { [name: string]: Question }
+interface BoxQuestion       { type: "box";    instructions?: EntryType }
+type Question = NoulQuestion | ScoreQuestion | ChoiceQuestion | BoxQuestion;  interface Questions { [name: string]: Question }
 
 interface NoulResponse      { readonly type: "noul"; readonly noul: number }
 interface ChoiceResponse<T> { readonly type: "choice"; readonly choice: keyof T & string; readonly confidence: number;
@@ -254,23 +287,25 @@ interface ChoiceResponse<T> { readonly type: "choice"; readonly choice: keyof T 
 interface ScoreResponse<T>  { readonly type: "score"; readonly score: number; readonly confidence: number;
                               readonly legend: ScoreLegend<T>; readonly probabilities: { readonly [s in number | `${number}`]: number } }
 type ScoreOf<T>     = number extends T["length"] ? number : Extract<keyof T, `${number}`>;  // tuple -> its indices
-type ScoreLegend<T> = { readonly [score in ScoreOf<T>]: T[score] };
+interface BoxResponse       { readonly type: "box"; readonly box: BoxCoordinates /*top, bottom, left, right*/;
+                              readonly confidence: number | null }
+type ScoreLegend<T> = { readonly [score in ScoreOf<T>]: SentContent<T[score]> };
 type ResultFor<T> = T extends NoulQuestion ? NoulResponse : T extends ScoreQuestion<infer S> ? ScoreResponse<S>
-                  : T extends ChoiceQuestion<infer E> ? ChoiceResponse<E> : never;
+                  : T extends ChoiceQuestion<infer E> ? ChoiceResponse<E> : T extends BoxQuestion ? BoxResponse : never;
 interface SystemOneResult<Q> { readonly answers: { readonly [K in keyof Q]: ResultFor<Q[K]> }; // docs render K as string|number|symbol
                                readonly model: string; readonly usage: Usage }
-// Usage {input_tokens, output_tokens: number}; ModelCard {name, description, release_date: string} (all readonly)
+// Usage {input_tokens, output_tokens: number | null}; ModelCard {name, description, release_date: string} (all readonly)
 ```
 
 -
-`systemOne<Q extends Questions>(request: {state: EntryType; questions: Q; model?: string}, options?: RequestOptions): APIPromise<SystemOneResult<Q>>`
+`systemOne<Q extends Questions>(request: {state: NonNullable<EntryType>; questions: Q; model?: string; assets?: Record<string, Image>}, options?: RequestOptions): APIPromise<SystemOneResult<Q>>`
 - `RequestOptions = {headers?, retry?: Partial<RetryPolicy>, signal?: AbortSignal, timeout?: number}`
 - `models.list(options?): APIPromise<ModelCard[]>`
 - `APIPromise<T> extends Promise<T>`: `asResponse()` (raw `Response`, caller owns body), `withResponse()` →
   `{data, response, requestId}`, `map(fn)` (shares one parse). Non-2xx rejects with `APIError`, even via `asResponse()`.
 - JS has no nouls/choices/scores grouping: `answers.<id>`, with `choice` typed as the union of criteria keys. Client
-  readonly props: `baseURL`, `defaultHeaders`, `defaultModel`, `fetch`, `logger`, `logLevel`, `models`, `retry`,
-  `timeout`.
+  readonly props: `baseURL`, `compression`, `defaultHeaders`, `defaultModel`, `fetch`, `logger`, `logLevel`, `models`,
+  `retry`, `timeout`. Config `compression?: Compression` (`"zstd" | false`).
 
 ## 5. Examples
 
@@ -320,6 +355,15 @@ Unspecified: whether `as const` is needed for `ScoreOf` to infer tuple indices (
 
 ## 6. Changelog highlights
 
+- **Python 0.7.5 / JS 0.7.0 (2026-10-14)**: zstd request compression by default; images (`Image` / `image()`, sent as
+  multipart; experimental, behind `TypeSafe-Danger-Zone-Images`); `Box` questions and answers. JS: BREAKING Node.js
+  22+, request payload types no longer exported; `usage` counts may be `null`; invalid requests reject the promise
+  instead of throwing; score criteria built at runtime accepted.
+- **Python 0.7.4 (2026-10-09)**: non-finite numbers are sent as strings instead of invalid JSON tokens.
+- **Python 0.7.3 (2026-10-09)**: more request validation; pooled connections kept alive 30 s; fix for async TLS
+  crashes with `truststore<=0.10.4`.
+- **Python 0.7.2 (2026-09-26)**: `http2` extra. **0.7.1 (2026-09-21)**: API key validated early and kept out of logged
+  exceptions.
 - **Python 0.7.0 (2026-09-18)**: BREAKING serialization `msgspec` → `pydantic`; fix: `str` subclasses were serialized as
   char lists (emit JSON strings); new `response_model`.
 - **Python 0.6.0 (2026-09-15)**: BREAKING **`Score.criteria` is an ordered sequence, no longer a dict keyed by
@@ -328,4 +372,5 @@ Unspecified: whether `as const` is needed for `ScoreOf` to infer tuple indices (
 - **JS 0.6.0 (2026-09-15)**: BREAKING: same `Score.criteria` change. First public releases: Python 0.5.7 (2026-09-14),
   JS 0.5.7 (2026-09-11).
 - For the v1 wire format: score criteria are sent as a JSON array (matching api.md). Score answers still use
-  string-keyed `legend` and `probabilities`. The changelogs mention no other wire changes.
+  string-keyed `legend` and `probabilities`. The 0.7.x wire changes are the optional `Content-Encoding: zstd`,
+  multipart requests carrying `assets`, and Box questions and answers.

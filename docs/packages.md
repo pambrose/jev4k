@@ -5,7 +5,7 @@ kotlinx.serialization. It runs on the JVM, Apple platforms, Linux, Windows, and 
 *state* (text, JSON, or any `@Serializable` value) and a set of typed *questions*. Jev answers each question with a
 typed judgment and probabilities that code can branch on, without generating any text.
 
-There are three question types:
+jev4k supports three question types:
 
 | Question | Answer                                                                                                           | Use it when                             |
 |----------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------|

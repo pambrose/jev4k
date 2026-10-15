@@ -1,6 +1,6 @@
 package com.pambrose.jev4k
 
-import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
+import com.pambrose.jev4k.internal.MAX_SEND_DEPTH
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
@@ -138,18 +138,40 @@ class ValidationTest : StringSpec() {
             problems shouldHaveSize 2
         }
 
-        // Question entries are encoded with the request, so they get the same depth limit as the state.
-        "question entries nested too deeply are reported like any other problem" {
+        // The API answers an entry nested more than 64 levels deep with a 400, so it is reported before sending.
+        "question entries nested deeper than the API allows are reported like any other problem" {
+            MAX_SEND_DEPTH shouldBe 64
             val problems = problemsOf {
-                noul("deep", nestedArrays(MAX_JSON_DEPTH + 1))
-                choice("pick", "Which one?") { "a" means nestedArrays(MAX_JSON_DEPTH + 1) }
+                noul("deep", nestedArrays(MAX_SEND_DEPTH + 1))
+                choice("pick", "Which one?") { "a" means nestedArrays(MAX_SEND_DEPTH + 1) }
+                score("rate", "How much?") {
+                    level(nestedArrays(MAX_SEND_DEPTH + 1))
+                    level("High")
+                }
+                noul("when", "Is it?") { whenTrue(nestedArrays(MAX_SEND_DEPTH + 1)) }
                 score("fine", "How much?") { levels("Low", "High") }
             }
             problems shouldBe
                 listOf(
-                    "question 'deep': instructions is nested more than $MAX_JSON_DEPTH levels deep",
-                    "question 'pick': option 'a' is nested more than $MAX_JSON_DEPTH levels deep",
+                    "question 'deep': instructions is nested more than $MAX_SEND_DEPTH levels deep",
+                    "question 'pick': option 'a' is nested more than $MAX_SEND_DEPTH levels deep",
+                    "question 'rate': level 0 is nested more than $MAX_SEND_DEPTH levels deep",
+                    "question 'when': whenTrue is nested more than $MAX_SEND_DEPTH levels deep",
                 )
+        }
+
+        // The API counts each criteria value on its own: the map or array holding them isn't a level.
+        "question entries right at the API's limit pass, criteria values included" {
+            shouldNotThrowAny {
+                questions {
+                    noul("deep", nestedArrays(MAX_SEND_DEPTH)) { whenTrue(nestedArrays(MAX_SEND_DEPTH)) }
+                    choice("pick", "Which one?") { "a" means nestedArrays(MAX_SEND_DEPTH) }
+                    score("rate", "How much?") {
+                        level(nestedArrays(MAX_SEND_DEPTH))
+                        level("High")
+                    }
+                }
+            }
         }
 
         "instructions that can't state a question are rejected: a number, a boolean, an empty object or array" {

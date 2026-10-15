@@ -9,7 +9,7 @@ values, down to enum-valued choices that work with an exhaustive `when`. It is a
 on the Ktor client and kotlinx.serialization, with a suspend-first API. It runs on the JVM (Java 17 bytecode, with a
 blocking mirror of the API), on Apple platforms, Linux and Windows, and on Node.js through the js and wasmJs targets.
 
-There are three kinds of question. A **Noul** asks whether something is true and answers with a probability. A
+jev4k supports three kinds of question. A **Noul** asks whether something is true and answers with a probability. A
 **Choice** picks one of a set of options and reports a probability per option plus a confidence. A **Score**
 places the state on ordered levels and can fall between them. Questions can be written inline with string ids or
 declared once as a typed `JevQuery` object whose property names become the ids.

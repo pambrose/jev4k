@@ -81,6 +81,17 @@ every call, `query`, `ask` and `blocking()` included; options passed to a call o
 Options are checked when they're built, and a problem is a `JevConfigException`. `extraBody` is an escape hatch for
 API parameters jev4k doesn't model yet; whether the service accepts a field is up to TypeSafe.
 
+### Long context
+
+A request has to fit two context limits: 64k tokens for the state plus every question, and 32k for the state plus
+any one question. TypeSafe's `TypeSafe-Danger-Zone-Long-Context: true` header raises both to 262k tokens, on
+`jev-1.13.0` and `jev-1.14.0`, at the same price per token. A long-context request is slower and less accurate, so
+send the header only on the calls that need it:
+
+```kotlin
+--8<-- "ClientExamples.kt:long-context"
+```
+
 ## Concurrency
 
 Suspending calls make it easy to process many states at once. Bound the parallelism, though: TypeSafe's

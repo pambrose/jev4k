@@ -146,6 +146,18 @@ suspend fun callsOptions(
     println(result)
 }
 
+suspend fun callsLongContext(
+    jev: JevApi,
+    transcript: String,
+) {
+    // --8<-- [start:long-context]
+    // Both context limits rise to 262k tokens for the calls made through longContext.
+    val longContext = JevCallOptions { headers["TypeSafe-Danger-Zone-Long-Context"] = "true" }
+    val result = jev.withOptions(longContext).ask(Triage, state = transcript)
+    // --8<-- [end:long-context]
+    println(result)
+}
+
 // --8<-- [start:concurrency]
 // Run many requests concurrently, but bound the fan-out: shared keys hit rate limits at around 8 at once.
 suspend fun triageBatch(

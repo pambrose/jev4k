@@ -69,11 +69,14 @@ without them keep compiling.
     - Every `JevResponseValidationException` from a 2xx body is thrown by `ResponseInfo.fail`, which carries the
       body's text as received, the status and the headers. `send` builds the `ResponseInfo`, and `JevResult` keeps
       it for failures at read time.
-    - JSON nested more than `MAX_JSON_DEPTH` (128, `internal/JsonDepth.kt`) levels is refused before
-      kotlinx.serialization recurses into it: a state or question entry with `JevValidationException`, a response
-      body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's `bodyJson`
-      is null. Both checks are iterative, so they can't overflow themselves. Windows sets the limit: its 1 MB
-      main-thread stack crashed the mingwX64 test binary encoding 512 levels, so the limit is 128.
+    - A value jev4k sends (the state, each question entry, each `extraBody` field) may nest `MAX_SEND_DEPTH` (64,
+      `internal/JsonDepth.kt`) levels, or it fails with `JevValidationException`. That is the API's request rule: it
+      checks the state and each instructions or criteria value on its own, counting the outermost object or array as
+      level 1 (a criteria map isn't a level), and answers a deeper one with a 400. A probe on 2026-10-15 pinned it.
+    - JSON received may nest `MAX_JSON_DEPTH` (128) levels, refused before kotlinx.serialization recurses into it:
+      a response body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's
+      `bodyJson` is null. Both checks are iterative, so they can't overflow themselves. Windows sets this limit: its
+      1 MB main-thread stack crashed the mingwX64 test binary encoding 512 levels, so the limit is 128.
 - **Client** (`JevClient.kt`, `internal/HttpClientFactory.kt`, `internal/Retry.kt`).
     - `HttpRequestRetry` reproduces the official SDKs' retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.

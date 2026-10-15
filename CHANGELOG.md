@@ -8,9 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- The README and the site's Making Calls page show how to turn on TypeSafe's long context (both context limits raised
+  to 262k tokens) with the `TypeSafe-Danger-Zone-Long-Context: true` header in `JevCallOptions.headers`.
+
 ### Changed
 
 - The default `User-Agent` is `jev4k/0.2.3`.
+- The README and the site no longer say Jev reads only text, and say that jev4k supports three question types:
+  TypeSafe's experimental images and Box questions aren't supported yet. The site lists `jev-preview` as `jev-1.14.0`.
+
+### Fixed
+
+- A state, question entry or `extraBody` field nested more than 64 levels deep fails with `JevValidationException`
+  before anything is sent. The API now rejects deeper JSON in the state and in each instructions or criteria value
+  with a 400, so 65 to 128 levels passed jev4k's old limit of 128 and came back as `JevBadRequestException`.
+  Responses may still nest 128 levels.
+- `make api-docs` works again. It also fetched the TypeSafe migration guide, which the site has removed, and a page
+  that fails leaves the cache untouched. The cached pages also drop the footer the site now adds to every page.
 
 ## [0.2.2] - 2026-10-12
 

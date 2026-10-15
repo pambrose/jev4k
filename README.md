@@ -149,7 +149,7 @@ more question costs only its tokens, not another round trip.
 
 ## Questions and answers
 
-There are three question types. Each returns its own answer type.
+jev4k supports three question types. Each returns its own answer type.
 
 | Question   | Asks                           | Answer            | Key fields                                                                                                               |
 |------------|--------------------------------|-------------------|--------------------------------------------------------------------------------------------------------------------------|
@@ -165,6 +165,9 @@ There are three question types. Each returns its own answer type.
 
 The question definitions themselves are `NoulQuestion`, `ChoiceQuestion` and `ScoreQuestion`, subtypes of `Question`,
 named after TypeSafe's JS SDK. The DSL builds them for you.
+
+TypeSafe also offers Box, an experimental question type that finds where something is in an image. jev4k doesn't
+support it, or images, yet.
 
 ## Defining questions
 
@@ -311,7 +314,8 @@ jev.ask(Triage, state = Order("A-104"))                       // any @Serializab
 `@Serializable` values keep fields that equal their defaults (`"status": "open"` above), so the model sees them.
 
 Prefer an object with named fields when the state has several parts. Send only what the questions need: unrelated detail
-lowers accuracy. Jev reads text only, and English works best.
+lowers accuracy. Jev reads text, and English works best. TypeSafe's image support is experimental, and jev4k doesn't
+send images yet.
 
 ## Reading results
 
@@ -401,6 +405,9 @@ val result = jev.withOptions(interactive).ask(Triage, state = ticket)
 ```
 
 `evaluate` and `models` also take options directly. A setting left unset keeps the client's value.
+
+TypeSafe's long context is a header. `headers["TypeSafe-Danger-Zone-Long-Context"] = "true"` raises both context limits
+to 262k tokens, at the same price per token but slower and less accurate, so set it only on the calls that need it.
 
 ### Configuration
 
