@@ -31,7 +31,7 @@ fun clientBuilder(): JevClient {
         JevClient {
             apiKey = System.getenv("MY_TYPESAFE_KEY")      // default: TYPESAFE_API_KEY
             baseUrl = "https://api.typesafe.ai"            // default: TYPESAFE_BASE_URL, then this
-            defaultModel = "jev-1.13.0"                    // default: TYPESAFE_DEFAULT_MODEL, then "jev-latest"
+            defaultModel = "jev-1.14.0"                    // default: TYPESAFE_DEFAULT_MODEL, then "jev-latest"
             timeout = 15.seconds                           // per HTTP attempt; default 10 s
             retry = RetryPolicy(maxRetries = 4)            // see "Retries & Errors"
             headers["X-Request-Source"] = "support-triage" // sent with every request
@@ -106,7 +106,7 @@ suspend fun callsModel(jev: JevApi) {
     // --8<-- [start:model]
     // Override the model per call. Pin a versioned model once you've tuned thresholds against it,
     // because an alias such as jev-latest can move to a newer release.
-    val pinned = jev.ask(Triage, state = "The API returns 500s.", model = "jev-1.13.0")
+    val pinned = jev.ask(Triage, state = "The API returns 500s.", model = "jev-1.14.0")
     println("answered by ${pinned.model}")
 
     // List the models this account can use. The list also carries the call's request id.

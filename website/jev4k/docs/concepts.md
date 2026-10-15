@@ -98,14 +98,16 @@ and the `x-typesafe-request-id` header on the [`JevResult`](results/reading.md).
 
 ## Models
 
-| Name          | Meaning                                                          |
-|---------------|------------------------------------------------------------------|
-| `jev-latest`  | The latest stable release (the default). Currently `jev-1.13.0`. |
-| `jev-preview` | The latest release, official or not. Currently `jev-1.14.0`.     |
-| `jev-1.13.0`  | A pinned version.                                                |
+| Name          | Meaning                                   |
+|---------------|-------------------------------------------|
+| `jev-latest`  | The latest stable release (the default).  |
+| `jev-preview` | The latest release, official or not.      |
+| `jev-1.14.0`  | A pinned version.                         |
 
-Aliases move when TypeSafe ships a new release. If you've tuned thresholds against a particular version, pin it
-by name; see [Making Calls](client/calls.md#choosing-a-model).
+Aliases move when TypeSafe ships a new release. On 2026-10-14 TypeSafe released `jev-1.14.0` as `jev-preview`
+and announced that `jev-latest`, then `jev-1.13.0`, would move to it about a week later. `jev-1.13.0` stays
+available for a while, and TypeSafe has said it will give 60 days' notice before deprecating it. If you've tuned
+thresholds against a particular version, pin it by name; see [Making Calls](client/calls.md#choosing-a-model).
 
 Jev reads text: strings, JSON objects, and arrays of text. TypeSafe's image support, and its Box question
 type, are experimental, and jev4k doesn't support them yet. English is Jev's primary language; other languages

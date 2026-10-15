@@ -57,7 +57,7 @@ Every call takes an optional `model`, which overrides the client's `defaultModel
 ```
 
 `jev-latest` always points at the newest stable model, so its answers can shift when TypeSafe ships a release.
-Once you've tuned thresholds against a model, pin its version (for example `jev-1.13.0`) and move to a new one
+Once you've tuned thresholds against a model, pin its version (for example `jev-1.14.0`) and move to a new one
 deliberately.
 
 ## Per-call options

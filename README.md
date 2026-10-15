@@ -384,7 +384,7 @@ calls for scripts, `main`, and tests.
 also carries the call's `requestId`. Any other `JevApi`, a fake say, gets the blocking calls from `api.blocking()`.
 
 Each call accepts `model = "..."` to override the default for that request. `jev-latest` points at the newest stable
-model. If you've tuned thresholds against a particular version, pin it by name, e.g. `jev-1.13.0`, because an alias can
+model. If you've tuned thresholds against a particular version, pin it by name, e.g. `jev-1.14.0`, because an alias can
 move to a new model.
 
 Close the client when done. `use { }` does this for you.

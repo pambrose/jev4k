@@ -1,7 +1,8 @@
 # TypeSafe / Jev API — compressed reference
 
 Condensed from https://docs.typesafe.ai: fetched 2026-09-18, then updated 2026-10-15 for Jev 1.14, the request rules,
-compression, images and Box questions. The full page mirror is in `pages/`; paths below are relative to it.
+compression, images and Box questions, with release facts from TypeSafe's Jev 1.14 announcement
+(https://typesafe.ai/blog/jev-1-14, 2026-10-14). The full page mirror is in `pages/`; paths below are relative to it.
 Lines marked **(inferred)** are my reading, not a statement in the docs.
 
 ## 1. What Jev is
@@ -208,9 +209,22 @@ Retry behavior both official SDKs share (details and error class trees in `sdks.
   are gone. Cookbooks report ~8 concurrent requests on a shared key already hitting limits. Higher limits on custom and
   enterprise plans.
 
-Aliases: `jev-latest` → `jev-1.13.0` (latest stable; SDK default) · `jev-preview` → `jev-1.14.0` (newest release,
-official or not). Aliases move on release; **pin the versioned ID if you tuned thresholds**. The jaggedness page uses
-the short form `jev-1.13` in an SDK call.
+Aliases (2026-10-15): `jev-latest` → `jev-1.13.0` (latest stable; SDK default) · `jev-preview` → `jev-1.14.0`
+(newest release, official or not). Aliases move on release; **pin the versioned ID if you tuned thresholds**. The
+jaggedness page uses the short form `jev-1.13` in an SDK call.
+
+From the Jev 1.14 announcement (blog, 2026-10-14):
+
+- **`jev-latest` moves to `jev-1.14.0` "in a week"**, so around 2026-10-21. `jev-1.13.0` "will be available for a
+  while".
+- **Deprecation notice**: 60 days before `jev-1.13.0` is formally deprecated, 30 days for `jev-1.14.0`. A deprecation
+  policy is promised but not yet published.
+- 1.14 is "small, subtle improvements to everything", with the largest gain expected in multilingual support.
+- `jev-1.13.0` "was multimodal all along": images work on it too. Box is 1.14-only.
+- The "danger zone" headers mark features TypeSafe says are here to stay but still too jagged to vouch for in
+  production.
+- A new opt-in lets TypeSafe use your queries to find model jaggedness (still no training on them). Neither the post
+  nor the docs say how to turn it on, so it is presumably an account setting **(inferred)**.
 
 ## 4. Choosing and writing questions
 
