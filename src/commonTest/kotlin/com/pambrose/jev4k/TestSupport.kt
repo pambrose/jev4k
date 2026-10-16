@@ -194,3 +194,14 @@ internal val PNG_BYTES =
 /** A JPEG signature and a few bytes, as [PNG_BYTES] is for PNG. */
 internal val JPEG_BYTES =
     byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0x00, 0x10, 0x4A, 0x46)
+
+/** A Choice defined by example pictures, TypeSafe's "define options by example" pattern. */
+object Gestures : JevQuery() {
+    val thumb = attach(JevImage.of(PNG_BYTES, "<thumb>"))
+    val palm = attach(JevImage.of(JPEG_BYTES, "<palm>"))
+    val gesture by choice("Which gesture is the hand in `camera` making?") {
+        "thumbs_up" means thumb
+        "open_palm" means entry("description" to "A hand held up, palm to the camera.", "examples" to listOf(palm))
+        "none" means "No hand, or a hand that matches none of the examples."
+    }
+}

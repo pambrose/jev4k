@@ -28,6 +28,18 @@ class NoulBuilder internal constructor() {
     fun whenFalse(entry: JsonElement) {
         falseEntry = entry
     }
+
+    /** Defines yes with a picture: the [image]'s reference. */
+    @ExperimentalJevImages
+    fun whenTrue(image: JevImage) {
+        whenTrue(JsonPrimitive(image.reference))
+    }
+
+    /** Defines no with a picture: the [image]'s reference. */
+    @ExperimentalJevImages
+    fun whenFalse(image: JevImage) {
+        whenFalse(JsonPrimitive(image.reference))
+    }
 }
 
 /** A Choice's options, in order. Option keys and descriptions are both sent to the model. */
@@ -44,6 +56,12 @@ class ChoiceBuilder internal constructor() {
 
     infix fun String.means(entry: JsonElement) {
         option(this, entry)
+    }
+
+    /** An option defined by a picture: the [image]'s reference. Option keys are never replaced, so it goes here. */
+    @ExperimentalJevImages
+    infix fun String.means(image: JevImage) {
+        option(this, JsonPrimitive(image.reference))
     }
 
     /** Adds an option; with no description it is sent as `null`, fine when the key says it all. */
@@ -67,6 +85,14 @@ class ChoiceBuilder internal constructor() {
         options[key] = entry
     }
 
+    @ExperimentalJevImages
+    fun option(
+        key: String,
+        image: JevImage,
+    ) {
+        option(key, JsonPrimitive(image.reference))
+    }
+
     /** Adds undescribed options. */
     fun options(vararg keys: String) {
         keys.forEach { option(it) }
@@ -86,6 +112,12 @@ class ScoreBuilder internal constructor() {
         levels += entry
     }
 
+    /** A level shown by an example picture: the [image]'s reference. */
+    @ExperimentalJevImages
+    fun level(image: JevImage) {
+        level(JsonPrimitive(image.reference))
+    }
+
     fun levels(vararg descriptions: String) {
         descriptions.forEach(::level)
     }
@@ -98,6 +130,7 @@ class ScoreBuilder internal constructor() {
 @JevDsl
 class QueryBuilder internal constructor() {
     private val questions = mutableListOf<QuestionRef<*>>()
+    private val images = mutableListOf<JevImage>()
 
     @JvmOverloads
     fun noul(
@@ -168,15 +201,29 @@ class QueryBuilder internal constructor() {
         return add(QuestionRef(id, copy, decode))
     }
 
-    /** Adds every question of [query], keeping its handles, so typed and ad-hoc questions share one request. */
+    /**
+     * Attaches [images] to this request, so their bytes are sent. Placing an image (in a string, an entry, a builder
+     * overload or the state) never attaches it.
+     */
+    @ExperimentalJevImages
+    fun attach(vararg images: JevImage) {
+        this.images += images
+    }
+
+    /**
+     * Adds every question of [query], keeping its handles, so typed and ad-hoc questions share one request. The images
+     * the query attaches come too.
+     */
     fun include(query: JevQuery) {
-        questions += query.questions
+        val set = query.questions
+        questions += set
+        images += set.images
     }
 
     @PublishedApi
     internal fun <A : Answer> add(question: QuestionRef<A>): QuestionRef<A> = question.also { questions += it }
 
-    internal fun build(): QuestionSet = QuestionSet(questions)
+    internal fun build(): QuestionSet = QuestionSet(questions, images)
 }
 
 /** Builds a validated [QuestionSet] inline. */

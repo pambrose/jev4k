@@ -89,11 +89,19 @@ class QuestionRef<out A : Answer> internal constructor(
 /** An ordered, validated set of questions: everything one request asks about a single state. */
 class QuestionSet internal constructor(
     questions: List<QuestionRef<*>>,
+    images: List<JevImage> = emptyList(),
 ) : Iterable<QuestionRef<*>> {
     private val questions: List<QuestionRef<*>> = questions.toList()
 
+    /**
+     * The images attached to these questions, each instance once, in the order they were attached. They are sent with
+     * every request that asks this set.
+     */
+    @ExperimentalJevImages
+    val images: List<JevImage> = images.distinct()
+
     init {
-        val problems = validate(this.questions)
+        val problems = validate(this.questions, this.images)
         if (problems.isNotEmpty()) throw JevValidationException(problems)
     }
 
@@ -140,7 +148,10 @@ private const val INSTRUCTIONS_REQUIRED =
     "instructions must be non-blank text or a non-empty JSON object or array; question ids are never sent to the " +
         "model, so the instructions must state the full question"
 
-internal fun validate(questions: List<QuestionRef<*>>): List<String> =
+internal fun validate(
+    questions: List<QuestionRef<*>>,
+    images: List<JevImage> = emptyList(),
+): List<String> =
     buildList {
         if (questions.isEmpty()) add("A request needs at least one question")
         val seen = mutableSetOf<String>()
@@ -152,6 +163,7 @@ internal fun validate(questions: List<QuestionRef<*>>): List<String> =
             ref.problems.forEach { add("question '${ref.id}': $it") }
             if (ref.complete) addAll(validate(ref.id, ref.question))
         }
+        addAll(imageDefinitionProblems(images))
     }
 
 private fun validate(
