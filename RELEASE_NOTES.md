@@ -5,6 +5,12 @@ Narrative notes for each jev4k release, newest first. The itemized list of chang
 
 ## v0.3.0 — 2026-10-16
 
+> [!WARNING]
+> **One source break: `Question` and `Answer` have new subtypes.** `BoxQuestion` and `BoxAnswer` join them, so a
+> `when` over either that lists every subtype and has no `else` branch no longer compiles. Add an `else` branch, or a
+> branch for the new type, which needs the `@ExperimentalJevImages` opt-in. Nothing else breaks: other code compiles
+> unchanged, and the binary API only grows.
+
 jev4k now sends images. TypeSafe's image support and its Box question type are experimental: TypeSafe calls them
 "Dreamer-ready", meaning the request format, the answers and the limits can change between its releases. jev4k puts
 them behind an opt-in, `@ExperimentalJevImages`, and may change them in any release too.
@@ -14,10 +20,8 @@ them behind an opt-in, `@ExperimentalJevImages`, and may change them in any rele
 - Gradle builds: `com.pambrose.jev4k:jev4k:0.3.0`
 - Maven builds: `com.pambrose.jev4k:jev4k-jvm:0.3.0`
 
-Code that compiled against 0.2.2 compiles against 0.3.0 with one exception: `Question` and `Answer` gain the subtypes
-`BoxQuestion` and `BoxAnswer`, so an exhaustive `when` over either needs an `else` branch, or a branch for the new
-type, which needs the opt-in. The binary API only grows. `kotlinx-io-core`, which Ktor already brought in, is now a
-declared dependency, so the JVM POM lists five compile dependencies.
+Apart from the source break above, code that compiled against 0.2.2 compiles against 0.3.0. `kotlinx-io-core`, which
+Ktor already brought in, is now a declared dependency, so the JVM POM lists five compile dependencies.
 
 ### Images
 
