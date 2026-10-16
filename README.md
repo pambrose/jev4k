@@ -150,13 +150,15 @@ more question costs only its tokens, not another round trip.
 
 ## Questions and answers
 
-jev4k supports three question types. Each returns its own answer type.
+jev4k supports three question types, and TypeSafe's experimental Box (see [Images](#images)). Each returns its own
+answer type.
 
 | Question   | Asks                           | Answer            | Key fields                                                                                                               |
 |------------|--------------------------------|-------------------|--------------------------------------------------------------------------------------------------------------------------|
 | **Noul**   | Is this true?                  | `NoulAnswer`      | `noul`: probability of yes, 0 to 1                                                                                       |
 | **Choice** | Which of these options?        | `ChoiceAnswer<K>` | `choice`, `probabilities` (one per option), `confidence`                                                                 |
 | **Score**  | Where on these ordered levels? | `ScoreAnswer`     | `score` (probability-weighted level, can fall between levels), `probabilities` and `legend` keyed by level, `confidence` |
+| **Box**    | Where is this in an image?     | `BoxAnswer`       | `box`: four edges as fractions of the image's size; `confidence`, or null                                                |
 
 - A Noul value near 0.5 means yes and no are about equally likely. It doesn't mean "medium"; use a Score to measure
   degree.
@@ -351,6 +353,7 @@ thumb`). A `JevQuery` can attach its own example pictures. See [Images & Box](ht
 | `noul(id)`, `choice(id)`, `score(id)`   | An answer by string id                                                          |
 | `enumChoice<E>(id)`                     | A Choice by id, as constants of `E`                                             |
 | `nouls`, `choices`, `scores`, `answers` | All answers, by id                                                              |
+| `box(id)`, `boxes`                      | A Box answer by id, and all Box answers (experimental)                          |
 | `model` / `requestedModel`              | The model that answered, as reported, and the name you sent (e.g. `jev-latest`) |
 | `usage`                                 | `inputTokens` / `outputTokens`                                                  |
 | `requestId`                             | The `x-typesafe-request-id` header, for support tickets and logs                |

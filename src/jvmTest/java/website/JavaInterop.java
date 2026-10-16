@@ -114,4 +114,10 @@ public final class JavaInterop {
         return r.box("mug").getBox();
     }
     // --8<-- [end:images]
+
+    // A literal null model must keep resolving to ask(query, state, model): Java sees the image overloads under
+    // another name, askWithImages, so they can't make this call ambiguous.
+    static JevResult askWithDefaultModel(BlockingJev blocking) throws InterruptedException {
+        return blocking.ask(SpamBroad.INSTANCE, "Win a free cruise!", null);
+    }
 }

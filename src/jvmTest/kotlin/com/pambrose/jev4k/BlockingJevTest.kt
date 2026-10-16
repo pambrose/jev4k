@@ -145,7 +145,7 @@ class BlockingJevTest : StringSpec() {
             val calls = BlockingJev::class.java.declaredMethods.filter {
                 Modifier.isPublic(it.modifiers) && !it.isSynthetic && it.name != "getApi"
             }
-            calls.map { it.name }.toSet() shouldBe setOf("evaluate", "models", "query", "ask")
+            calls.map { it.name }.toSet() shouldBe setOf("evaluate", "models", "query", "ask", "askWithImages")
             calls.forEach { withClue(it) { it.exceptionTypes.toList() shouldContain InterruptedException::class.java } }
         }
     }

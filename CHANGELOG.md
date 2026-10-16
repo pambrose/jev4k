@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Experimental support for TypeSafe's images and Box questions, behind the new `@ExperimentalJevImages` opt-in.
   `JevImage` (from bytes, base64 or a file) is placed anywhere content goes as its reference and attached with
-  `QueryBuilder.attach`, `JevQuery.attach` or the new `ask(query, state, images...)`. A request with images is sent as
+  `QueryBuilder.attach`, `JevQuery.attach` or the new `ask(query, state, images...)` (`askWithImages` on `BlockingJev`
+  from Java, so a Java `ask(query, state, null)` stays unambiguous). A request with images is sent as
   `multipart/form-data`, with the `TypeSafe-Danger-Zone-Images: true` header added for you. `box(...)` asks a Box
   question, read back as a `BoxAnswer` through `result.box(id)` or `result.boxes`. Structural problems, such as an
   image nothing references or one placed but not attached, fail before sending.

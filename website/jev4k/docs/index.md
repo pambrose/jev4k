@@ -34,13 +34,14 @@ graph TD
    your levels for a Score, each with the probabilities behind it.
 4. **Decide in code.** Control flow, arithmetic, thresholds and side effects stay in your program.
 
-## Three kinds of question
+## Kinds of question
 
 | Question                          | Asks                           | Answer                                                                   |
 |-----------------------------------|--------------------------------|--------------------------------------------------------------------------|
 | [**Noul**](questions/noul.md)     | Is this true?                  | `noul`: the probability of yes, 0 to 1                                   |
 | [**Choice**](questions/choice.md) | Which of these options?        | `choice`, a probability per option, `confidence`                         |
 | [**Score**](questions/score.md)   | Where on these ordered levels? | `score` (can fall between levels), per-level probabilities, `confidence` |
+| [**Box**](queries/images.md)      | Where is this in an image?     | `box`: four edges as fractions; experimental                             |
 
 ## Features
 
