@@ -44,6 +44,7 @@ JevClient().use { jev ->
 - [Questions and answers](#questions-and-answers)
 - [Defining questions](#defining-questions)
 - [State](#state)
+- [Images](#images)
 - [Reading results](#reading-results)
 - [Client and configuration](#client-and-configuration)
 - [Embedding in an application](#embedding-in-an-application)
@@ -80,7 +81,7 @@ artifact for each target, so a JVM project and a Kotlin Multiplatform project (i
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.2")
+    implementation("com.pambrose.jev4k:jev4k:0.3.0")
 }
 ```
 
@@ -90,7 +91,7 @@ Maven doesn't read Gradle's module metadata, so a Maven build depends on the JVM
 <dependency>
     <groupId>com.pambrose.jev4k</groupId>
     <artifactId>jev4k-jvm</artifactId>
-    <version>0.2.2</version>
+    <version>0.3.0</version>
 </dependency>
 ```
 
@@ -149,13 +150,15 @@ more question costs only its tokens, not another round trip.
 
 ## Questions and answers
 
-There are three question types. Each returns its own answer type.
+jev4k supports three question types, and TypeSafe's experimental Box (see [Images](#images)). Each returns its own
+answer type.
 
 | Question   | Asks                           | Answer            | Key fields                                                                                                               |
 |------------|--------------------------------|-------------------|--------------------------------------------------------------------------------------------------------------------------|
 | **Noul**   | Is this true?                  | `NoulAnswer`      | `noul`: probability of yes, 0 to 1                                                                                       |
 | **Choice** | Which of these options?        | `ChoiceAnswer<K>` | `choice`, `probabilities` (one per option), `confidence`                                                                 |
 | **Score**  | Where on these ordered levels? | `ScoreAnswer`     | `score` (probability-weighted level, can fall between levels), `probabilities` and `legend` keyed by level, `confidence` |
+| **Box**    | Where is this in an image?     | `BoxAnswer`       | `box`: four edges as fractions of the image's size; `confidence`, or null                                                |
 
 - A Noul value near 0.5 means yes and no are about equally likely. It doesn't mean "medium"; use a Score to measure
   degree.
@@ -165,6 +168,9 @@ There are three question types. Each returns its own answer type.
 
 The question definitions themselves are `NoulQuestion`, `ChoiceQuestion` and `ScoreQuestion`, subtypes of `Question`,
 named after TypeSafe's JS SDK. The DSL builds them for you.
+
+TypeSafe's experimental Box question type finds where something is in an image. jev4k supports it, and images in the
+state, instructions and criteria, behind the `@ExperimentalJevImages` opt-in; see [Images](#images).
 
 ## Defining questions
 
@@ -290,6 +296,7 @@ These are checked locally before anything is sent, and every problem is reported
 - non-empty instructions
 - a Choice has 1 to 255 options (`MAX_CHOICE_OPTIONS`)
 - a Score has 2 to 10 levels (`MIN_SCORE_LEVELS`..`MAX_SCORE_LEVELS`)
+- the state, and each instructions or criteria value, nests at most 64 objects or arrays deep, as the API requires
 
 ## State
 
@@ -311,7 +318,31 @@ jev.ask(Triage, state = Order("A-104"))                       // any @Serializab
 `@Serializable` values keep fields that equal their defaults (`"status": "open"` above), so the model sees them.
 
 Prefer an object with named fields when the state has several parts. Send only what the questions need: unrelated detail
-lowers accuracy. Jev reads text only, and English works best.
+lowers accuracy. Jev reads text, and English works best. Images can go in the state too, experimentally; see
+[Images](#images).
+
+## Images
+
+TypeSafe's image support is experimental, so jev4k marks it `@ExperimentalJevImages`. A `JevImage` stands in content
+as its reference; `attach` it so its bytes are sent. jev4k adds the `TypeSafe-Danger-Zone-Images: true` header and
+sends the request as multipart.
+
+```kotlin
+@OptIn(ExperimentalJevImages::class)
+suspend fun findMug(jev: JevApi, bytes: ByteArray) {
+    val photo = JevImage.of(bytes)                                   // or JevImage.read(path)
+    val result =
+        jev.query(jsonOf(mapOf("photo" to photo)), model = "jev-preview") {
+            attach(photo)                                            // placing an image doesn't send it
+            noul("mug_visible", "Is there a coffee mug in `photo`?")
+            box("mug", "the coffee mug in `photo`")                  // a Box finds where it is
+        }
+    if (result.noul("mug_visible").isTrue()) println(result.box("mug").box)
+}
+```
+
+Images also go in instructions (`"Is $upload the same product as $catalog?"`) and criteria (`"thumbs_up" means
+thumb`). A `JevQuery` can attach its own example pictures. See [Images & Box](https://jev4k.com/queries/images/).
 
 ## Reading results
 
@@ -323,6 +354,7 @@ lowers accuracy. Jev reads text only, and English works best.
 | `noul(id)`, `choice(id)`, `score(id)`   | An answer by string id                                                          |
 | `enumChoice<E>(id)`                     | A Choice by id, as constants of `E`                                             |
 | `nouls`, `choices`, `scores`, `answers` | All answers, by id                                                              |
+| `box(id)`, `boxes`                      | A Box answer by id, and all Box answers (experimental)                          |
 | `model` / `requestedModel`              | The model that answered, as reported, and the name you sent (e.g. `jev-latest`) |
 | `usage`                                 | `inputTokens` / `outputTokens`                                                  |
 | `requestId`                             | The `x-typesafe-request-id` header, for support tickets and logs                |
@@ -380,7 +412,7 @@ calls for scripts, `main`, and tests.
 also carries the call's `requestId`. Any other `JevApi`, a fake say, gets the blocking calls from `api.blocking()`.
 
 Each call accepts `model = "..."` to override the default for that request. `jev-latest` points at the newest stable
-model. If you've tuned thresholds against a particular version, pin it by name, e.g. `jev-1.13.0`, because an alias can
+model. If you've tuned thresholds against a particular version, pin it by name, e.g. `jev-1.14.0`, because an alias can
 move to a new model.
 
 Close the client when done. `use { }` does this for you.
@@ -401,6 +433,9 @@ val result = jev.withOptions(interactive).ask(Triage, state = ticket)
 ```
 
 `evaluate` and `models` also take options directly. A setting left unset keeps the client's value.
+
+TypeSafe's long context is a header. `headers["TypeSafe-Danger-Zone-Long-Context"] = "true"` raises both context limits
+to 262k tokens, at the same price per token but slower and less accurate, so set it only on the calls that need it.
 
 ### Configuration
 
@@ -472,9 +507,9 @@ jev4k is meant to be embedded in an application, so it keeps out of the host's w
 
 ### What it puts on your classpath
 
-On the JVM, four `compile` dependencies (`ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core`,
-`kotlin-stdlib`) and one `runtime` one, the CIO engine (`ktor-client-cio`). Nothing else: no test framework, no logging
-backend, and no content-negotiation plugin, since jev4k encodes its request body itself.
+On the JVM, five `compile` dependencies (`ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core`,
+`kotlinx-io-core`, `kotlin-stdlib`) and one `runtime` one, the CIO engine (`ktor-client-cio`). Nothing else: no test
+framework, no logging backend, and no content-negotiation plugin, since jev4k encodes its request body itself.
 
 ### Logging
 
@@ -491,7 +526,7 @@ dropped:
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.2") {
+    implementation("com.pambrose.jev4k:jev4k:0.3.0") {
         exclude(group = "io.ktor", module = "ktor-client-cio-jvm")
     }
     implementation("io.ktor:ktor-client-okhttp:3.6.0")

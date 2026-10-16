@@ -1,10 +1,10 @@
 # TypeSafe cookbooks — compressed notes
 
-All 18 cookbooks from https://docs.typesafe.ai/cookbooks, read in full (code and output cells included) on 2026-09-18.
-Sources are under `pages/cookbooks/`.
+All 20 cookbooks from https://docs.typesafe.ai/cookbooks, read in full (code and output cells included): 18 on
+2026-09-18, and the two in Part 4 on 2026-10-15. Sources are under `pages/cookbooks/`.
 Question wording is kept verbatim where it carries the technique. Most cookbooks pin **`jev-1.12`** (the two
-self-consistency cookbooks ran `jev-latest` → `jev-1.13.0`), so treat their thresholds and numbers as version-specific
-examples to re-evaluate, not defaults.
+self-consistency cookbooks ran `jev-latest` → `jev-1.13.0`, and the two Part 4 cookbooks pin `jev-1.13.0`), so treat
+their thresholds and numbers as version-specific examples to re-evaluate, not defaults.
 The cookbooks show Python SDK calls, not raw HTTP; wire-format question JSON was recovered by decoding their Playground
 share links (lz-string), and it matches `jev-api.md`.
 
@@ -30,6 +30,8 @@ share links (lz-string), and it matches `jev-api.md`.
 | 3.3 | Hierarchical classification     | 1 Choice per tree level, beam K=3                                   | Geometric-mean path score; beam 4/4 vs greedy 2/4                             |
 | 3.4 | Autoresearch feature discovery  | LLM proposes Score/Noul features → CatBoost                         | Jev answers as ML features; 38 Qs beat asking for the score directly          |
 | 3.5 | Classification using confidence | One 75-option Choice                                                | confidence ≥ 0.9 → fine label, else parent division (48/60 useful)            |
+| 4.1 | Simple memory system            | Routing Choice, then a gate Noul over (request, answer)             | Code carries memory in the state; save at P ≥ 0.5; routing 2/6 → 6/6          |
+| 4.2 | Twitch chat filter              | Category Choice + toxic and spoiler Nouls per message, 8 at once    | Precedence policy in code; a rule change needs no new requests                |
 
 ## Cross-cutting lessons
 
@@ -55,6 +57,9 @@ share links (lz-string), and it matches `jev-api.md`.
    repeats; there is no temperature); ~8 concurrent requests on a shared key already hits rate limits; log
    `response.model` and put model + a rubric hash in cache keys; Choice ≤ 255 options (reliable to ~240); Score ≤ 10
    levels (11 → server error).
+8. **The state is all Jev knows.** Nothing carries over between requests: what a customer said last month, or the
+   game being streamed, reaches the model only if code puts it in the state. A Noul gate can decide what's worth
+   keeping (memory cookbook).
 
 ---
 
@@ -2113,3 +2118,207 @@ name for Shopify and CookSafe.)
   per note). Parallelism in the examples is client-side threads, not a batch endpoint.
 - **Playground**: share links take the form `https://console.typesafe.ai/playground#share/<compressed blob>`. Docs
   index: `https://docs.typesafe.ai/llms.txt`.
+
+---
+
+# Part 4
+
+Covers the two cookbooks added after September: simple memory system and Twitch chat filter, read in full on
+2026-10-15. Both use the Python `typesafe-sdk` with `cooksafe>=0.2.0,<0.3.0` and pin **`jev-1.13.0`**. They show SDK
+calls only; the JSON below is SDK arguments written as JSON.
+
+---
+
+## 1. Simple memory system
+
+- **Source**: `cookbooks/basic_memory.md`
+- **Problem / data**: Jev sees only the state it's sent, so a fact a customer gave in an earlier ticket (edition, plan,
+  contract) is missing from the next one unless code puts it back. Demo: support-ticket routing for 2 customers,
+  5 earlier tickets, then 3 later messages from each. C-1042 (Harbor Logistics) self-hosts on Windows Server under an
+  Enterprise contract; C-2210 (Fernwood Studio) is on the cloud edition's self-serve Team plan. No later message
+  mentions the setup. Run 2026-09-28.
+- **Core idea**: a wrapper `ask_with_memory(state, questions)` with the same arguments and return value as `ask()`
+  (`client.system_one` with the model pinned and the call cached). It adds the customer's saved memories to the state,
+  makes the call, then asks a second request, the "gate", whether the original request states a lasting fact about the
+  customer, and saves the request with its answer if so. The cookbook calls it a basic agent harness whose only
+  capability is memory, kept in a plain dict keyed by customer ID.
+
+### Decomposition
+
+- **2 sequential requests per call**:
+    1. The caller's request (here one routing Choice), with saved memories added to the state under
+       `earlier_tickets_from_this_customer`. The questions never mention the memories.
+    2. The gate: one Noul over `{request, jev_answered}`. `request` is the state before memories were added, so old
+       memories don't nest inside new ones. `jev_answered` maps each question's instructions to the chosen option's
+       description (or the Noul or Score value).
+- The gate reads the answer, so it can't be a second question in request 1. A gate that ignored the answer could be
+  (fan-out).
+- `state` = `{customer: {id, company}, ticket: {id, received_on, subject, messages: [{from: "customer", text}]}}`. The
+  wrapper needs `customer.id` to find the memory list, so a plain string state won't do.
+
+### Questions (exact wording)
+
+- `team` (Choice): "Which support team should handle `ticket`?" criteria:
+    - `cloud_ops`: "Cloud team: problems with the hosted cloud edition, run by us"
+    - `selfhosted_linux`: "Self-hosted team, Linux: installs, upgrades and performance of the self-hosted edition on
+      Linux servers"
+    - `selfhosted_windows`: the same, "on Windows Server"
+    - `billing`: "Billing: invoices, payments, seats and plan changes for self-serve plans"
+    - `enterprise_desk`: "Enterprise desk: seats, contracts and account changes for customers on an Enterprise contract
+      (their technical problems go to the technical teams)"
+    - `general`: "General product questions: features, how-to, settings"
+    - `none_suitable`: "None of these teams fits the ticket"
+- `remember` (Noul, the gate): "In `request.ticket`, does the thread state a lasting fact about the customer that should
+  change how their future, unrelated tickets are handled? Count what the customer or our support staff wrote in
+  `request.ticket`. `jev_answered` shows how the ticket was routed, which may rely on things learned earlier: do not
+  count anything it says or implies."
+    - `true`: "Yes: in `request.ticket` the customer or our support staff state something about the customer that stays
+      true after this ticket, such as the product edition or operating system they run, their plan or contract, or a
+      standing preference."
+    - `false`: "No: `request.ticket` only contains things specific to this one ticket or moment, such as a one-off
+      request, today's schedule, or the device they happen to be typing on; or the lasting fact appears only in
+      `jev_answered`."
+
+### Code-side logic
+
+- `REMEMBER_AT = 0.5`, "a starting point": save when P(remember) ≥ 0.5.
+- `MEMORIES: dict[str, list[dict]]` maps a customer ID to its saved `{request, jev_answered}` memories, in order.
+- The wrapper returns the routing response whether or not anything is saved, so callers can swap `ask()` for
+  `ask_with_memory()` without other changes.
+- Every call is cached (`JsonCache`) on (model, state JSON, questions JSON).
+
+### Results
+
+- Gate: the three tickets stating an edition, a plan or a contract were saved at 0.91–0.92. "Typing this on my phone at
+  the airport" (0.07) and "out on Friday for a public holiday" (0.10) weren't. T-102 was saved although routing sent it
+  to `general`, because the gate counts the customer's words, not the answer. None of the 6 later messages was saved.
+- Routing the 6 later messages:
+
+| customer | message         | expected           | plain Jev              | with memory               |
+|----------|-----------------|--------------------|------------------------|---------------------------|
+| C-1042   | Slow dashboards | selfhosted_windows | ✗ cloud_ops 0.80       | ✓ selfhosted_windows 0.94 |
+| C-1042   | Upgrade failing | selfhosted_windows | ✗ none_suitable 0.60   | ✓ selfhosted_windows 1.00 |
+| C-1042   | More seats      | enterprise_desk    | ✓ enterprise_desk 0.62 | ✓ enterprise_desk 0.99    |
+| C-2210   | Slow dashboards | cloud_ops          | ✓ cloud_ops 0.75       | ✓ cloud_ops 0.91          |
+| C-2210   | Upgrade failing | cloud_ops          | ✗ none_suitable 0.63   | ✓ cloud_ops 0.86          |
+| C-2210   | More seats      | billing            | ✗ enterprise_desk 0.52 | ✓ billing 0.98            |
+
+- 2/6 without memory, 6/6 with. The same message routes differently for each customer.
+
+### Lessons / gotchas
+
+- **Count only facts in the request.** Without the "do not count `jev_answered`" rule, a generic answer ("General
+  product questions") can outweigh a real fact in the request, and an answer that relied on an earlier memory gets
+  saved again as if it were new.
+- **Store the state as it was before memories were added**, or every new memory carries the old ones.
+- **Memory only grows**: no size limit, relevance check or expiry. Adding the Enterprise memory lowered C-1042's
+  slow-dashboards answer from 0.99 to 0.94, a reason to select relevant memories once the list is long.
+- **A saved answer can reinforce a mistake.** The gate can't save a ticket on the strength of its answer alone, but a
+  saved ticket's answer is stored with it, mistaken inference included, and every later call reads it.
+- Suggested next steps: a relevance question to pick which memories to add, a "does this replace an older memory?"
+  question, a database instead of the dict, and tuning `REMEMBER_AT` on labeled request/answer pairs (raise it if a
+  misleading memory costs more than a missing one).
+
+### Reusable takeaway
+
+- Jev keeps nothing between requests; code carries context forward by adding it to the state. A Noul gate over
+  (request, answer) decides what's worth keeping, and a wrapper with the call's own signature hides it from callers.
+
+---
+
+## 2. Twitch chat filter
+
+- **Source**: `cookbooks/twitch_chat_filter.md`
+- **Problem / data**: sort a fast Twitch chat as messages arrive: highlight questions; hide spam, insults and
+  unrequested gameplay tips ("backseating"); blur spoilers. A keyword list misses "go left, there's a site of grace
+  behind the tree" and plot twists. Demo: 29 hand-written messages for an Elden Ring stream, every kind at least twice,
+  plus a video of a Jev-powered Chrome extension filtering live chat. Run 2026-09-25.
+- **Core idea**: one request per message with three questions (what kind, toxic?, spoiler?), and a `decide()` function
+  in code that turns the answers into show / highlight / dim / hide / blur, so changing a rule reruns only `decide()`.
+
+### Decomposition
+
+- **1 request per message**: `state = {stream: {title, game}, message: {user, text}}`. The stream goes into every
+  request because what counts as a spoiler or backseating depends on the game:
+  `{"title": "Elden Ring first playthrough! No spoilers please", "game": "Elden Ring"}`.
+- 3 questions: a `category` Choice over 5 options, a `toxic` Noul with criteria, a `spoiler` Noul.
+- Messages are independent, so 8 run at once (`ThreadPoolExecutor(max_workers=8)`; `pool.map` keeps chat order).
+
+### Questions (exact wording)
+
+- `category` (Choice): "Which category best describes the main purpose of `message.text`?" criteria:
+    - `question`: "A genuine request for information from the streamer or chat, not gameplay instructions phrased as a
+      question or a promotional pitch"
+    - `hype`: "Cheering, reactions, or repeated emotes (PogChamp, LUL, GG, W, lets gooo); repetition alone does not make
+      cheering spam"
+    - `conversation`: "Ordinary chatter, opinions, replies, useful shared links, or any message whose main purpose does
+      not fit the other categories"
+    - `backseat`: "Unrequested gameplay advice telling the streamer what to do, including instructions phrased as a
+      question; not a request for information"
+    - `spam`: "Unsolicited advertising, self-promotion, follower selling, or promotional links; not ordinary cheering,
+      repeated emotes, or a useful link"
+- `toxic` (Noul): "Is this message insulting, hateful or harassing towards someone?"
+    - `true`: "Insults, slurs, threats or personal attacks on the streamer or another viewer"
+    - `false`: "Friendly, neutral, or light banter with no target"
+- `spoiler` (Noul): "Does this message reveal a plot point or ending of the game being played?"
+
+### Code-side logic
+
+- `RULES = {question: highlight, hype: show, conversation: show, backseat: hide, spam: hide}`, `TOXIC_AT = 0.7`,
+  `SPOILER_AT = 0.7`.
+- `decide()` precedence: toxic ≥ 0.7 → hide (toxic); a category whose rule is `hide` → hide (category); spoiler ≥ 0.7
+  → blur; otherwise the category's rule. Toxicity overrides the category, and a hidden message isn't also blurred.
+- Changing the rules (`QUIET = RULES | {hype: hide, conversation: dim}`) changed 14 of 29 messages with 0 new requests.
+- The cache key is the state and questions JSON, not the model, so clear the cache when changing `TYPESAFE_MODEL`.
+
+### Results
+
+- 29 messages: show 14, highlight 6, hide (backseat) 3, hide (spam) 2, blur (spoiler) 2, hide (toxic) 2.
+- Every toxic probability was ≥ 0.97 or ≤ 0.24 and every spoiler probability ≥ 0.94 or ≤ 0.20, so any threshold in
+  between gives the same result on this sample. Real chat lands in between; tune both on your own channel.
+- The backseat tip → `backseat` 1.00 (toxic 0.02, spoiler 0.09). "wait till you find out Ranni planned the Night of
+  Black Knives" → `conversation` 0.57 vs `backseat` 0.42, spoiler 0.94, so it's blurred. "you're so bad at this boss
+  lmao, love you tho" → toxic 0.21, which fits the "light banter" criterion, so it's shown.
+- Latency: a median of about 0.4 s per request.
+
+### Lessons / gotchas
+
+- Toxic and spoiler are Nouls rather than categories because they cut across categories (the insults came back as
+  `conversation`; a spoiler can be `conversation` or `backseat`), and each gets its own threshold.
+- Contrastive option descriptions carry the boundaries: "a link alone is not spam", "repetition alone does not make
+  cheering spam", a question that's really gameplay instructions is `backseat`, and `conversation` is the explicit
+  fallback.
+- A line appears before its answer returns, so either hold new lines until they're answered or accept a toxic line on
+  screen for about 0.4 s. One request at a time can't keep up with a busy chat.
+- The example always applies the winning label's rule. Decide how to treat close category splits and Nouls near 0.5
+  (review, or leave visible) before going live.
+- The spoiler check knows the game and the model's own knowledge, not the streamer's progress; supply progress and plot
+  context to filter only unseen plot points. Non-English chat is answered less accurately.
+- On a rate limit, lower `max_workers` and rerun; cached answers aren't requested again.
+
+### Reusable takeaway
+
+- Fan-out per item: one request per independent unit holding every question it might need, a precedence policy over
+  named thresholds in code, and rules that change without new requests because the stored answers describe the item,
+  not the action to take.
+
+---
+
+## API facts observed (these two cookbooks)
+
+- **SDK install**: `pip install 'typesafe-sdk>=0.7.1,<0.8.0' ipython 'cooksafe>=0.2.0,<0.3.0'` (Twitch) and
+  `pip install ipython 'cooksafe>=0.2.0,<0.3.0'` (memory, which imports `typesafe_sdk` without installing it, so
+  `cooksafe` presumably depends on it **(inferred)**). Neither passes the `--extra-index-url https://pypi.typesafe.ai/`
+  the September cookbooks used.
+- **Client**: `TypeSafeClient(api_key=os.environ.get("TYPESAFE_API_KEY", "cache-only"),
+  base_url=os.environ.get("TYPESAFE_ENDPOINT"), timeout=...)`: 120 s (memory), 60 s (Twitch).
+- **Imports**: `from typesafe_sdk import Choice, Noul, NoulCriteria, SystemOneResponse, TypeSafeClient`.
+- **Serialization**: questions go to JSON with `q.model_dump(mode="json", exclude_none=True)`; responses are cached with
+  `response.model_dump(mode="json")` and restored with `SystemOneResponse.model_validate(raw)`.
+- **Answer fields**: `.type` (`"choice"`, `"noul"`, …), `.choice`, `.probabilities` (`dict()` works), `.noul`;
+  `response.model`, `response.usage.input_tokens`.
+- **Model**: `jev-1.13.0`, runs on 2026-09-25 (Twitch) and 2026-09-28 (memory).
+- **Latency**: a median of about 0.4 s per request, measured from the client around `system_one` (Twitch), against the
+  ~100 ms the docs quote for the model.
+- **Concurrency**: 8 workers; "if you hit a rate limit, lower `max_workers`".
+- **Playground**: `make_playground_link(state, questions, models=[...])`, as before.

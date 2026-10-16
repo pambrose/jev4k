@@ -38,8 +38,8 @@ fun rubric(
 
 /**
  * Converts plain Kotlin values (null, strings, numbers, booleans, enums, maps with string keys,
- * iterables, arrays, primitive arrays such as `IntArray`, and JSON elements) to JSON. Use [jsonEntry] for
- * `@Serializable` values.
+ * iterables, arrays, primitive arrays such as `IntArray`, JSON elements, and [JevImage]s, as their reference) to JSON.
+ * Use [jsonEntry] for `@Serializable` values.
  */
 fun jsonOf(value: Any?): JsonElement =
     when (value) {
@@ -48,6 +48,9 @@ fun jsonOf(value: Any?): JsonElement =
         is JsonElement -> value
 
         is String -> JsonPrimitive(value)
+
+        // An image is placed as its reference; its bytes go with the request once it is attached.
+        is JevImage -> JsonPrimitive(value.reference)
 
         // JSON has no NaN or Infinity. Caught here, the caller gets a JevValidationException naming the field;
         // left alone, it would surface as a kotlinx encoding failure from inside the HTTP call.

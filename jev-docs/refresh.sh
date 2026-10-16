@@ -1,22 +1,18 @@
 #!/usr/bin/env bash
 # Re-download the TypeSafe docs into jev-docs/pages/ as Markdown.
-# Pages come from https://docs.typesafe.ai/llms.txt plus a few pages the index omits.
-# Each page is cleaned of the Mintlify index banner and the inline JS component
-# that only builds "Try it in the Playground" links.
+# Pages come from https://docs.typesafe.ai/llms.txt. If any page fails, jev-docs/pages/ is left as it was.
+# Each page is cleaned of the Mintlify index banner and footer, trailing blank lines, and the inline JS
+# component that only builds "Try it in the Playground" links.
 set -euo pipefail
 
 BASE=https://docs.typesafe.ai
 DIR="$(cd "$(dirname "$0")" && pwd)"
-EXTRA_PAGES=(migrating-to-v1.md)
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
 curl -fsSL "$BASE/llms.txt" -o "$tmp/llms.txt"
-{
-  grep -oE "\($BASE/[^)]+\.md\)" "$tmp/llms.txt" | tr -d '()' | sed "s#^$BASE/##"
-  printf '%s\n' "${EXTRA_PAGES[@]}"
-} | sort -u > "$tmp/pages.txt"
+grep -oE "\($BASE/[^)]+\.md\)" "$tmp/llms.txt" | tr -d '()' | sed "s#^$BASE/##" | sort -u > "$tmp/pages.txt"
 
 fail=0
 while read -r page; do
@@ -26,7 +22,9 @@ while read -r page; do
       NR <= 4 && (/^> ## Documentation Index/ || /^> Fetch the complete documentation index/ || /^> Use this file to discover/ || /^$/) { next }
       /^export function [A-Za-z]+\(/ { skip = 1 }
       skip { if ($0 == "}") skip = 0; next }
-      { print }
+      /^This documentation is built and hosted on \[Mintlify\]/ { next }
+      /^$/ { blank++; next }
+      { while (blank > 0) { print ""; blank-- } print }
     ' "$tmp/raw.md" > "$tmp/pages/$page"
   else
     echo "FAILED: $page" >&2

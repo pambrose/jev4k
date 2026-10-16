@@ -2,6 +2,7 @@ package website;
 
 import com.pambrose.jev4k.BlockingJev;
 import com.pambrose.jev4k.BlockingJevKt;
+import com.pambrose.jev4k.BoundingBox;
 import com.pambrose.jev4k.BuildersKt;
 import com.pambrose.jev4k.JevApi;
 import com.pambrose.jev4k.JevApiException;
@@ -9,6 +10,7 @@ import com.pambrose.jev4k.JevCallOptions;
 import com.pambrose.jev4k.JevCallOptionsKt;
 import com.pambrose.jev4k.JevClient;
 import com.pambrose.jev4k.JevDefaults;
+import com.pambrose.jev4k.JevImage;
 import com.pambrose.jev4k.JevRateLimitException;
 import com.pambrose.jev4k.JevResult;
 import com.pambrose.jev4k.ModelList;
@@ -24,7 +26,8 @@ import kotlin.Unit;
  * It also pins part of the Java-visible surface: it stops compiling if an overload it calls disappears (the
  * two-argument QueryBuilder.noul, BlockingJev.query without a model, jevResult, jevApiException), if BlockingJev
  * loses its @Throws (javac then rejects the catch of InterruptedException), or if a millisecond member for a
- * Duration setting goes. The ABI dump in api/ guards everything else.
+ * Duration setting goes, or if the image calls Java needs do (JevImage.of, the vararg QueryBuilder.attach, box). The
+ * ABI dump in api/ guards everything else.
  */
 public final class JavaInterop {
     private JavaInterop() {
@@ -97,5 +100,24 @@ public final class JavaInterop {
             return Unit.INSTANCE;
         }));
         System.out.println(((JevRateLimitException) limited).getRetryAfterMillis() + " " + canned.getModel());
+    }
+
+    // --8<-- [start:images]
+    static BoundingBox findMug(BlockingJev blocking, byte[] photoBytes) throws InterruptedException {
+        JevImage photo = JevImage.of(photoBytes);
+        JevResult r = blocking.query("The photo: " + photo.getReference(), qb -> {
+            qb.attach(photo);
+            qb.noul("mug_visible", "Is there a coffee mug in the photo?");
+            qb.box("mug", "the coffee mug in the photo");
+            return Unit.INSTANCE;
+        });
+        return r.box("mug").getBox();
+    }
+    // --8<-- [end:images]
+
+    // A literal null model must keep resolving to ask(query, state, model): Java sees the image overloads under
+    // another name, askWithImages, so they can't make this call ambiguous.
+    static JevResult askWithDefaultModel(BlockingJev blocking) throws InterruptedException {
+        return blocking.ask(SpamBroad.INSTANCE, "Win a free cruise!", null);
     }
 }

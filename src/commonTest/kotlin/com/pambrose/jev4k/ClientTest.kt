@@ -2,6 +2,7 @@ package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.JEV4K_VERSION
 import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
+import com.pambrose.jev4k.internal.MAX_SEND_DEPTH
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -554,16 +555,15 @@ class ClientTest : StringSpec() {
             jev.delays.shouldBeEmpty()
         }
 
-        // kotlinx.serialization recurses once per level, so a few thousand levels overflow the stack on every
-        // platform. The limit is checked before sending; a state right at it is sent, which also shows that every
-        // platform can encode that deep.
-        "a state nested too deeply fails before anything is sent" {
+        // The API answers a state nested more than 64 levels deep with a 400, so the limit is checked before sending;
+        // a state right at it is sent, which also shows that every platform can encode that deep.
+        "a state nested deeper than the API allows fails before anything is sent" {
             val jev = triageJev()
-            shouldThrow<JevValidationException> { jev.client.ask(Triage, state = nestedArrays(MAX_JSON_DEPTH + 1)) }
-                .message shouldContain "state is nested more than $MAX_JSON_DEPTH levels deep"
+            shouldThrow<JevValidationException> { jev.client.ask(Triage, state = nestedArrays(MAX_SEND_DEPTH + 1)) }
+                .message shouldContain "state is nested more than $MAX_SEND_DEPTH levels deep"
             jev.requests.shouldBeEmpty()
 
-            jev.client.ask(Triage, state = nestedArrays(MAX_JSON_DEPTH))
+            jev.client.ask(Triage, state = nestedArrays(MAX_SEND_DEPTH))
             jev.requests shouldHaveSize 1
         }
 

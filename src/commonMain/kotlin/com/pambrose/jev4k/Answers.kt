@@ -90,6 +90,29 @@ data class ScoreAnswer(
 }
 
 /**
+ * Where a Box found its target. Each edge is a fraction, from 0 to 1, of the image's height
+ * ([top][BoundingBox.top], [bottom][BoundingBox.bottom]) or width ([left][BoundingBox.left],
+ * [right][BoundingBox.right]), measured from the top-left corner, so the same box fits the image at any size.
+ */
+@ExperimentalJevImages
+data class BoundingBox(
+    val top: Double,
+    val bottom: Double,
+    val left: Double,
+    val right: Double,
+)
+
+/**
+ * The answer to a Box: the [box][BoxAnswer.box] around the target, and a [confidence][BoxAnswer.confidence] from 0
+ * to 1, or null when the API reports none. A Box always answers with a box, even when the target isn't in the image.
+ */
+@ExperimentalJevImages
+data class BoxAnswer(
+    val box: BoundingBox,
+    val confidence: Double?,
+) : Answer
+
+/**
  * An answer of a type this version of jev4k doesn't know; [raw][UnknownAnswer.raw] is the answer
  * object as received.
  */
@@ -137,6 +160,7 @@ internal val Answer.typeName: String
         is NoulAnswer -> "noul"
         is ChoiceAnswer<*> -> "choice"
         is ScoreAnswer -> "score"
+        is BoxAnswer -> "box"
         is UnknownAnswer -> type ?: "unknown"
     }
 
@@ -148,6 +172,8 @@ private fun mismatch(
 internal fun decodeNoul(answer: Answer): NoulAnswer = answer as? NoulAnswer ?: mismatch("noul", answer)
 
 internal fun decodeScore(answer: Answer): ScoreAnswer = answer as? ScoreAnswer ?: mismatch("score", answer)
+
+internal fun decodeBox(answer: Answer): BoxAnswer = answer as? BoxAnswer ?: mismatch("box", answer)
 
 @Suppress("UNCHECKED_CAST")
 internal fun decodeChoice(answer: Answer): ChoiceAnswer<String> =

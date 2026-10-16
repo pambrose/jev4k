@@ -98,14 +98,18 @@ and the `x-typesafe-request-id` header on the [`JevResult`](results/reading.md).
 
 ## Models
 
-| Name          | Meaning                                                          |
-|---------------|------------------------------------------------------------------|
-| `jev-latest`  | The latest stable release (the default). Currently `jev-1.13.0`. |
-| `jev-preview` | The latest release, whether or not it's official.                |
-| `jev-1.13.0`  | A pinned version.                                                |
+| Name          | Meaning                                   |
+|---------------|-------------------------------------------|
+| `jev-latest`  | The latest stable release (the default).  |
+| `jev-preview` | The latest release, official or not.      |
+| `jev-1.14.0`  | A pinned version.                         |
 
-Aliases move when TypeSafe ships a new release. If you've tuned thresholds against a particular version, pin it
-by name; see [Making Calls](client/calls.md#choosing-a-model).
+Aliases move when TypeSafe ships a new release. On 2026-10-14 TypeSafe released `jev-1.14.0` as `jev-preview`
+and announced that `jev-latest`, then `jev-1.13.0`, would move to it about a week later. `jev-1.13.0` stays
+available for a while, and TypeSafe has said it will give 60 days' notice before deprecating it. If you've tuned
+thresholds against a particular version, pin it by name; see [Making Calls](client/calls.md#choosing-a-model).
 
-Jev reads text only: strings, JSON objects, and arrays of text. English is its primary language; other
-languages work, but test them on your own data. It isn't trained on customer requests.
+Jev reads text: strings, JSON objects, and arrays of text. It also reads PNG and JPEG images, and its Box question
+type finds where something is in an image; both are experimental, as [Images & Box](queries/images.md) explains.
+English is Jev's primary language; other languages work, but test them on your own data. It isn't trained on customer
+requests.

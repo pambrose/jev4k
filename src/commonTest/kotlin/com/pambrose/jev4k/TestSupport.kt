@@ -186,3 +186,84 @@ data class Order(
 data class Reading(
     val temperature: Double,
 )
+
+/** A PNG signature and a few bytes: jev4k checks only the signature, and no test sends these to the real API. */
+internal val PNG_BYTES =
+    byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52)
+
+/** A JPEG signature and a few bytes, as [PNG_BYTES] is for PNG. */
+internal val JPEG_BYTES =
+    byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0x00, 0x10, 0x4A, 0x46)
+
+/** A Choice defined by example pictures, TypeSafe's "define options by example" pattern. */
+object Gestures : JevQuery() {
+    val thumb = attach(JevImage.of(PNG_BYTES, "<thumb>"))
+    val palm = attach(JevImage.of(JPEG_BYTES, "<palm>"))
+    val gesture by choice("Which gesture is the hand in `camera` making?") {
+        "thumbs_up" means thumb
+        "open_palm" means entry("description" to "A hand held up, palm to the camera.", "examples" to listOf(palm))
+        "none" means "No hand, or a hand that matches none of the examples."
+    }
+}
+
+/** One part of a multipart/form-data body: its headers and its bytes. */
+internal class Part(
+    val headers: Map<String, String>,
+    val body: ByteArray,
+) {
+    val name: String
+        get() =
+            headers.getValue(HttpHeaders.ContentDisposition)
+                .substringAfter("name=")
+                .substringBefore(";")
+                .removeSurrounding("\"")
+
+    val text: String get() = body.decodeToString()
+}
+
+/** The parts of this request's multipart body. */
+internal suspend fun HttpRequestData.parts(): List<Part> {
+    val boundary =
+        requireNotNull(body.contentType?.parameter("boundary")) { "not a multipart body: ${body.contentType}" }
+    return multipartParts(body.toByteArray(), boundary)
+}
+
+/** Splits a multipart [bytes] body on [boundary]: enough for the bodies jev4k writes, whose parts tests choose. */
+internal fun multipartParts(
+    bytes: ByteArray,
+    boundary: String,
+): List<Part> {
+    val delimiter = "--$boundary".encodeToByteArray()
+    val starts =
+        generateSequence(bytes.indexOf(delimiter, 0).takeIf { it >= 0 }) { previous ->
+            bytes.indexOf(delimiter, previous + delimiter.size).takeIf { it >= 0 }
+        }.toList()
+    return starts.zipWithNext { from, to ->
+        // "--boundary\r\n", the headers, a blank line, the body, and "\r\n" before the next delimiter.
+        val part = bytes.copyOfRange(from + delimiter.size + 2, to - 2)
+        val split = part.indexOf("\r\n\r\n".encodeToByteArray(), 0)
+        Part(
+            headers = part.copyOfRange(0, split).decodeToString().lines().associate {
+                it.substringBefore(": ") to it.substringAfter(": ")
+            },
+            body = part.copyOfRange(split + 4, part.size),
+        )
+    }
+}
+
+private fun ByteArray.indexOf(
+    needle: ByteArray,
+    from: Int,
+): Int = (from..size - needle.size).firstOrNull { start -> needle.indices.all { this[start + it] == needle[it] } } ?: -1
+
+/** One camera frame of a [History], the docs' "what changed" pattern. */
+@Serializable
+data class Frame(
+    val secondsAgo: Int,
+    val frame: JevImage,
+)
+
+@Serializable
+data class History(
+    val frames: List<Frame>,
+)

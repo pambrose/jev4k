@@ -1,7 +1,7 @@
 .PHONY: default help stop clean clean-all build tests jvm-tests js-tests native-tests refresh tree depends kdocs \
         site site-build clean-site check-site upgrade-site lint format detekt detekt-baseline zizmor abi-check \
         abi-update coverage coverage-html coverage-xml coverage-log \
-        coverage-verify coverage-open coverage-clean versions versions-all api-docs example live-tests \
+        coverage-verify coverage-open coverage-clean versions versions-all api-docs example hotdog-example live-tests \
         publish-local publish-local-snapshot publish-snapshot publish-maven-central \
         upgrade-wrapper test-jdk all-tests docker-linux-tests platform-tests _check-gpg-env _require-version \
         _require-gradle-version _require-jdk _require-macos _require-docker _require-zizmor
@@ -248,6 +248,9 @@ api-docs:  ## Re-download the cached TypeSafe docs into jev-docs/pages
 
 example:  ## Run the Triage example against the live API (needs TYPESAFE_API_KEY)
 	$(GRADLE) runExample
+
+hotdog-example:  ## Run the hot dog image example against the live API (needs TYPESAFE_API_KEY)
+	$(GRADLE) runHotDogExample
 
 # The JVM runs LiveSmokeTest, which spends tokens, and LiveProbeTest; the other platforms run LiveProbeTest, whose
 # two calls spend none. Each task is filtered to those specs; wasmJsNodeTest ignores the filter and runs its whole

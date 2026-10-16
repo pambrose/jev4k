@@ -6,6 +6,10 @@
 // - Show declarations: true
 
 // Library unique name: <com.pambrose.jev4k:jev4k>
+open annotation class com.pambrose.jev4k/ExperimentalJevImages : kotlin/Annotation { // com.pambrose.jev4k/ExperimentalJevImages|null[0]
+    constructor <init>() // com.pambrose.jev4k/ExperimentalJevImages.<init>|<init>(){}[0]
+}
+
 open annotation class com.pambrose.jev4k/JevDsl : kotlin/Annotation { // com.pambrose.jev4k/JevDsl|null[0]
     constructor <init>() // com.pambrose.jev4k/JevDsl.<init>|<init>(){}[0]
 }
@@ -52,6 +56,9 @@ abstract class com.pambrose.jev4k/JevQuery { // com.pambrose.jev4k/JevQuery|null
         final fun <get-questions>(): com.pambrose.jev4k/QuestionSet // com.pambrose.jev4k/JevQuery.questions.<get-questions>|<get-questions>(){}[0]
 
     final fun <#A1: kotlin/Enum<#A1>> enumChoiceProvider(kotlinx.serialization.json/JsonElement, kotlin/String?, kotlin.collections/List<#A1>): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ChoiceAnswer<#A1>> // com.pambrose.jev4k/JevQuery.enumChoiceProvider|enumChoiceProvider(kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.collections.List<0:0>){0§<kotlin.Enum<0:0>>}[0]
+    final fun attach(com.pambrose.jev4k/JevImage): com.pambrose.jev4k/JevImage // com.pambrose.jev4k/JevQuery.attach|attach(com.pambrose.jev4k.JevImage){}[0]
+    final fun box(kotlin/String, kotlin/String? = ...): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/BoxAnswer> // com.pambrose.jev4k/JevQuery.box|box(kotlin.String;kotlin.String?){}[0]
+    final fun box(kotlinx.serialization.json/JsonElement, kotlin/String? = ...): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/BoxAnswer> // com.pambrose.jev4k/JevQuery.box|box(kotlinx.serialization.json.JsonElement;kotlin.String?){}[0]
     final fun choice(kotlin/String, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/ChoiceBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/JevQuery.choice|choice(kotlin.String;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.ChoiceBuilder,kotlin.Unit>){}[0]
     final fun choice(kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/ChoiceBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/JevQuery.choice|choice(kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.ChoiceBuilder,kotlin.Unit>){}[0]
     final fun noul(kotlin/String, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/NoulBuilder, kotlin/Unit>? = ...): com.pambrose.jev4k/QuestionProvider<com.pambrose.jev4k/NoulAnswer> // com.pambrose.jev4k/JevQuery.noul|noul(kotlin.String;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.NoulBuilder,kotlin.Unit>?){}[0]
@@ -101,9 +108,62 @@ final class <#A: out com.pambrose.jev4k/Answer> com.pambrose.jev4k/QuestionRef {
 
 final class com.pambrose.jev4k/BlockingJev // com.pambrose.jev4k/BlockingJev|null[0]
 
+final class com.pambrose.jev4k/BoundingBox { // com.pambrose.jev4k/BoundingBox|null[0]
+    constructor <init>(kotlin/Double, kotlin/Double, kotlin/Double, kotlin/Double) // com.pambrose.jev4k/BoundingBox.<init>|<init>(kotlin.Double;kotlin.Double;kotlin.Double;kotlin.Double){}[0]
+
+    final val bottom // com.pambrose.jev4k/BoundingBox.bottom|{}bottom[0]
+        final fun <get-bottom>(): kotlin/Double // com.pambrose.jev4k/BoundingBox.bottom.<get-bottom>|<get-bottom>(){}[0]
+    final val left // com.pambrose.jev4k/BoundingBox.left|{}left[0]
+        final fun <get-left>(): kotlin/Double // com.pambrose.jev4k/BoundingBox.left.<get-left>|<get-left>(){}[0]
+    final val right // com.pambrose.jev4k/BoundingBox.right|{}right[0]
+        final fun <get-right>(): kotlin/Double // com.pambrose.jev4k/BoundingBox.right.<get-right>|<get-right>(){}[0]
+    final val top // com.pambrose.jev4k/BoundingBox.top|{}top[0]
+        final fun <get-top>(): kotlin/Double // com.pambrose.jev4k/BoundingBox.top.<get-top>|<get-top>(){}[0]
+
+    final fun component1(): kotlin/Double // com.pambrose.jev4k/BoundingBox.component1|component1(){}[0]
+    final fun component2(): kotlin/Double // com.pambrose.jev4k/BoundingBox.component2|component2(){}[0]
+    final fun component3(): kotlin/Double // com.pambrose.jev4k/BoundingBox.component3|component3(){}[0]
+    final fun component4(): kotlin/Double // com.pambrose.jev4k/BoundingBox.component4|component4(){}[0]
+    final fun copy(kotlin/Double = ..., kotlin/Double = ..., kotlin/Double = ..., kotlin/Double = ...): com.pambrose.jev4k/BoundingBox // com.pambrose.jev4k/BoundingBox.copy|copy(kotlin.Double;kotlin.Double;kotlin.Double;kotlin.Double){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/BoundingBox.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/BoundingBox.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/BoundingBox.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/BoxAnswer : com.pambrose.jev4k/Answer { // com.pambrose.jev4k/BoxAnswer|null[0]
+    constructor <init>(com.pambrose.jev4k/BoundingBox, kotlin/Double?) // com.pambrose.jev4k/BoxAnswer.<init>|<init>(com.pambrose.jev4k.BoundingBox;kotlin.Double?){}[0]
+
+    final val box // com.pambrose.jev4k/BoxAnswer.box|{}box[0]
+        final fun <get-box>(): com.pambrose.jev4k/BoundingBox // com.pambrose.jev4k/BoxAnswer.box.<get-box>|<get-box>(){}[0]
+    final val confidence // com.pambrose.jev4k/BoxAnswer.confidence|{}confidence[0]
+        final fun <get-confidence>(): kotlin/Double? // com.pambrose.jev4k/BoxAnswer.confidence.<get-confidence>|<get-confidence>(){}[0]
+
+    final fun component1(): com.pambrose.jev4k/BoundingBox // com.pambrose.jev4k/BoxAnswer.component1|component1(){}[0]
+    final fun component2(): kotlin/Double? // com.pambrose.jev4k/BoxAnswer.component2|component2(){}[0]
+    final fun copy(com.pambrose.jev4k/BoundingBox = ..., kotlin/Double? = ...): com.pambrose.jev4k/BoxAnswer // com.pambrose.jev4k/BoxAnswer.copy|copy(com.pambrose.jev4k.BoundingBox;kotlin.Double?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/BoxAnswer.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/BoxAnswer.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/BoxAnswer.toString|toString(){}[0]
+}
+
+final class com.pambrose.jev4k/BoxQuestion : com.pambrose.jev4k/Question { // com.pambrose.jev4k/BoxQuestion|null[0]
+    constructor <init>(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/BoxQuestion.<init>|<init>(kotlinx.serialization.json.JsonElement){}[0]
+
+    final val instructions // com.pambrose.jev4k/BoxQuestion.instructions|{}instructions[0]
+        final fun <get-instructions>(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/BoxQuestion.instructions.<get-instructions>|<get-instructions>(){}[0]
+
+    final fun component1(): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/BoxQuestion.component1|component1(){}[0]
+    final fun copy(kotlinx.serialization.json/JsonElement = ...): com.pambrose.jev4k/BoxQuestion // com.pambrose.jev4k/BoxQuestion.copy|copy(kotlinx.serialization.json.JsonElement){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/BoxQuestion.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.pambrose.jev4k/BoxQuestion.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/BoxQuestion.toString|toString(){}[0]
+}
+
 final class com.pambrose.jev4k/ChoiceBuilder { // com.pambrose.jev4k/ChoiceBuilder|null[0]
+    final fun (kotlin/String).means(com.pambrose.jev4k/JevImage) // com.pambrose.jev4k/ChoiceBuilder.means|means@kotlin.String(com.pambrose.jev4k.JevImage){}[0]
     final fun (kotlin/String).means(kotlin/String) // com.pambrose.jev4k/ChoiceBuilder.means|means@kotlin.String(kotlin.String){}[0]
     final fun (kotlin/String).means(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/ChoiceBuilder.means|means@kotlin.String(kotlinx.serialization.json.JsonElement){}[0]
+    final fun option(kotlin/String, com.pambrose.jev4k/JevImage) // com.pambrose.jev4k/ChoiceBuilder.option|option(kotlin.String;com.pambrose.jev4k.JevImage){}[0]
     final fun option(kotlin/String, kotlin/String? = ...) // com.pambrose.jev4k/ChoiceBuilder.option|option(kotlin.String;kotlin.String?){}[0]
     final fun option(kotlin/String, kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/ChoiceBuilder.option|option(kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
     final fun options(kotlin/Array<out kotlin/String>...) // com.pambrose.jev4k/ChoiceBuilder.options|options(kotlin.Array<out|kotlin.String>...){}[0]
@@ -238,6 +298,20 @@ final class com.pambrose.jev4k/JevConfigException : com.pambrose.jev4k/JevExcept
     constructor <init>(kotlin/String) // com.pambrose.jev4k/JevConfigException.<init>|<init>(kotlin.String){}[0]
 }
 
+final class com.pambrose.jev4k/JevImage { // com.pambrose.jev4k/JevImage|null[0]
+    final val reference // com.pambrose.jev4k/JevImage.reference|{}reference[0]
+        final fun <get-reference>(): kotlin/String // com.pambrose.jev4k/JevImage.reference.<get-reference>|<get-reference>(){}[0]
+
+    final fun toString(): kotlin/String // com.pambrose.jev4k/JevImage.toString|toString(){}[0]
+
+    final object Companion { // com.pambrose.jev4k/JevImage.Companion|null[0]
+        final fun fromBase64(kotlin/String, kotlin/String? = ...): com.pambrose.jev4k/JevImage // com.pambrose.jev4k/JevImage.Companion.fromBase64|fromBase64(kotlin.String;kotlin.String?){}[0]
+        final fun of(kotlin/ByteArray, kotlin/String? = ...): com.pambrose.jev4k/JevImage // com.pambrose.jev4k/JevImage.Companion.of|of(kotlin.ByteArray;kotlin.String?){}[0]
+        final fun read(kotlinx.io.files/Path, kotlin/String? = ...): com.pambrose.jev4k/JevImage // com.pambrose.jev4k/JevImage.Companion.read|read(kotlinx.io.files.Path;kotlin.String?){}[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<com.pambrose.jev4k/JevImage> // com.pambrose.jev4k/JevImage.Companion.serializer|serializer(){}[0]
+    }
+}
+
 final class com.pambrose.jev4k/JevNotFoundException : com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/JevNotFoundException|null[0]
 
 final class com.pambrose.jev4k/JevOverloadedException : com.pambrose.jev4k/JevInternalServerException // com.pambrose.jev4k/JevOverloadedException|null[0]
@@ -261,6 +335,8 @@ final class com.pambrose.jev4k/JevResponseValidationException : com.pambrose.jev
 final class com.pambrose.jev4k/JevResult { // com.pambrose.jev4k/JevResult|null[0]
     final val answers // com.pambrose.jev4k/JevResult.answers|{}answers[0]
         final fun <get-answers>(): kotlin.collections/Map<kotlin/String, com.pambrose.jev4k/Answer> // com.pambrose.jev4k/JevResult.answers.<get-answers>|<get-answers>(){}[0]
+    final val boxes // com.pambrose.jev4k/JevResult.boxes|{}boxes[0]
+        final fun <get-boxes>(): kotlin.collections/Map<kotlin/String, com.pambrose.jev4k/BoxAnswer> // com.pambrose.jev4k/JevResult.boxes.<get-boxes>|<get-boxes>(){}[0]
     final val choices // com.pambrose.jev4k/JevResult.choices|{}choices[0]
         final fun <get-choices>(): kotlin.collections/Map<kotlin/String, com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/JevResult.choices.<get-choices>|<get-choices>(){}[0]
     final val model // com.pambrose.jev4k/JevResult.model|{}model[0]
@@ -282,6 +358,7 @@ final class com.pambrose.jev4k/JevResult { // com.pambrose.jev4k/JevResult|null[
 
     final fun <#A1: com.pambrose.jev4k/Answer> get(com.pambrose.jev4k/QuestionRef<#A1>): #A1 // com.pambrose.jev4k/JevResult.get|get(com.pambrose.jev4k.QuestionRef<0:0>){0§<com.pambrose.jev4k.Answer>}[0]
     final fun <#A1: kotlin/Enum<#A1>> enumChoiceOf(kotlin/String, kotlin.collections/List<#A1>): com.pambrose.jev4k/ChoiceAnswer<#A1> // com.pambrose.jev4k/JevResult.enumChoiceOf|enumChoiceOf(kotlin.String;kotlin.collections.List<0:0>){0§<kotlin.Enum<0:0>>}[0]
+    final fun box(kotlin/String): com.pambrose.jev4k/BoxAnswer // com.pambrose.jev4k/JevResult.box|box(kotlin.String){}[0]
     final fun choice(kotlin/String): com.pambrose.jev4k/ChoiceAnswer<kotlin/String> // com.pambrose.jev4k/JevResult.choice|choice(kotlin.String){}[0]
     final fun noul(kotlin/String): com.pambrose.jev4k/NoulAnswer // com.pambrose.jev4k/JevResult.noul|noul(kotlin.String){}[0]
     final fun score(kotlin/String): com.pambrose.jev4k/ScoreAnswer // com.pambrose.jev4k/JevResult.score|score(kotlin.String){}[0]
@@ -363,8 +440,10 @@ final class com.pambrose.jev4k/NoulAnswer : com.pambrose.jev4k/Answer { // com.p
 }
 
 final class com.pambrose.jev4k/NoulBuilder { // com.pambrose.jev4k/NoulBuilder|null[0]
+    final fun whenFalse(com.pambrose.jev4k/JevImage) // com.pambrose.jev4k/NoulBuilder.whenFalse|whenFalse(com.pambrose.jev4k.JevImage){}[0]
     final fun whenFalse(kotlin/String) // com.pambrose.jev4k/NoulBuilder.whenFalse|whenFalse(kotlin.String){}[0]
     final fun whenFalse(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/NoulBuilder.whenFalse|whenFalse(kotlinx.serialization.json.JsonElement){}[0]
+    final fun whenTrue(com.pambrose.jev4k/JevImage) // com.pambrose.jev4k/NoulBuilder.whenTrue|whenTrue(com.pambrose.jev4k.JevImage){}[0]
     final fun whenTrue(kotlin/String) // com.pambrose.jev4k/NoulBuilder.whenTrue|whenTrue(kotlin.String){}[0]
     final fun whenTrue(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/NoulBuilder.whenTrue|whenTrue(kotlinx.serialization.json.JsonElement){}[0]
 }
@@ -390,6 +469,9 @@ final class com.pambrose.jev4k/NoulQuestion : com.pambrose.jev4k/Question { // c
 
 final class com.pambrose.jev4k/QueryBuilder { // com.pambrose.jev4k/QueryBuilder|null[0]
     final fun <#A1: com.pambrose.jev4k/Answer> add(com.pambrose.jev4k/QuestionRef<#A1>): com.pambrose.jev4k/QuestionRef<#A1> // com.pambrose.jev4k/QueryBuilder.add|add(com.pambrose.jev4k.QuestionRef<0:0>){0§<com.pambrose.jev4k.Answer>}[0]
+    final fun attach(kotlin/Array<out com.pambrose.jev4k/JevImage>...) // com.pambrose.jev4k/QueryBuilder.attach|attach(kotlin.Array<out|com.pambrose.jev4k.JevImage>...){}[0]
+    final fun box(kotlin/String, kotlin/String): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/BoxAnswer> // com.pambrose.jev4k/QueryBuilder.box|box(kotlin.String;kotlin.String){}[0]
+    final fun box(kotlin/String, kotlinx.serialization.json/JsonElement): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/BoxAnswer> // com.pambrose.jev4k/QueryBuilder.box|box(kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
     final fun choice(kotlin/String, kotlin/String, kotlin/Function1<com.pambrose.jev4k/ChoiceBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/QueryBuilder.choice|choice(kotlin.String;kotlin.String;kotlin.Function1<com.pambrose.jev4k.ChoiceBuilder,kotlin.Unit>){}[0]
     final fun choice(kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/Function1<com.pambrose.jev4k/ChoiceBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionRef<com.pambrose.jev4k/ChoiceAnswer<kotlin/String>> // com.pambrose.jev4k/QueryBuilder.choice|choice(kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.Function1<com.pambrose.jev4k.ChoiceBuilder,kotlin.Unit>){}[0]
     final fun include(com.pambrose.jev4k/JevQuery) // com.pambrose.jev4k/QueryBuilder.include|include(com.pambrose.jev4k.JevQuery){}[0]
@@ -405,6 +487,8 @@ final class com.pambrose.jev4k/QueryBuilder { // com.pambrose.jev4k/QueryBuilder
 final class com.pambrose.jev4k/QuestionSet : kotlin.collections/Iterable<com.pambrose.jev4k/QuestionRef<*>> { // com.pambrose.jev4k/QuestionSet|null[0]
     final val ids // com.pambrose.jev4k/QuestionSet.ids|{}ids[0]
         final fun <get-ids>(): kotlin.collections/List<kotlin/String> // com.pambrose.jev4k/QuestionSet.ids.<get-ids>|<get-ids>(){}[0]
+    final val images // com.pambrose.jev4k/QuestionSet.images|{}images[0]
+        final fun <get-images>(): kotlin.collections/List<com.pambrose.jev4k/JevImage> // com.pambrose.jev4k/QuestionSet.images.<get-images>|<get-images>(){}[0]
     final val size // com.pambrose.jev4k/QuestionSet.size|{}size[0]
         final fun <get-size>(): kotlin/Int // com.pambrose.jev4k/QuestionSet.size.<get-size>|<get-size>(){}[0]
 
@@ -499,6 +583,7 @@ final class com.pambrose.jev4k/ScoreAnswer : com.pambrose.jev4k/Answer { // com.
 }
 
 final class com.pambrose.jev4k/ScoreBuilder { // com.pambrose.jev4k/ScoreBuilder|null[0]
+    final fun level(com.pambrose.jev4k/JevImage) // com.pambrose.jev4k/ScoreBuilder.level|level(com.pambrose.jev4k.JevImage){}[0]
     final fun level(kotlin/String) // com.pambrose.jev4k/ScoreBuilder.level|level(kotlin.String){}[0]
     final fun level(kotlinx.serialization.json/JsonElement) // com.pambrose.jev4k/ScoreBuilder.level|level(kotlinx.serialization.json.JsonElement){}[0]
     final fun levels(kotlin/Array<out kotlin/String>...) // com.pambrose.jev4k/ScoreBuilder.levels|levels(kotlin.Array<out|kotlin.String>...){}[0]
@@ -616,12 +701,16 @@ final fun com.pambrose.jev4k/jevResult(kotlin/String, com.pambrose.jev4k/Questio
 final fun com.pambrose.jev4k/jevResult(kotlinx.serialization.json/JsonObject, com.pambrose.jev4k/QuestionSet, kotlin/String = ..., kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/jevResult|jevResult(kotlinx.serialization.json.JsonObject;com.pambrose.jev4k.QuestionSet;kotlin.String;kotlin.String?){}[0]
 final fun com.pambrose.jev4k/jsonOf(kotlin/Any?): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/jsonOf|jsonOf(kotlin.Any?){}[0]
 final fun com.pambrose.jev4k/questions(kotlin/Function1<com.pambrose.jev4k/QueryBuilder, kotlin/Unit>): com.pambrose.jev4k/QuestionSet // com.pambrose.jev4k/questions|questions(kotlin.Function1<com.pambrose.jev4k.QueryBuilder,kotlin.Unit>){}[0]
+final fun com.pambrose.jev4k/questionsWith(com.pambrose.jev4k/JevQuery, kotlin/Array<out com.pambrose.jev4k/JevImage>): com.pambrose.jev4k/QuestionSet // com.pambrose.jev4k/questionsWith|questionsWith(com.pambrose.jev4k.JevQuery;kotlin.Array<out|com.pambrose.jev4k.JevImage>){}[0]
 final fun com.pambrose.jev4k/rubric(kotlin/String, kotlin/String? = ..., kotlin.collections/List<kotlin/String> = ...): kotlinx.serialization.json/JsonObject // com.pambrose.jev4k/rubric|rubric(kotlin.String;kotlin.String?;kotlin.collections.List<kotlin.String>){}[0]
 final inline fun <#A: reified kotlin/Any?> com.pambrose.jev4k/jsonEntry(#A): kotlinx.serialization.json/JsonElement // com.pambrose.jev4k/jsonEntry|jsonEntry(0:0){0§<kotlin.Any?>}[0]
 final inline fun <#A: reified kotlin/Any?> com.pambrose.jev4k/serializerOrReport(): kotlinx.serialization/KSerializer<#A> // com.pambrose.jev4k/serializerOrReport|serializerOrReport(){0§<kotlin.Any?>}[0]
+final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, kotlin/String, kotlin/Array<out com.pambrose.jev4k/JevImage>..., kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;kotlin.String;kotlin.Array<out|com.pambrose.jev4k.JevImage>...;kotlin.String?){}[0]
 final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, kotlin/String, kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;kotlin.String;kotlin.String?){}[0]
+final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, kotlinx.serialization.json/JsonElement, kotlin/Array<out com.pambrose.jev4k/JevImage>..., kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;kotlinx.serialization.json.JsonElement;kotlin.Array<out|com.pambrose.jev4k.JevImage>...;kotlin.String?){}[0]
 final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, kotlinx.serialization.json/JsonElement, kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;kotlinx.serialization.json.JsonElement;kotlin.String?){}[0]
 final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/query(kotlin/String, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/QueryBuilder, kotlin/Unit>): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/query|query@com.pambrose.jev4k.JevApi(kotlin.String;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.QueryBuilder,kotlin.Unit>){}[0]
 final suspend fun (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/query(kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/Function1<com.pambrose.jev4k/QueryBuilder, kotlin/Unit>): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/query|query@com.pambrose.jev4k.JevApi(kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.QueryBuilder,kotlin.Unit>){}[0]
+final suspend inline fun <#A: reified kotlin/Any> (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, #A, kotlin/Array<out com.pambrose.jev4k/JevImage>..., kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;0:0;kotlin.Array<out|com.pambrose.jev4k.JevImage>...;kotlin.String?){0§<kotlin.Any>}[0]
 final suspend inline fun <#A: reified kotlin/Any> (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/ask(com.pambrose.jev4k/JevQuery, #A, kotlin/String? = ...): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/ask|ask@com.pambrose.jev4k.JevApi(com.pambrose.jev4k.JevQuery;0:0;kotlin.String?){0§<kotlin.Any>}[0]
 final suspend inline fun <#A: reified kotlin/Any> (com.pambrose.jev4k/JevApi).com.pambrose.jev4k/query(#A, kotlin/String? = ..., noinline kotlin/Function1<com.pambrose.jev4k/QueryBuilder, kotlin/Unit>): com.pambrose.jev4k/JevResult // com.pambrose.jev4k/query|query@com.pambrose.jev4k.JevApi(0:0;kotlin.String?;kotlin.Function1<com.pambrose.jev4k.QueryBuilder,kotlin.Unit>){0§<kotlin.Any>}[0]

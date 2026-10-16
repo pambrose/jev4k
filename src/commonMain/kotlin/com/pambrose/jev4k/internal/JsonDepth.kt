@@ -7,15 +7,23 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
 
 /**
- * How deeply jev4k lets JSON nest, sent or received. kotlinx.serialization encodes, parses and prints JSON by
- * recursing once per level, several frames deep, so deeply nested JSON overflows the stack: a `StackOverflowError` on
- * the JVM, a `RangeError` on Node.js, a crash on Kotlin/Native. Windows is the tightest, with a 1 MB main-thread
- * stack: encoding 512 levels crashed the mingwX64 test binary. 128 (serde_json's default) leaves a wide margin
- * everywhere and is still far deeper than any real state or answer.
+ * How deeply jev4k lets received JSON nest. kotlinx.serialization encodes, parses and prints JSON by recursing once
+ * per level, several frames deep, so deeply nested JSON overflows the stack: a `StackOverflowError` on the JVM, a
+ * `RangeError` on Node.js, a crash on Kotlin/Native. Windows is the tightest, with a 1 MB main-thread stack: encoding
+ * 512 levels crashed the mingwX64 test binary. 128 (serde_json's default) leaves a wide margin everywhere and is still
+ * far deeper than any real answer.
  */
 internal const val MAX_JSON_DEPTH = 128
 
-/** True when this element nests more than [MAX_JSON_DEPTH] objects or arrays deep. */
+/**
+ * How deeply a value jev4k sends may nest: the API's request rule, which answers anything deeper with a 400. The API
+ * applies it to the state and to each instructions or criteria value on its own, counting the outermost object or
+ * array as the first level; a criteria map or level array doesn't count as a level of its values. It is well inside
+ * [MAX_JSON_DEPTH], so a request that passes it can also be encoded.
+ */
+internal const val MAX_SEND_DEPTH = 64
+
+/** True when this element, about to be sent, nests more than [MAX_SEND_DEPTH] objects or arrays deep. */
 internal fun JsonElement.nestsTooDeep(): Boolean {
     // Iterative, with an explicit stack, so that checking can't overflow either. Only containers are pushed.
     val pending = ArrayDeque<Pair<JsonElement, Int>>()
@@ -27,13 +35,16 @@ internal fun JsonElement.nestsTooDeep(): Boolean {
             is JsonArray -> element
             else -> continue
         }
-        if (depth > MAX_JSON_DEPTH) return true
+        if (depth > MAX_SEND_DEPTH) return true
         children.forEach { if (it is JsonObject || it is JsonArray) pending.addLast(it to depth + 1) }
     }
     return false
 }
 
-/** The same check on JSON text, before it is parsed: counts open `[` and `{` outside string literals. */
+/**
+ * True when received JSON text nests more than [MAX_JSON_DEPTH] levels, checked before it is parsed: counts open `[`
+ * and `{` outside string literals.
+ */
 internal fun String.nestsTooDeep(): Boolean {
     var depth = 0
     var inString = false
@@ -70,13 +81,13 @@ internal fun JsonElement.hasNonFiniteNumber(): Boolean {
 }
 
 /**
- * What stops this element being sent, naming it [what] in the message, or null: nesting past [MAX_JSON_DEPTH], or a
+ * What stops this element being sent, naming it [what] in the message, or null: nesting past [MAX_SEND_DEPTH], or a
  * number JSON can't represent. Every JSON value jev4k sends is checked here: the state, question entries and extra
  * body fields.
  */
 internal fun JsonElement.sendProblem(what: String): String? =
     when {
-        nestsTooDeep() -> "$what is nested more than $MAX_JSON_DEPTH levels deep"
+        nestsTooDeep() -> "$what is nested more than $MAX_SEND_DEPTH levels deep"
         hasNonFiniteNumber() -> "$what holds NaN or an infinity, which JSON lacks"
         else -> null
     }

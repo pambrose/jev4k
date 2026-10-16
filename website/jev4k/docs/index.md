@@ -34,13 +34,14 @@ graph TD
    your levels for a Score, each with the probabilities behind it.
 4. **Decide in code.** Control flow, arithmetic, thresholds and side effects stay in your program.
 
-## Three kinds of question
+## Kinds of question
 
 | Question                          | Asks                           | Answer                                                                   |
 |-----------------------------------|--------------------------------|--------------------------------------------------------------------------|
 | [**Noul**](questions/noul.md)     | Is this true?                  | `noul`: the probability of yes, 0 to 1                                   |
 | [**Choice**](questions/choice.md) | Which of these options?        | `choice`, a probability per option, `confidence`                         |
 | [**Score**](questions/score.md)   | Where on these ordered levels? | `score` (can fall between levels), per-level probabilities, `confidence` |
+| [**Box**](queries/images.md)      | Where is this in an image?     | `box`: four edges as fractions; experimental                             |
 
 ## Features
 
@@ -50,6 +51,8 @@ graph TD
 - **Structured criteria**: contrastive rubrics, examples, and JSON field specs in
   [instructions and options](questions/structured.md).
 - **Any state**: text, JSON, or any `@Serializable` value.
+- **Images and Box** (experimental): PNG and JPEG images in the state, instructions and criteria, and Box questions
+  that find where something is, on the [Images & Box](queries/images.md) page.
 - **Suspend-first client** on Ktor, with a [blocking mirror](client/calls.md) on the JVM for scripts and `main`.
 - **Multiplatform**: the JVM, Apple platforms, Linux, Windows, and Node.js, with the same API on
   [every one](getting-started/installation.md#platforms).

@@ -79,4 +79,40 @@ actual class BlockingJev internal actual constructor(
         state: T,
         model: String? = null,
     ): JevResult = runBlocking { api.ask(query, state, model) }
+
+    // Java sees this as askWithImages: as an ask overload, its varargs would make Java's ask(query, state, null)
+    // ambiguous with the model-taking one.
+    @ExperimentalJevImages
+    @JvmName("askWithImages")
+    @JvmOverloads
+    @Throws(InterruptedException::class)
+    fun ask(
+        query: JevQuery,
+        state: String,
+        vararg images: JevImage,
+        model: String? = null,
+    ): JevResult = runBlocking { api.ask(query, state, *images, model = model) }
+
+    // Java sees this as askWithImages: as an ask overload, its varargs would make Java's ask(query, state, null)
+    // ambiguous with the model-taking one.
+    @ExperimentalJevImages
+    @JvmName("askWithImages")
+    @JvmOverloads
+    @Throws(InterruptedException::class)
+    fun ask(
+        query: JevQuery,
+        state: JsonElement,
+        vararg images: JevImage,
+        model: String? = null,
+    ): JevResult = runBlocking { api.ask(query, state, *images, model = model) }
+
+    @ExperimentalJevImages
+    @JvmSynthetic
+    @Throws(InterruptedException::class)
+    inline fun <reified T : Any> ask(
+        query: JevQuery,
+        state: T,
+        vararg images: JevImage,
+        model: String? = null,
+    ): JevResult = runBlocking { api.ask(query, state, *images, model = model) }
 }

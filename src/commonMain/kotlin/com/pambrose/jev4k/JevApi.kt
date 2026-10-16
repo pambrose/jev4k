@@ -83,3 +83,41 @@ suspend inline fun <reified T : Any> JevApi.ask(
     state: T,
     model: String? = null,
 ): JevResult = evaluate(jsonEntry(state), query.questions, model)
+
+/** Asks a [JevQuery]'s questions about a text [state], with [images] attached after the query's own. */
+@ExperimentalJevImages
+suspend fun JevApi.ask(
+    query: JevQuery,
+    state: String,
+    vararg images: JevImage,
+    model: String? = null,
+): JevResult = evaluate(JsonPrimitive(state), questionsWith(query, images), model)
+
+/** Asks a [JevQuery]'s questions about a JSON [state], with [images] attached after the query's own. */
+@ExperimentalJevImages
+suspend fun JevApi.ask(
+    query: JevQuery,
+    state: JsonElement,
+    vararg images: JevImage,
+    model: String? = null,
+): JevResult = evaluate(state, questionsWith(query, images), model)
+
+/** Asks a [JevQuery]'s questions about a `@Serializable` [state], with [images] attached after the query's own. */
+@ExperimentalJevImages
+@JvmSynthetic
+suspend inline fun <reified T : Any> JevApi.ask(
+    query: JevQuery,
+    state: T,
+    vararg images: JevImage,
+    model: String? = null,
+): JevResult = evaluate(jsonEntry(state), questionsWith(query, images), model)
+
+@PublishedApi
+internal fun questionsWith(
+    query: JevQuery,
+    images: Array<out JevImage>,
+): QuestionSet =
+    questions {
+        include(query)
+        attach(*images)
+    }

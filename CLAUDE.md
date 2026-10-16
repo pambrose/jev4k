@@ -5,10 +5,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 `jev4k` is a Kotlin Multiplatform DSL and client for TypeSafe's Jev "System One" model, built on the Ktor client and
-kotlinx.serialization. You describe a state and typed questions (Noul, Choice, Score), and it returns typed answers. The
-library is `com.pambrose.jev4k`, almost all of it common code under `src/commonMain/kotlin`, for the JVM (the primary
-target), Apple platforms, Linux, Windows, and Node.js (js and wasmJs). A runnable example is
-`src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt`.
+kotlinx.serialization. You describe a state and typed questions (Noul, Choice, Score, and the experimental Box), and it
+returns typed answers. The library is `com.pambrose.jev4k`, almost all of it common code under `src/commonMain/kotlin`,
+for the JVM (the primary target), Apple platforms, Linux, Windows, and Node.js (js and wasmJs). The runnable examples
+are `src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt` (`make example`) and `HotDogExample.kt` next to
+it (`make hotdog-example`), which sends the two CC0 photos in `src/jvmTest/resources/hotdog/`; `HotDogPhotosTest`
+holds them to the API's image limits.
 
 ## TypeSafe / Jev API docs
 
@@ -21,10 +23,11 @@ the legacy preview API shape (`/preview/evaluation`, `document`, `prompts`); `je
 
 ## Architecture
 
-The question types' names follow TypeSafe's JS SDK; the answer types and the `nouls`/`choices`/`scores` views follow the
-Python SDK, and `ModelInfo`/`ModelList` are jev4k's own. A question definition is a `Question`, one of `NoulQuestion`,
-`ChoiceQuestion` or `ScoreQuestion`, which hold only what is asked: instructions and criteria. A `QuestionRef<A>` is the
-handle code holds. It pairs an id with a `Question` (`ref.question`) and a decoder for the typed answer.
+The question types' names follow TypeSafe's JS SDK; the answer types and the `nouls`/`choices`/`scores` views follow
+the Python SDK, and `ModelInfo`/`ModelList` are jev4k's own. A question definition is a `Question`, one of
+`NoulQuestion`, `ChoiceQuestion`, `ScoreQuestion` or the experimental `BoxQuestion`, which hold only what is asked:
+instructions and criteria. A `QuestionRef<A>` is the handle code holds. It pairs an id with a `Question`
+(`ref.question`) and a decoder for the typed answer.
 
 There are two DSL layers over one core model. Both produce a validated `QuestionSet`, and
 `JevApi.evaluate(state, questionSet, model)` is the only call that sends questions to the network. `JevApi.models()`
@@ -53,6 +56,22 @@ without them keep compiling.
   since a mismatch is the caller's mistake (`IllegalArgumentException`). A string-keyed read returns an undeclared
   option as sent, as both official SDKs do. `QueryBuilder.question(id, q)` copies the question's map or list and
   picks the type-checking decoder for its subtype.
+- **Images and Box** (`JevImage.kt`, `internal/ImageRequest.kt`), all behind `@ExperimentalJevImages`, which the build
+  opts the module into (`compilerOptions.optIn`), so every public declaration that names an image or Box type must
+  carry the annotation by hand.
+    - A `JevImage` stands in content as its `reference` (`toString()`, `jsonOf`, `JevImageSerializer`, the builders'
+      image overloads); `JsonPrimitive` is sealed, so images can't be discovered in a JSON tree and must be attached:
+      `QueryBuilder.attach`, `JevQuery.attach`, or `ask(query, state, images...)`. `QuestionSet.images` holds each
+      instance once.
+    - The factories never throw for bad content: the problem rides on the image and `imageDefinitionProblems` reports
+      it when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws.
+    - `evaluate` runs `imageRequestProblems` (references matched as the API does, as plain text in string values,
+      never keys), adds `TypeSafe-Danger-Zone-Images: true` as a built-in header (for a hand-built
+      `extraBody["assets"]` too), and sends a request with images as
+      `MultiPartFormDataContent`: a `request` part with the JSON and a generated `assets` map, then `image-0`, … with a
+      filename (Ktor quotes each part name). Without images the request is the same `TextContent` as before.
+    - `BoxQuestion`/`BoxAnswer` are the fourth question and answer types; the mapper requires edges in 0..1 with
+      `left < right` and `top < bottom`.
 - **Wire** (`internal/Wire.kt`).
     - Requests are `@Serializable` DTOs, and a sealed `WireQuestion` writes the `"type"` discriminator.
     - `JevJson` sets `encodeDefaults = false`, so unset optional fields (Noul criteria) are omitted. Explicit JSON
@@ -69,11 +88,14 @@ without them keep compiling.
     - Every `JevResponseValidationException` from a 2xx body is thrown by `ResponseInfo.fail`, which carries the
       body's text as received, the status and the headers. `send` builds the `ResponseInfo`, and `JevResult` keeps
       it for failures at read time.
-    - JSON nested more than `MAX_JSON_DEPTH` (128, `internal/JsonDepth.kt`) levels is refused before
-      kotlinx.serialization recurses into it: a state or question entry with `JevValidationException`, a response
-      body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's `bodyJson`
-      is null. Both checks are iterative, so they can't overflow themselves. Windows sets the limit: its 1 MB
-      main-thread stack crashed the mingwX64 test binary encoding 512 levels, so the limit is 128.
+    - A value jev4k sends (the state, each question entry, each `extraBody` field) may nest `MAX_SEND_DEPTH` (64,
+      `internal/JsonDepth.kt`) levels, or it fails with `JevValidationException`. That is the API's request rule: it
+      checks the state and each instructions or criteria value on its own, counting the outermost object or array as
+      level 1 (a criteria map isn't a level), and answers a deeper one with a 400. A probe on 2026-10-15 pinned it.
+    - JSON received may nest `MAX_JSON_DEPTH` (128) levels, refused before kotlinx.serialization recurses into it:
+      a response body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's
+      `bodyJson` is null. Both checks are iterative, so they can't overflow themselves. Windows sets this limit: its
+      1 MB main-thread stack crashed the mingwX64 test binary encoding 512 levels, so the limit is 128.
 - **Client** (`JevClient.kt`, `internal/HttpClientFactory.kt`, `internal/Retry.kt`).
     - `HttpRequestRetry` reproduces the official SDKs' retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.
@@ -274,9 +296,10 @@ without them keep compiling.
 - Versions, libraries, and plugins are declared in the version catalog `gradle/libs.versions.toml` and referenced from
   `build.gradle.kts` as `libs.*` (e.g. `alias(libs.plugins.kotlin.serialization)`, `api(libs.ktor.client.core)`). Add
   new dependencies to the catalog, not as inline coordinates. Kotlin-family plugins share `version.ref = "kotlin"`.
-- `ktor-client-core`, `kotlinx-serialization-json` and `kotlinx-coroutines-core` are `api` dependencies because their
-  types appear in the public API (`HttpClientEngine`, `JsonElement`, suspend functions and inline `runBlocking`
-  wrappers).
+- `ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core` and `kotlinx-io-core` are `api`
+  dependencies because their types appear in the public API (`HttpClientEngine`, `JsonElement`, suspend functions and
+  inline `runBlocking` wrappers, and the kotlinx-io `Path` that `JevImage.read` takes). kotlinx-io is pinned to the
+  version `ktor-io` brings.
 - The catalog carries two JVM versions, because the build JDK and the shipped bytecode deliberately differ:
     - `jvm-toolchain = "25"` is what compiles the project (`jvmToolchain(...)`). The foojay resolver plugin in
       `settings.gradle.kts` downloads a matching JDK automatically if one isn't installed. That plugin keeps an inline
@@ -294,7 +317,8 @@ without them keep compiling.
 - `kotlin.code.style=official` is set in `gradle.properties` (4-space indentation).
 - `compilerOptions.optIn` carries `kotlinx.serialization.ExperimentalSerializationApi` for every compilation, so no
   source file needs an `@OptIn` for it (the `JsonArrayBuilder.addAll` overloads used in the website examples are the
-  current reason). Opt-in is compile-time only and doesn't propagate to consumers of the published jar.
+  current reason). It also carries jev4k's own `com.pambrose.jev4k.ExperimentalJevImages`, which the library and its
+  tests use throughout. Opt-in is compile-time only and doesn't propagate to consumers of the published jar.
 - Detekt (`dev.detekt` 2.0.0-alpha, the line used in the author's other repos) runs as part of `check`, so `make tests`
   lints too.
     - The plain `detekt` task, the one `check` runs, defaults to `src/main` and `src/test`, which no longer exist, so
@@ -334,7 +358,8 @@ without them keep compiling.
     - The site documents the public API of the main source sets, with a tab per platform (common, jvm, native, web).
       Source sets whose names end in `Test` are suppressed, so no test class, fixture or example is included, and the
       `com.pambrose.jev4k.internal` package is excluded. `docs/packages.md` supplies the module and package overview
-      pages.
+      pages, through `commonMain`'s source-set `includes`. A publication's `includes` is only read for a multi-module
+      overview, so the file set there, as it was until 0.3.0, never reached the site.
     - kotlinx.serialization and Ktor types link to their online API docs through `externalDocumentationLinks`.
     - `moduleVersion` is `project.version`, `jvmMain`'s `jdkVersion` comes from the catalog's `jvm-target` version, and
       `suppressInheritedMembers` is on. Pages don't repeat inherited members: a subclass such as `JevRateLimitException`
@@ -363,14 +388,15 @@ without them keep compiling.
 - The JVM jar's manifest carries `Implementation-Version` and
   `Automatic-Module-Name: com.pambrose.jev4k`, which pins the JPMS module name for consumers instead of letting it
   derive from the jar's file name. The README and the site's Installation page document what an embedding app inherits:
-  five POM dependencies (in `jev4k-jvm`'s POM: four compile, CIO at runtime), no logging binding, and how to drop
+  six POM dependencies (in `jev4k-jvm`'s POM: five compile, CIO at runtime), no logging binding, and how to drop
   CIO when supplying another engine.
 - KGP's ABI validation (`abiValidation()`) guards the public API. `api/jev4k.api` is the JVM surface, Java callers
   included, and `api/jev4k.klib.api` covers the other targets. `checkKotlinAbi` runs under `check`;
   `make abi-update` (`updateKotlinAbi`) rewrites the dumps after an intended change and must run on a Mac, since a
   host that can't compile a target keeps that target's old declarations. The JVM dump matched 0.1.0's through the
   multiplatform move; 0.2.0's API changes since (`ModelList`, `JevCallOptions`, the millisecond members and the rest,
-  listed in the changelog) were recorded with `make abi-update`.
+  listed in the changelog) were recorded with `make abi-update`, as were 0.3.0's image and Box additions, which only
+  add to the dumps.
 - Coverage uses Kover (`org.jetbrains.kotlinx.kover`).
     - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs
       `build koverVerify koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js,
@@ -434,6 +460,7 @@ make zizmor                                           # audit .github's workflow
 make abi-check                                        # check the public API against api/
 make abi-update                                       # rewrite the api/ dumps after an intended change (macOS)
 make example                                          # run TriageExample against the live API (needs TYPESAFE_API_KEY)
+make hotdog-example                                   # run HotDogExample, two photos, against the live API
 make live-tests                                       # LiveSmokeTest (needs TYPESAFE_API_KEY) + every platform's probes
 make tree                                             # dependency tree
 make versions                                         # list only the outdated dependencies, plugins and Gradle
@@ -477,6 +504,8 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
 - HTTP is tested with Ktor's `MockEngine` through `testJev(...)` in `TestSupport.kt`. It injects the engine and records
   retry delays instead of sleeping, and `NoJitter` makes backoff predictable. A client on a real engine gets the same
   settings from `testDefaults(delays)`; `triageJev()`, `PAYOUT_TICKET` and `liveOptIn()` are shared there too.
+  `parts()` splits a MockEngine request's multipart body, for `ImageRequestTest`; `PNG_BYTES`/`JPEG_BYTES` are
+  signature-only fixtures, and `Gestures` is a `JevQuery` that attaches example pictures.
   `SilentServer` (JVM) is a local socket that never responds, for testing real-CIO timeouts. `RawServer` (JVM)
   answers every request with fixed bytes, for responses no real server sends, optionally over TLS with a
   self-signed certificate made by the JDK's `keytool`. `PlatformEngineTest` drives each platform's real default

@@ -52,15 +52,30 @@ interface JevOption {
 abstract class JevQuery {
     private val registered = mutableListOf<QuestionRef<*>>()
     private var built: QuestionSet? = null
+    private val registeredImages = mutableListOf<JevImage>()
 
-    /** The declared questions, in declaration order (base-class questions first). */
+    /** The declared questions, in declaration order (base-class questions first), with the images [attach]ed. */
     val questions: QuestionSet
-        // Rebuilt when questions have registered since the last read, which only happens during initialization.
-        // Once that is over the set never changes, and a race between two first reads just builds it twice.
-        get() = built?.takeIf { it.size == registered.size } ?: QuestionSet(registered).also { built = it }
+        // Rebuilt when questions or images have registered since the last read, which only happens during
+        // initialization. Once that is over the set never changes, and a race between two first reads just builds it
+        // twice.
+        get() =
+            built?.takeIf { it.size == registered.size && it.images.size == registeredImages.size }
+                ?: QuestionSet(registered, registeredImages).also { built = it }
 
     internal fun register(question: QuestionRef<*>) {
         registered += question
+    }
+
+    /**
+     * Attaches [image] to every request that asks these questions, and returns it, so a picture can be declared and
+     * attached at once: `private val thumb = attach(JevImage.of(thumbBytes))`. Reading a file here, with
+     * [JevImage.read], does I/O in the object's initializer; a missing file then fails the object's first use.
+     */
+    @ExperimentalJevImages
+    protected fun attach(image: JevImage): JevImage {
+        if (registeredImages.none { it === image }) registeredImages += image
+        return image
     }
 
     protected fun noul(
@@ -111,6 +126,19 @@ abstract class JevQuery {
         id: String? = null,
         levels: ScoreBuilder.() -> Unit,
     ): QuestionProvider<ScoreAnswer> = QuestionProvider(id) { scoreRef(it, instructions, levels) }
+
+    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. */
+    @ExperimentalJevImages
+    protected fun box(
+        instructions: String,
+        id: String? = null,
+    ): QuestionProvider<BoxAnswer> = box(JsonPrimitive(instructions), id)
+
+    @ExperimentalJevImages
+    protected fun box(
+        instructions: JsonElement,
+        id: String? = null,
+    ): QuestionProvider<BoxAnswer> = QuestionProvider(id) { boxRef(it, instructions) }
 
     @PublishedApi
     internal fun <E : Enum<E>> enumChoiceProvider(

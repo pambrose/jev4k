@@ -1,6 +1,8 @@
 package com.pambrose.jev4k.internal
 
 import com.pambrose.jev4k.Answer
+import com.pambrose.jev4k.BoundingBox
+import com.pambrose.jev4k.BoxAnswer
 import com.pambrose.jev4k.ChoiceAnswer
 import com.pambrose.jev4k.ChoiceQuestion
 import com.pambrose.jev4k.JevResult
@@ -121,6 +123,10 @@ private class BodyReader(
                 )
             }
 
+            "box" -> {
+                boxAnswer(obj, path)
+            }
+
             else -> {
                 UnknownAnswer(type, obj)
             }
@@ -166,6 +172,34 @@ private class BodyReader(
         path: String,
     ): Double =
         obj[key]?.takeUnless { it == JsonNull }?.let { number(it, "$path.$key") } ?: fail("$path.$key", "missing")
+
+    private fun boxAnswer(
+        obj: JsonObject,
+        path: String,
+    ): BoxAnswer {
+        val boxPath = "$path.box"
+        val edges = optionalObject(obj, "box", boxPath) ?: fail(boxPath, "missing")
+        val box =
+            BoundingBox(
+                top = fraction(edges["top"], "$boxPath.top"),
+                bottom = fraction(edges["bottom"], "$boxPath.bottom"),
+                left = fraction(edges["left"], "$boxPath.left"),
+                right = fraction(edges["right"], "$boxPath.right"),
+            )
+        if (box.left >= box.right) fail("$boxPath.left", "left (${box.left}) must be less than right (${box.right})")
+        if (box.top >= box.bottom) fail("$boxPath.top", "top (${box.top}) must be less than bottom (${box.bottom})")
+        val confidence = obj["confidence"]?.takeUnless { it == JsonNull }?.let { fraction(it, "$path.confidence") }
+        return BoxAnswer(box, confidence)
+    }
+
+    /** A number from 0 to 1, as a Box's edges and confidence are. */
+    private fun fraction(
+        value: JsonElement?,
+        path: String,
+    ): Double {
+        val number = number(value ?: fail(path, "missing"), path)
+        return number.takeIf { it in 0.0..1.0 } ?: fail(path, "expected a number from 0 to 1, got $number")
+    }
 
     private fun doubles(
         obj: JsonObject,

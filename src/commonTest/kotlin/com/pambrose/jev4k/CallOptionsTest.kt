@@ -1,7 +1,7 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.JEV4K_VERSION
-import com.pambrose.jev4k.internal.MAX_JSON_DEPTH
+import com.pambrose.jev4k.internal.MAX_SEND_DEPTH
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -108,7 +108,7 @@ class CallOptionsTest : StringSpec() {
                     headers["X-Secret"] = "abc\ndef"
                     extraBody["state"] = JsonPrimitive("elsewhere")
                     extraBody["questions"] = JsonNull
-                    extraBody["deep"] = nestedArrays(MAX_JSON_DEPTH + 1)
+                    extraBody["deep"] = nestedArrays(MAX_SEND_DEPTH + 1)
                     extraBody["nan"] = JsonPrimitive(Double.NaN)
                 }
             }
@@ -117,7 +117,7 @@ class CallOptionsTest : StringSpec() {
             e.message shouldContain "header 'X-Secret' has a control character"
             e.message shouldContain "extraBody can't set 'state'"
             e.message shouldContain "extraBody can't set 'questions'"
-            e.message shouldContain "extraBody 'deep' is nested more than $MAX_JSON_DEPTH levels deep"
+            e.message shouldContain "extraBody 'deep' is nested more than $MAX_SEND_DEPTH levels deep"
             e.message shouldNotContain "abc"
         }
 

@@ -59,6 +59,15 @@ data class ScoreQuestion(
 ) : Question
 
 /**
+ * Find one thing in an image: the answer is a [BoxAnswer], the box around it. Box takes no criteria, and needs an
+ * image attached to the request. It always returns a box, even for a target that isn't there, so ask a Noul too.
+ */
+@ExperimentalJevImages
+data class BoxQuestion(
+    override val instructions: JsonElement,
+) : Question
+
+/**
  * A handle to one question. The same handle reads its typed answer back from a [JevResult], and it
  * can be used as a property delegate so `val urgent by noul(...)` works in a [JevQuery].
  */
@@ -89,11 +98,19 @@ class QuestionRef<out A : Answer> internal constructor(
 /** An ordered, validated set of questions: everything one request asks about a single state. */
 class QuestionSet internal constructor(
     questions: List<QuestionRef<*>>,
+    images: List<JevImage> = emptyList(),
 ) : Iterable<QuestionRef<*>> {
     private val questions: List<QuestionRef<*>> = questions.toList()
 
+    /**
+     * The images attached to these questions, each instance once, in the order they were attached. They are sent with
+     * every request that asks this set.
+     */
+    @ExperimentalJevImages
+    val images: List<JevImage> = images.distinct()
+
     init {
-        val problems = validate(this.questions)
+        val problems = validate(this.questions, this.images)
         if (problems.isNotEmpty()) throw JevValidationException(problems)
     }
 
@@ -113,7 +130,10 @@ class QuestionSet internal constructor(
 
     override fun iterator(): Iterator<QuestionRef<*>> = questions.iterator()
 
-    /** The `questions` object exactly as it is sent, e.g. for logging or cache keys. */
+    /**
+     * The `questions` object exactly as it is sent, e.g. for logging or cache keys. It holds the references of attached
+     * [images], not their bytes, so a cache key for a set with images must cover each image's bytes too.
+     */
     fun toJson(): JsonObject =
         JevJson.encodeToJsonElement(MapSerializer(String.serializer(), WireQuestion.serializer()), toWire()).jsonObject
 }
@@ -123,6 +143,7 @@ internal val Question.typeName: String
         is NoulQuestion -> "noul"
         is ChoiceQuestion -> "choice"
         is ScoreQuestion -> "score"
+        is BoxQuestion -> "box"
     }
 
 /** Anything that can't state a question: null, a number or boolean, a blank string, an empty object or array. */
@@ -140,7 +161,10 @@ private const val INSTRUCTIONS_REQUIRED =
     "instructions must be non-blank text or a non-empty JSON object or array; question ids are never sent to the " +
         "model, so the instructions must state the full question"
 
-internal fun validate(questions: List<QuestionRef<*>>): List<String> =
+internal fun validate(
+    questions: List<QuestionRef<*>>,
+    images: List<JevImage> = emptyList(),
+): List<String> =
     buildList {
         if (questions.isEmpty()) add("A request needs at least one question")
         val seen = mutableSetOf<String>()
@@ -152,6 +176,7 @@ internal fun validate(questions: List<QuestionRef<*>>): List<String> =
             ref.problems.forEach { add("question '${ref.id}': $it") }
             if (ref.complete) addAll(validate(ref.id, ref.question))
         }
+        addAll(imageDefinitionProblems(images))
     }
 
 private fun validate(
@@ -160,7 +185,7 @@ private fun validate(
 ): List<String> =
     buildList {
         if (question.instructions.isEmptyEntry()) add("question '$id': $INSTRUCTIONS_REQUIRED")
-        for ((name, entry) in question.entries()) entry.sendProblem(name)?.let { add("question '$id': $it") }
+        for ((name, entry) in question.sentEntries()) entry.sendProblem(name)?.let { add("question '$id': $it") }
         when (question) {
             is NoulQuestion -> {
                 // Noul criteria are optional; nothing else to check.
@@ -181,16 +206,21 @@ private fun validate(
                     add("question '$id': a Score needs $range levels (got ${question.levels.size})")
                 }
             }
+
+            is BoxQuestion -> {
+                // Box takes no criteria; its instructions were checked above.
+            }
         }
     }
 
 /** Every JSON entry a question sends, each named as a validation message refers to it. */
-private fun Question.entries(): List<Pair<String, JsonElement>> =
+internal fun Question.sentEntries(): List<Pair<String, JsonElement>> =
     listOf("instructions" to instructions) +
         when (this) {
             is NoulQuestion -> listOfNotNull(whenTrue?.let { "whenTrue" to it }, whenFalse?.let { "whenFalse" to it })
             is ChoiceQuestion -> options.map { (key, entry) -> "option '$key'" to entry }
             is ScoreQuestion -> levels.mapIndexed { index, entry -> "level $index" to entry }
+            is BoxQuestion -> emptyList()
         }
 
 /**
@@ -232,6 +262,11 @@ internal fun scoreRef(
     levels: ScoreBuilder.() -> Unit,
 ): QuestionRef<ScoreAnswer> =
     QuestionRef(id, ScoreQuestion(instructions, ScoreBuilder().apply(levels).levels.toList()), ::decodeScore)
+
+internal fun boxRef(
+    id: String,
+    instructions: JsonElement,
+): QuestionRef<BoxAnswer> = QuestionRef(id, BoxQuestion(instructions), ::decodeBox)
 
 @PublishedApi
 internal fun <E : Enum<E>> enumChoiceRef(

@@ -38,6 +38,36 @@ class BlockingJevTest : StringSpec() {
     }
 
     init {
+        "ask with images forwards a text or a @Serializable state too" {
+            val (api, blocking) = answering()
+            val frame = JevImage.of(JPEG_BYTES, "<frame>")
+            blocking.ask(Gestures, "The camera frame: $frame", frame, model = "m1")
+            blocking.ask(Gestures, Frame(0, frame), frame)
+            coVerify(exactly = 1) {
+                api.evaluate(
+                    JsonPrimitive("The camera frame: <frame>"),
+                    match { "<frame>" in it.images.map(JevImage::reference) },
+                    "m1",
+                )
+            }
+            coVerify(exactly = 1) {
+                api.evaluate(json("""{"secondsAgo":0,"frame":"<frame>"}"""), match { it.images.size == 3 }, null)
+            }
+        }
+
+        "ask with images attaches them after the query's own" {
+            val (api, blocking) = answering()
+            val frame = JevImage.of(JPEG_BYTES, "<frame>")
+            blocking.ask(Gestures, jsonState, frame)
+            coVerify(exactly = 1) {
+                api.evaluate(
+                    jsonState,
+                    match { set -> set.images.map { it.reference } == listOf("<thumb>", "<palm>", "<frame>") },
+                    null,
+                )
+            }
+        }
+
         "evaluate forwards state, questions and model" {
             val (api, blocking) = answering()
             blocking.evaluate(jsonState, Triage.questions, "jev-1.13.0")[Triage.urgent].noul shouldBe 0.92
@@ -132,7 +162,7 @@ class BlockingJevTest : StringSpec() {
             val calls = BlockingJev::class.java.declaredMethods.filter {
                 Modifier.isPublic(it.modifiers) && !it.isSynthetic && it.name != "getApi"
             }
-            calls.map { it.name }.toSet() shouldBe setOf("evaluate", "models", "query", "ask")
+            calls.map { it.name }.toSet() shouldBe setOf("evaluate", "models", "query", "ask", "askWithImages")
             calls.forEach { withClue(it) { it.exceptionTypes.toList() shouldContain InterruptedException::class.java } }
         }
     }

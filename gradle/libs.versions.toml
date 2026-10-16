@@ -6,8 +6,9 @@ gradle-plugins = "1.1.7"
 gradle-wrapper = "9.8.1"
 jvm-toolchain = "25"  # the JDK this project builds with
 jvm-target = "17"     # bytecode floor: the oldest JDK a consumer can run
-kotest = "6.2.5"
+kotest = "6.2.6"
 kover = "0.9.11"
+kotlinx-io = "0.9.1"  # the version ktor-io 3.6.0 brings; kotlinx.io.files.Path is in jev4k's public API
 kotlin = "2.4.21"
 # KSP versions are independent of Kotlin since 2.3.0; the kotest plugin needs KSP for the non-JVM targets.
 ksp = "2.3.12"
@@ -23,6 +24,7 @@ kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", versio
 kotest-framework-symbol-processor = { module = "io.kotest:kotest-framework-symbol-processor", version.ref = "kotest" }
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-curl = { module = "io.ktor:ktor-client-curl", version.ref = "ktor" }

@@ -21,12 +21,12 @@ Verified 2026-09-20; the release rows on 2026-10-12.
 | Published site                        | ✅ live at <https://jev4k.com/>, KDocs included             |
 | Site deploys                          | on a published GitHub release, or a manual `docs.yml` run   |
 | Required checks on `master`           | `ci-ok`, `docs` and GitGuardian                             |
-| Git tags                              | ✅ `0.1.0`, `0.2.0` and `0.2.1` (`b00015f`), all released   |
+| Git tags                              | ✅ `0.1.0` through `0.2.2` (`c88646e`), all released        |
 | `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                  |
-| `com.pambrose.jev4k:jev4k` on Central | ✅ 0.2.1 published, signed, and resolvable                  |
-| `gradle.properties` version           | `0.2.2`, the next release number                            |
+| `com.pambrose.jev4k:jev4k` on Central | ✅ 0.2.2 published, signed, and resolvable                  |
+| `gradle.properties` version           | `0.3.0`, the next release number                            |
 | `gradle.properties` group             | `com.pambrose.jev4k` from 0.2.0 (0.1.0 was `com.pambrose`)  |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.2.1 dated 2026-10-04; 0.2.2 dated 2026-10-12              |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.3.0 dated 2026-10-16                                      |
 
 ## Before the first release, once
 
