@@ -96,7 +96,8 @@ class JevClient(
         val resolvedModel = model.setting() ?: config.defaultModel
         val request = SystemOneRequest(state, resolvedModel, questions.toWire())
         val images = questions.images
-        val builtIn = if (needsImagesHeader(questions)) mapOf(IMAGES_HEADER to "true") else emptyMap()
+        val dangerZone = needsImagesHeader(questions, options.extraBody)
+        val builtIn = if (dangerZone) mapOf(IMAGES_HEADER to "true") else emptyMap()
         return send(HttpMethod.Post, SYSTEM_ONE_PATH, options, builtIn, {
             // Encoded here, inside the call, so a state that can't be encoded still becomes a JevValidationException.
             // jev4k encodes the body itself, extra fields and all, rather than installing Ktor's ContentNegotiation

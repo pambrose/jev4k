@@ -80,7 +80,7 @@ class JevImageTest : StringSpec() {
             val bytes = PNG_BYTES.copyOf()
             val image = JevImage.of(bytes)
             bytes[0] = 0
-            image.format shouldBe ImageFormat.PNG
+            image.bytes shouldBe PNG_BYTES
         }
 
         "read takes a file through kotlinx-io" {

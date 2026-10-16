@@ -35,6 +35,7 @@ suspend fun checkDelivery(jev: JevApi) {
 // --8<-- [end:state]
 
 // --8<-- [start:instructions]
+@OptIn(ExperimentalJevImages::class)
 suspend fun sameProduct(
     jev: JevApi,
     upload: JevImage,
@@ -50,6 +51,7 @@ suspend fun sameProduct(
 // --8<-- [end:instructions]
 
 // --8<-- [start:criteria]
+@OptIn(ExperimentalJevImages::class)
 object HandGestures : JevQuery() {
     private val thumb = attach(JevImage.read(Path.of("gestures/thumb.png")))
     private val palm1 = attach(JevImage.read(Path.of("gestures/palm1.png")))
@@ -66,6 +68,7 @@ object HandGestures : JevQuery() {
     }
 }
 
+@OptIn(ExperimentalJevImages::class)
 suspend fun readGesture(
     jev: JevApi,
     frameBytes: ByteArray,
@@ -77,12 +80,14 @@ suspend fun readGesture(
 // --8<-- [end:criteria]
 
 // --8<-- [start:serializable]
+@OptIn(ExperimentalJevImages::class)
 @Serializable
 data class ReturnClaim(
     val claim: String,
     val photo: JevImage,                                         // written as its reference
 )
 
+@OptIn(ExperimentalJevImages::class)
 suspend fun checkClaim(
     jev: JevApi,
     claim: ReturnClaim,
@@ -98,6 +103,7 @@ suspend fun checkClaim(
 // --8<-- [end:serializable]
 
 // --8<-- [start:references]
+@OptIn(ExperimentalJevImages::class)
 suspend fun matchesCatalog(
     jev: JevApi,
     delivered: ByteArray,
@@ -113,6 +119,7 @@ suspend fun matchesCatalog(
 // --8<-- [end:references]
 
 // --8<-- [start:box]
+@OptIn(ExperimentalJevImages::class)
 suspend fun findMug(
     jev: JevApi,
     photo: JevImage,
@@ -131,12 +138,13 @@ suspend fun findMug(
 // --8<-- [end:box]
 
 // --8<-- [start:crop]
+@OptIn(ExperimentalJevImages::class)
 fun cropToBox(
     image: BufferedImage,
     box: BoundingBox,
 ): BufferedImage {
-    val x = (box.left * image.width).roundToInt()
-    val y = (box.top * image.height).roundToInt()
+    val x = (box.left * image.width).toInt().coerceIn(0, image.width - 1)
+    val y = (box.top * image.height).toInt().coerceIn(0, image.height - 1)
     val width = ((box.right - box.left) * image.width).roundToInt().coerceIn(1, image.width - x)
     val height = ((box.bottom - box.top) * image.height).roundToInt().coerceIn(1, image.height - y)
     return image.getSubimage(x, y, width, height)

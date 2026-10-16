@@ -18,6 +18,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 
 private const val NO_ANSWERS = """{"answers":{}}"""
 
@@ -121,7 +122,52 @@ class ImageRequestTest : StringSpec() {
             jev.client.ask(Gestures, buildJsonObject { put("camera", frame.reference) }, frame, Gestures.thumb)
             val parts = jev.requests.single().parts()
             parts.map { it.name } shouldBe listOf("request", "image-0", "image-1", "image-2")
-            json(parts[0].text).jsonObject["assets"]!!.jsonObject.keys shouldBe setOf("<thumb>", "<palm>", "<frame>")
+            json(parts[0].text).jsonObject["assets"]!!.jsonObject.keys.toList() shouldBe
+                listOf("<thumb>", "<palm>", "<frame>")
+        }
+
+        "ask with images takes a text or a @Serializable state too" {
+            val jev = testJev { respondJson(NO_ANSWERS) }
+            val frame = JevImage.of(JPEG_BYTES, "<frame>")
+            jev.client.ask(Gestures, "The camera frame: $frame", frame)
+            jev.client.ask(Gestures, Frame(0, frame), frame, model = "jev-preview")
+            val (text, typed) = jev.requests.map { json(it.parts()[0].text).jsonObject }
+            text["state"] shouldBe JsonPrimitive("The camera frame: <frame>")
+            typed["state"] shouldBe json("""{"secondsAgo":0,"frame":"<frame>"}""")
+            typed["model"] shouldBe JsonPrimitive("jev-preview")
+            typed["assets"]!!.jsonObject.keys.toList() shouldBe listOf("<thumb>", "<palm>", "<frame>")
+        }
+
+        "a Box whose image comes through extraBody's assets is sent, with the images header" {
+            val jev = testJev { respondJson(NO_ANSWERS) }
+            val assets =
+                buildJsonObject {
+                    putJsonObject("<photo>") {
+                        put("format", "png")
+                        put("data_base64", "iVBORw0KGgo=")
+                    }
+                }
+            jev.client.withOptions(JevCallOptions { extraBody["assets"] = assets }).query("A photo: <photo>") {
+                box("cat", "the cat in the photo")
+            }
+            val request = jev.requests.single()
+            request.headers[IMAGES_HEADER] shouldBe "true"
+            request.bodyJson().jsonObject["assets"] shouldBe assets
+        }
+
+        "an unreferenced image with a generated reference is named with its format and size" {
+            val jev = testJev { respondJson(NO_ANSWERS) }
+            val stray = JevImage.of(PNG_BYTES)
+            shouldThrow<JevValidationException> {
+                jev.client.query(PAYOUT_TICKET) {
+                    attach(stray)
+                    noul("urgent", "Is this urgent?")
+                }
+            }.problems shouldBe
+                listOf(
+                    "image '${stray.reference}' (PNG, 16 bytes) is attached but appears in no string in the state, " +
+                        "instructions or criteria",
+                )
         }
 
         "one image placed in the state and in two questions is sent once" {

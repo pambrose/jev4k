@@ -18,7 +18,8 @@ instructions, and in its criteria. The Box question type finds where something i
 Everything here is marked `@ExperimentalJevImages`. Opt in with `@OptIn(ExperimentalJevImages::class)` on the code
 that uses it, or for a whole module with `optIn.add("com.pambrose.jev4k.ExperimentalJevImages")` in Gradle's
 `compilerOptions`. jev4k then sends TypeSafe's `TypeSafe-Danger-Zone-Images: true` header with every request that
-carries an image or a Box question. A header of the same name in the client's or the call's headers replaces it.
+carries an image (attached, or hand-built in `extraBody["assets"]`) or a Box question. A header of the same name in the
+client's or the call's headers replaces it.
 
 ## Placing and attaching
 
@@ -98,7 +99,8 @@ Before sending, jev4k reports every problem at once, as a `JevValidationExceptio
 - a reference that is blank or longer than 1,024 bytes, two images sharing a reference, or references over 64 KiB in
   total
 - an attached image that no string references, or a generated reference placed without its image attached
-- a Box question with no image attached, or `extraBody["assets"]` on a request that attaches images
+- a Box question with no image, attached or in `extraBody["assets"]`, or `extraBody["assets"]` on a request that
+  attaches images
 
 The API enforces its own size and pixel limits (each side 256 to 1568 pixels, 16 MiB per file, 32 MiB per request),
 answering with a 400 or a 413. Resize and rotate images before sending them; the API strips EXIF data and doesn't apply

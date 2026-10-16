@@ -107,6 +107,12 @@ class ImageAttachTest : StringSpec() {
                 )
         }
 
+        "a bad image with a generated reference is named with its format and size" {
+            val gif = JevImage.of("GIF89a......".encodeToByteArray())
+            shouldThrow<JevValidationException> { questions { attach(gif) } }.problems shouldContain
+                "image '${gif.reference}' (12 bytes) is neither a PNG nor a JPEG; the API takes only those two"
+        }
+
         "a JevQuery with a bad image fails on first use, not in its initializer" {
             shouldThrow<JevValidationException> { BadImageQuery.questions }.problems shouldContain
                 "image '<nothing>' is empty"

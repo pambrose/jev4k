@@ -38,6 +38,23 @@ class BlockingJevTest : StringSpec() {
     }
 
     init {
+        "ask with images forwards a text or a @Serializable state too" {
+            val (api, blocking) = answering()
+            val frame = JevImage.of(JPEG_BYTES, "<frame>")
+            blocking.ask(Gestures, "The camera frame: $frame", frame, model = "m1")
+            blocking.ask(Gestures, Frame(0, frame), frame)
+            coVerify(exactly = 1) {
+                api.evaluate(
+                    JsonPrimitive("The camera frame: <frame>"),
+                    match { "<frame>" in it.images.map(JevImage::reference) },
+                    "m1",
+                )
+            }
+            coVerify(exactly = 1) {
+                api.evaluate(json("""{"secondsAgo":0,"frame":"<frame>"}"""), match { it.images.size == 3 }, null)
+            }
+        }
+
         "ask with images attaches them after the query's own" {
             val (api, blocking) = answering()
             val frame = JevImage.of(JPEG_BYTES, "<frame>")

@@ -165,8 +165,9 @@ so, and suggests reading the bytes elsewhere (or from resources) when that matte
 
 1. **Images.** The request's images are `questions.images`. A request with no images and no Box question is sent exactly
    as today: the same JSON `TextContent`, byte for byte, which `ClientTest` already pins.
-2. **Header.** A request with an image or a Box question gets `TypeSafe-Danger-Zone-Images: true` among the built-in
-   headers in `setHeaders`, ahead of the client's and the call's headers, which can still replace it.
+2. **Header.** A request with an image (attached, or hand-built in `extraBody["assets"]`) or a Box question gets
+   `TypeSafe-Danger-Zone-Images: true` among the built-in headers in `setHeaders`, ahead of the client's and the call's
+   headers, which can still replace it.
 3. **Multipart.** A request with images is sent as Ktor's `MultiPartFormDataContent`, as both SDKs do whenever a request
    has assets:
     - The first part is named `request`, with `Content-Type: application/json`. It holds the body as sent today
@@ -216,7 +217,8 @@ These run in `evaluate`, the only place that sees the state, the questions and `
   attached. The message names the reference and says to `attach()` it. A reference the caller chose can't be detected
   this way.
 - **Reference total.** All attached references together over 65,536 bytes of UTF-8.
-- **Box without an image.** A Box question in a request that attaches no image.
+- **Box without an image.** A Box question in a request that attaches no image and has no hand-built
+  `extraBody["assets"]`, which may hold the image.
 - **`extraBody` conflict.** `extraBody["assets"]` set on a request that attaches images.
 
 ### 5.3 Responses

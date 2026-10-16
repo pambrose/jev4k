@@ -98,7 +98,13 @@ class JevImage private constructor(
         fun read(
             path: Path,
             reference: String? = null,
-        ): JevImage = create(SystemFileSystem.source(path).buffered().use { it.readByteArray() }, reference, null)
+        ): JevImage = ofOwned(SystemFileSystem.source(path).buffered().use { it.readByteArray() }, reference)
+
+        /** An image from bytes nothing else holds, such as a file just read, so they needn't be copied. */
+        internal fun ofOwned(
+            bytes: ByteArray,
+            reference: String?,
+        ): JevImage = create(bytes, reference, null)
 
         private fun create(
             bytes: ByteArray,
@@ -171,6 +177,18 @@ private const val BAD_BASE64 =
 private fun generatedReference(): String = GENERATED_PREFIX + Uuid.random()
 
 /**
+ * How a problem names this image: by its reference, plus its format and size when jev4k generated the reference, since
+ * a random UUID alone doesn't tell the caller which of their images is meant.
+ */
+internal val JevImage.label: String
+    get() =
+        if (GENERATED_REFERENCE.matches(reference)) {
+            "image '$reference' (${listOfNotNull(format?.name, "${bytes.size} bytes").joinToString(", ")})"
+        } else {
+            "image '$reference'"
+        }
+
+/**
  * What is wrong with [images] on their own, before any request: each one's carried problem, a blank or overlong
  * reference, and two different images sharing a reference. [images] holds each instance once.
  */
@@ -188,7 +206,7 @@ internal fun imageDefinitionProblems(images: List<JevImage>): List<String> =
                     add("image reference '$preview…' is longer than $MAX_REFERENCE_BYTES bytes of UTF-8")
                 }
             }
-            image.problem?.let { add("image '$reference' $it") }
+            image.problem?.let { add("${image.label} $it") }
         }
         images
             .groupBy { it.reference }

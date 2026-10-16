@@ -5,6 +5,7 @@ import com.pambrose.jev4k.ChoiceQuestion
 import com.pambrose.jev4k.GENERATED_REFERENCE
 import com.pambrose.jev4k.JevImage
 import com.pambrose.jev4k.QuestionSet
+import com.pambrose.jev4k.label
 import com.pambrose.jev4k.sentEntries
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -27,15 +28,22 @@ internal const val MAX_REFERENCE_BYTES_TOTAL = 65_536
 
 private const val REQUEST_PART = "request"
 
+private const val ASSETS = "assets"
+
 private const val KEY_ONLY_HINT =
     "; it appears only as an object key, which the API never replaces: put it in a value, such as the option's " +
         "description"
 
 private fun partName(index: Int): String = "image-$index"
 
-/** True when the request needs [IMAGES_HEADER]: it carries an image or asks a Box question. */
-internal fun needsImagesHeader(questions: QuestionSet): Boolean =
-    questions.images.isNotEmpty() || questions.any { it.question is BoxQuestion }
+/**
+ * True when the request needs [IMAGES_HEADER]: it carries an image, attached or hand-built in `extraBody["assets"]`, or
+ * asks a Box question.
+ */
+internal fun needsImagesHeader(
+    questions: QuestionSet,
+    extraBody: Map<String, JsonElement>,
+): Boolean = questions.images.isNotEmpty() || ASSETS in extraBody || questions.any { it.question is BoxQuestion }
 
 /**
  * What stops this request being sent, as far as images go: an attached image no string references, a generated
@@ -56,8 +64,8 @@ internal fun imageRequestProblems(
             if (content.strings.none { image.reference in it }) {
                 val hint = if (image.reference in content.keys) KEY_ONLY_HINT else ""
                 add(
-                    "image '${image.reference}' is attached but appears in no string in the state, instructions " +
-                        "or criteria$hint",
+                    "${image.label} is attached but appears in no string in the state, instructions or " +
+                        "criteria$hint",
                 )
             }
         }
@@ -71,10 +79,11 @@ internal fun imageRequestProblems(
         if (total > MAX_REFERENCE_BYTES_TOTAL) {
             add("image references total $total bytes of UTF-8, over the API's limit of $MAX_REFERENCE_BYTES_TOTAL")
         }
-        if (images.isEmpty() && questions.any { it.question is BoxQuestion }) {
+        // A hand-built extraBody["assets"] supplies images jev4k can't see, so a Box may be using one of them.
+        if (images.isEmpty() && ASSETS !in extraBody && questions.any { it.question is BoxQuestion }) {
             add("a Box question needs an image attached to the request")
         }
-        if (images.isNotEmpty() && "assets" in extraBody) {
+        if (images.isNotEmpty() && ASSETS in extraBody) {
             add("extraBody can't set 'assets' when the request attaches images")
         }
     }

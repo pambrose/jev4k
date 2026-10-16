@@ -63,7 +63,8 @@ without them keep compiling.
     - The factories never throw for bad content: the problem rides on the image and `imageDefinitionProblems` reports
       it when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws.
     - `evaluate` runs `imageRequestProblems` (references matched as the API does, as plain text in string values,
-      never keys), adds `TypeSafe-Danger-Zone-Images: true` as a built-in header, and sends a request with images as
+      never keys), adds `TypeSafe-Danger-Zone-Images: true` as a built-in header (for a hand-built
+      `extraBody["assets"]` too), and sends a request with images as
       `MultiPartFormDataContent`: a `request` part with the JSON and a generated `assets` map, then `image-0`, … with a
       filename (Ktor quotes each part name). Without images the request is the same `TextContent` as before.
     - `BoxQuestion`/`BoxAnswer` are the fourth question and answer types; the mapper requires edges in 0..1 with
