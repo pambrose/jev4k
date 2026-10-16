@@ -108,7 +108,9 @@ Both are labeled "Dreamer-ready": the request format, answers and limits can cha
 - **Multipart** is preferred, since base64 makes each image a third larger. The first part, named `request`
   (`application/json`), holds the body. Each image part has content type `image/png`, `image/jpeg`, `image/jpg`,
   `application/octet-stream` or none. Part names are unique and non-empty, and each part belongs to exactly one asset.
-  Both SDKs send multipart whenever a request has assets.
+  Both SDKs send multipart whenever a request has assets. A part sent without a filename is accepted (probed
+  2026-10-16, when `jev-latest` still answered as `jev-1.13.0`); jev4k sends one anyway, as curl's `-F name=@file`
+  does.
 - **Limits** (inclusive; an image outside them is rejected, never resized, and fails the whole request): PNG or JPEG
   stills only (no animated PNG); ≤ 16 MiB per file, after base64 decoding; each side 256..1568 px; 78,400..2,458,624
   pixels in total; all images ≤ 32 MiB after processing (re-encoding can grow them); the whole request ≤ 32 MiB once

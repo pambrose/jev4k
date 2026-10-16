@@ -11,6 +11,14 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeBlank
 import kotlin.reflect.KClass
+import io.kotest.matchers.doubles.shouldBeGreaterThan
+import io.kotest.matchers.doubles.shouldBeLessThan
+import java.awt.Color
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
+import javax.imageio.ImageIO
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * The opt-in alone decides, not the key too: a live run without a key then fails, each test naming the missing
@@ -70,5 +78,35 @@ class LiveSmokeTest : StringSpec() {
         "models lists jev-latest".liveTest {
             JevClient().use { jev -> jev.models().map { it.name } shouldContain "jev-latest" }
         }
+
+        "an image and a Box question come back as typed answers".liveTest {
+            val photo = JevImage.of(redSquarePng())
+            JevClient().use { jev ->
+                val r = jev.query(buildJsonObject { put("photo", photo.reference) }, model = "jev-preview") {
+                    attach(photo)
+                    noul("square", "Is there a red square in `photo`?")
+                    box("where", "the red square in `photo`")
+                }
+                r.noul("square").noul shouldBeGreaterThan 0.5
+                val box = r.box("where").box
+                box.left shouldBeLessThan 0.7
+                box.right shouldBeGreaterThan 0.7
+                box.top shouldBeLessThan 1.0 / 3
+                box.bottom shouldBeGreaterThan 1.0 / 3
+            }
+        }
+    }
+
+    /** A 400 × 300 white PNG with a red square centered at (280, 100): 0.7 of the width, a third of the height. */
+    private fun redSquarePng(): ByteArray {
+        System.setProperty("java.awt.headless", "true")
+        val image = BufferedImage(400, 300, BufferedImage.TYPE_INT_RGB)
+        val graphics = image.createGraphics()
+        graphics.color = Color.WHITE
+        graphics.fillRect(0, 0, 400, 300)
+        graphics.color = Color.RED
+        graphics.fillRect(240, 60, 80, 80)
+        graphics.dispose()
+        return ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
     }
 }
