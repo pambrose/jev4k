@@ -90,9 +90,10 @@ class JevImage private constructor(
   works. Decoding throws a `SerializationException`, since an image can't be rebuilt from a reference.
 - `jsonOf` gains an `is JevImage` branch that returns `JsonPrimitive(reference)`, so `entry(...)` and maps and lists
   accept images: `entry("examples" to listOf(palm1, palm2))`.
-- **JVM.** `jvmMain` adds `JevImage.Companion.read(path: java.nio.file.Path, reference: String? = null)` and
-  `read(file: java.io.File, reference: String? = null)` in a file with `@file:JvmName("JevImages")`, so Java calls
-  `JevImages.read(path)`.
+- **JVM.** `jvmMain` adds the Kotlin extensions `JevImage.Companion.read(path: java.nio.file.Path, reference: String? =
+  null)` and `read(file: java.io.File, reference: String? = null)` in `JevImage.jvm.kt`, so Kotlin writes
+  `JevImage.read(Path.of("door.jpg"))`. An extension on a companion compiles to a static method that takes the
+  companion as its first argument, so Java doesn't use these: it writes `JevImage.of(Files.readAllBytes(path))`.
 - **Build.** kotlinx-io-core becomes an explicit `api` dependency in the version catalog, pinned to the version Ktor
   brings (0.9.1), because `kotlinx.io.files.Path` appears in the public API. This adds no artifact, but the documented
   POM dependency count goes from five to six.
@@ -235,8 +236,9 @@ Every test class is a Kotest `StringSpec` with an `init {}` block.
 
 ### 6.1 Common (every platform)
 
-- **Fixtures.** `TestSupport.kt` gains a small valid PNG and a small valid baseline JPEG, embedded as base64 constants.
-  Both are 280 × 280, so they meet the pixel minimum, and no platform needs to load resources.
+- **Fixtures.** `TestSupport.kt` gains `PNG_BYTES` and `JPEG_BYTES`: a PNG and a JPEG signature followed by a few
+  bytes. jev4k checks only the signature, and these tests never reach the real API, so no platform needs a full image
+  or resource loading. The live test (§6.3) draws a real one.
 - **`JevImageTest`.**
     - Signature detection for PNG, JPEG and neither, plus the empty-bytes, invalid-base64 and unrecognized-signature
       problems.
@@ -259,10 +261,10 @@ Every test class is a Kotest `StringSpec` with an `init {}` block.
 
 ### 6.2 JVM
 
-- **Readers.** `JevImages.read` with a `java.nio.file.Path` and with a `java.io.File`.
+- **Readers.** `JevImage.read` with a `java.nio.file.Path` and with a `java.io.File`.
 - **Mocks.** `ConsumerTest`'s MockK mock of `JevApi` runs unchanged.
-- **`JavaInterop.java`.** Calls `JevImage.of`, `JevImages.read`, `QueryBuilder.attach` and `box`, so `compileJvmTestJava`
-  guards the Java surface.
+- **`JavaInterop.java`.** Calls `JevImage.of`, `QueryBuilder.attach`, `box` and `JevResult.box`, so
+  `compileJvmTestJava` guards the Java surface.
 
 ### 6.3 Live (`JEV4K_LIVE=1` only)
 
