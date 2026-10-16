@@ -183,6 +183,19 @@ class QueryBuilder internal constructor() {
         levels: ScoreBuilder.() -> Unit,
     ): QuestionRef<ScoreAnswer> = add(scoreRef(id, instructions, levels))
 
+    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. */
+    @ExperimentalJevImages
+    fun box(
+        id: String,
+        instructions: String,
+    ): QuestionRef<BoxAnswer> = box(id, JsonPrimitive(instructions))
+
+    @ExperimentalJevImages
+    fun box(
+        id: String,
+        instructions: JsonElement,
+    ): QuestionRef<BoxAnswer> = add(boxRef(id, instructions))
+
     /**
      * Adds a [Question] built directly, e.g. one generated programmatically. Its option map or level list is copied,
      * so changing the original afterwards changes nothing. Reading the handle checks that the answer is of the
@@ -197,6 +210,7 @@ class QueryBuilder internal constructor() {
                 is NoulQuestion -> question to ::decodeNoul
                 is ChoiceQuestion -> question.copy(options = question.options.toMap()) to ::decodeChoice
                 is ScoreQuestion -> question.copy(levels = question.levels.toList()) to ::decodeScore
+                is BoxQuestion -> question to ::decodeBox
             }
         return add(QuestionRef(id, copy, decode))
     }

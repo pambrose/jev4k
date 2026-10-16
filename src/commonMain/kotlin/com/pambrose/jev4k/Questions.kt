@@ -59,6 +59,15 @@ data class ScoreQuestion(
 ) : Question
 
 /**
+ * Find one thing in an image: the answer is a [BoxAnswer], the box around it. Box takes no criteria, and needs an
+ * image attached to the request. It always returns a box, even for a target that isn't there, so ask a Noul too.
+ */
+@ExperimentalJevImages
+data class BoxQuestion(
+    override val instructions: JsonElement,
+) : Question
+
+/**
  * A handle to one question. The same handle reads its typed answer back from a [JevResult], and it
  * can be used as a property delegate so `val urgent by noul(...)` works in a [JevQuery].
  */
@@ -131,6 +140,7 @@ internal val Question.typeName: String
         is NoulQuestion -> "noul"
         is ChoiceQuestion -> "choice"
         is ScoreQuestion -> "score"
+        is BoxQuestion -> "box"
     }
 
 /** Anything that can't state a question: null, a number or boolean, a blank string, an empty object or array. */
@@ -172,7 +182,7 @@ private fun validate(
 ): List<String> =
     buildList {
         if (question.instructions.isEmptyEntry()) add("question '$id': $INSTRUCTIONS_REQUIRED")
-        for ((name, entry) in question.entries()) entry.sendProblem(name)?.let { add("question '$id': $it") }
+        for ((name, entry) in question.sentEntries()) entry.sendProblem(name)?.let { add("question '$id': $it") }
         when (question) {
             is NoulQuestion -> {
                 // Noul criteria are optional; nothing else to check.
@@ -193,16 +203,21 @@ private fun validate(
                     add("question '$id': a Score needs $range levels (got ${question.levels.size})")
                 }
             }
+
+            is BoxQuestion -> {
+                // Box takes no criteria; its instructions were checked above.
+            }
         }
     }
 
 /** Every JSON entry a question sends, each named as a validation message refers to it. */
-private fun Question.entries(): List<Pair<String, JsonElement>> =
+internal fun Question.sentEntries(): List<Pair<String, JsonElement>> =
     listOf("instructions" to instructions) +
         when (this) {
             is NoulQuestion -> listOfNotNull(whenTrue?.let { "whenTrue" to it }, whenFalse?.let { "whenFalse" to it })
             is ChoiceQuestion -> options.map { (key, entry) -> "option '$key'" to entry }
             is ScoreQuestion -> levels.mapIndexed { index, entry -> "level $index" to entry }
+            is BoxQuestion -> emptyList()
         }
 
 /**
@@ -244,6 +259,11 @@ internal fun scoreRef(
     levels: ScoreBuilder.() -> Unit,
 ): QuestionRef<ScoreAnswer> =
     QuestionRef(id, ScoreQuestion(instructions, ScoreBuilder().apply(levels).levels.toList()), ::decodeScore)
+
+internal fun boxRef(
+    id: String,
+    instructions: JsonElement,
+): QuestionRef<BoxAnswer> = QuestionRef(id, BoxQuestion(instructions), ::decodeBox)
 
 @PublishedApi
 internal fun <E : Enum<E>> enumChoiceRef(

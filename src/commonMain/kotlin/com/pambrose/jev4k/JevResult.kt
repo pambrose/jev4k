@@ -61,6 +61,12 @@ class JevResult internal constructor(
         return decodeAnswer(id, ::decodeScore)
     }
 
+    @ExperimentalJevImages
+    fun box(id: String): BoxAnswer {
+        requireQuestion<BoxQuestion>(id, "box")
+        return decodeAnswer(id, ::decodeBox)
+    }
+
     /**
      * Reads a Choice by id as constants of [E]. [E] must have a constant for every option the question declared,
      * else this is a mistake in the calling code, reported as [IllegalArgumentException]. An option the server
@@ -91,6 +97,9 @@ class JevResult internal constructor(
         get() = answersOf<ChoiceAnswer<*>>() as Map<String, ChoiceAnswer<String>>
 
     val scores: Map<String, ScoreAnswer> get() = answersOf<ScoreAnswer>()
+
+    @ExperimentalJevImages
+    val boxes: Map<String, BoxAnswer> get() = answersOf<BoxAnswer>()
 
     private inline fun <reified T : Answer> answersOf(): Map<String, T> =
         answers.mapNotNull { (id, answer) -> (answer as? T)?.let { id to it } }.toMap()

@@ -127,6 +127,19 @@ abstract class JevQuery {
         levels: ScoreBuilder.() -> Unit,
     ): QuestionProvider<ScoreAnswer> = QuestionProvider(id) { scoreRef(it, instructions, levels) }
 
+    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. */
+    @ExperimentalJevImages
+    protected fun box(
+        instructions: String,
+        id: String? = null,
+    ): QuestionProvider<BoxAnswer> = box(JsonPrimitive(instructions), id)
+
+    @ExperimentalJevImages
+    protected fun box(
+        instructions: JsonElement,
+        id: String? = null,
+    ): QuestionProvider<BoxAnswer> = QuestionProvider(id) { boxRef(it, instructions) }
+
     @PublishedApi
     internal fun <E : Enum<E>> enumChoiceProvider(
         instructions: JsonElement,

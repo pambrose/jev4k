@@ -27,6 +27,47 @@ public final class com/pambrose/jev4k/BlockingJevKt {
 	public static final fun blocking (Lcom/pambrose/jev4k/JevApi;)Lcom/pambrose/jev4k/BlockingJev;
 }
 
+public final class com/pambrose/jev4k/BoundingBox {
+	public fun <init> (DDDD)V
+	public final fun component1 ()D
+	public final fun component2 ()D
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun copy (DDDD)Lcom/pambrose/jev4k/BoundingBox;
+	public static synthetic fun copy$default (Lcom/pambrose/jev4k/BoundingBox;DDDDILjava/lang/Object;)Lcom/pambrose/jev4k/BoundingBox;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBottom ()D
+	public final fun getLeft ()D
+	public final fun getRight ()D
+	public final fun getTop ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pambrose/jev4k/BoxAnswer : com/pambrose/jev4k/Answer {
+	public fun <init> (Lcom/pambrose/jev4k/BoundingBox;Ljava/lang/Double;)V
+	public final fun component1 ()Lcom/pambrose/jev4k/BoundingBox;
+	public final fun component2 ()Ljava/lang/Double;
+	public final fun copy (Lcom/pambrose/jev4k/BoundingBox;Ljava/lang/Double;)Lcom/pambrose/jev4k/BoxAnswer;
+	public static synthetic fun copy$default (Lcom/pambrose/jev4k/BoxAnswer;Lcom/pambrose/jev4k/BoundingBox;Ljava/lang/Double;ILjava/lang/Object;)Lcom/pambrose/jev4k/BoxAnswer;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBox ()Lcom/pambrose/jev4k/BoundingBox;
+	public final fun getConfidence ()Ljava/lang/Double;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/pambrose/jev4k/BoxQuestion : com/pambrose/jev4k/Question {
+	public fun <init> (Lkotlinx/serialization/json/JsonElement;)V
+	public final fun component1 ()Lkotlinx/serialization/json/JsonElement;
+	public final fun copy (Lkotlinx/serialization/json/JsonElement;)Lcom/pambrose/jev4k/BoxQuestion;
+	public static synthetic fun copy$default (Lcom/pambrose/jev4k/BoxQuestion;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lcom/pambrose/jev4k/BoxQuestion;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getInstructions ()Lkotlinx/serialization/json/JsonElement;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/pambrose/jev4k/BuildersKt {
 	public static final fun questions (Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/QuestionSet;
 }
@@ -287,6 +328,10 @@ public final class com/pambrose/jev4k/JevPermissionDeniedException : com/pambros
 public abstract class com/pambrose/jev4k/JevQuery {
 	public fun <init> ()V
 	protected final fun attach (Lcom/pambrose/jev4k/JevImage;)Lcom/pambrose/jev4k/JevImage;
+	protected final fun box (Ljava/lang/String;Ljava/lang/String;)Lcom/pambrose/jev4k/QuestionProvider;
+	protected final fun box (Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;)Lcom/pambrose/jev4k/QuestionProvider;
+	public static synthetic fun box$default (Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/QuestionProvider;
+	public static synthetic fun box$default (Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/QuestionProvider;
 	protected final fun choice (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/QuestionProvider;
 	protected final fun choice (Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/QuestionProvider;
 	public static synthetic fun choice$default (Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/pambrose/jev4k/QuestionProvider;
@@ -315,10 +360,12 @@ public final class com/pambrose/jev4k/JevResponseValidationException : com/pambr
 }
 
 public final class com/pambrose/jev4k/JevResult {
+	public final fun box (Ljava/lang/String;)Lcom/pambrose/jev4k/BoxAnswer;
 	public final fun choice (Ljava/lang/String;)Lcom/pambrose/jev4k/ChoiceAnswer;
 	public final fun enumChoiceOf (Ljava/lang/String;Ljava/util/List;)Lcom/pambrose/jev4k/ChoiceAnswer;
 	public final fun get (Lcom/pambrose/jev4k/QuestionRef;)Lcom/pambrose/jev4k/Answer;
 	public final fun getAnswers ()Ljava/util/Map;
+	public final fun getBoxes ()Ljava/util/Map;
 	public final fun getChoices ()Ljava/util/Map;
 	public final fun getModel ()Ljava/lang/String;
 	public final fun getNouls ()Ljava/util/Map;
@@ -457,6 +504,8 @@ public final class com/pambrose/jev4k/NoulQuestion : com/pambrose/jev4k/Question
 public final class com/pambrose/jev4k/QueryBuilder {
 	public final fun add (Lcom/pambrose/jev4k/QuestionRef;)Lcom/pambrose/jev4k/QuestionRef;
 	public final fun attach ([Lcom/pambrose/jev4k/JevImage;)V
+	public final fun box (Ljava/lang/String;Ljava/lang/String;)Lcom/pambrose/jev4k/QuestionRef;
+	public final fun box (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Lcom/pambrose/jev4k/QuestionRef;
 	public final fun choice (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/QuestionRef;
 	public final fun choice (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lkotlin/jvm/functions/Function1;)Lcom/pambrose/jev4k/QuestionRef;
 	public final fun include (Lcom/pambrose/jev4k/JevQuery;)V

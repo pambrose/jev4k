@@ -1,5 +1,6 @@
 package com.pambrose.jev4k.internal
 
+import com.pambrose.jev4k.BoxQuestion
 import com.pambrose.jev4k.ChoiceQuestion
 import com.pambrose.jev4k.NoulQuestion
 import com.pambrose.jev4k.QuestionSet
@@ -53,6 +54,12 @@ internal sealed class WireQuestion {
         val instructions: JsonElement,
         val criteria: List<JsonElement>,
     ) : WireQuestion()
+
+    @Serializable
+    @SerialName("box")
+    data class Box(
+        val instructions: JsonElement,
+    ) : WireQuestion()
 }
 
 @Serializable
@@ -73,4 +80,6 @@ private fun Question.toWire(): WireQuestion =
         is ChoiceQuestion -> WireQuestion.Choice(instructions, options)
 
         is ScoreQuestion -> WireQuestion.Score(instructions, levels)
+
+        is BoxQuestion -> WireQuestion.Box(instructions)
     }
