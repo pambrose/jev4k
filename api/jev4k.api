@@ -4,10 +4,16 @@ public abstract interface class com/pambrose/jev4k/Answer {
 public final class com/pambrose/jev4k/BlockingJev {
 	public final fun ask (Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
 	public final fun ask (Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
+	public final fun ask (Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;[Lcom/pambrose/jev4k/JevImage;)Lcom/pambrose/jev4k/JevResult;
+	public final fun ask (Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;[Lcom/pambrose/jev4k/JevImage;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
 	public final fun ask (Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;)Lcom/pambrose/jev4k/JevResult;
 	public final fun ask (Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
+	public final fun ask (Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;[Lcom/pambrose/jev4k/JevImage;)Lcom/pambrose/jev4k/JevResult;
+	public final fun ask (Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;[Lcom/pambrose/jev4k/JevImage;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
 	public static synthetic fun ask$default (Lcom/pambrose/jev4k/BlockingJev;Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
+	public static synthetic fun ask$default (Lcom/pambrose/jev4k/BlockingJev;Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;[Lcom/pambrose/jev4k/JevImage;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
 	public static synthetic fun ask$default (Lcom/pambrose/jev4k/BlockingJev;Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
+	public static synthetic fun ask$default (Lcom/pambrose/jev4k/BlockingJev;Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;[Lcom/pambrose/jev4k/JevImage;Ljava/lang/String;ILjava/lang/Object;)Lcom/pambrose/jev4k/JevResult;
 	public final fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;)Lcom/pambrose/jev4k/JevResult;
 	public final fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;)Lcom/pambrose/jev4k/JevResult;
 	public final fun evaluate (Lkotlinx/serialization/json/JsonElement;Lcom/pambrose/jev4k/QuestionSet;Ljava/lang/String;Lcom/pambrose/jev4k/JevCallOptions;)Lcom/pambrose/jev4k/JevResult;
@@ -152,13 +158,18 @@ public class com/pambrose/jev4k/JevApiException : com/pambrose/jev4k/JevExceptio
 
 public final class com/pambrose/jev4k/JevApiKt {
 	public static final fun ask (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun ask (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;[Lcom/pambrose/jev4k/JevImage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun ask (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun ask (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;[Lcom/pambrose/jev4k/JevImage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun ask$default (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun ask$default (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevQuery;Ljava/lang/String;[Lcom/pambrose/jev4k/JevImage;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public static synthetic fun ask$default (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun ask$default (Lcom/pambrose/jev4k/JevApi;Lcom/pambrose/jev4k/JevQuery;Lkotlinx/serialization/json/JsonElement;[Lcom/pambrose/jev4k/JevImage;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public static final fun query (Lcom/pambrose/jev4k/JevApi;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun query (Lcom/pambrose/jev4k/JevApi;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun query$default (Lcom/pambrose/jev4k/JevApi;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public static synthetic fun query$default (Lcom/pambrose/jev4k/JevApi;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun questionsWith (Lcom/pambrose/jev4k/JevQuery;[Lcom/pambrose/jev4k/JevImage;)Lcom/pambrose/jev4k/QuestionSet;
 }
 
 public final class com/pambrose/jev4k/JevAuthenticationException : com/pambrose/jev4k/JevApiException {

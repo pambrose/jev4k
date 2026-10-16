@@ -205,3 +205,65 @@ object Gestures : JevQuery() {
         "none" means "No hand, or a hand that matches none of the examples."
     }
 }
+
+/** One part of a multipart/form-data body: its headers and its bytes. */
+internal class Part(
+    val headers: Map<String, String>,
+    val body: ByteArray,
+) {
+    val name: String
+        get() =
+            headers.getValue(HttpHeaders.ContentDisposition)
+                .substringAfter("name=")
+                .substringBefore(";")
+                .removeSurrounding("\"")
+
+    val text: String get() = body.decodeToString()
+}
+
+/** The parts of this request's multipart body. */
+internal suspend fun HttpRequestData.parts(): List<Part> {
+    val boundary =
+        requireNotNull(body.contentType?.parameter("boundary")) { "not a multipart body: ${body.contentType}" }
+    return multipartParts(body.toByteArray(), boundary)
+}
+
+/** Splits a multipart [bytes] body on [boundary]: enough for the bodies jev4k writes, whose parts tests choose. */
+internal fun multipartParts(
+    bytes: ByteArray,
+    boundary: String,
+): List<Part> {
+    val delimiter = "--$boundary".encodeToByteArray()
+    val starts =
+        generateSequence(bytes.indexOf(delimiter, 0).takeIf { it >= 0 }) { previous ->
+            bytes.indexOf(delimiter, previous + delimiter.size).takeIf { it >= 0 }
+        }.toList()
+    return starts.zipWithNext { from, to ->
+        // "--boundary\r\n", the headers, a blank line, the body, and "\r\n" before the next delimiter.
+        val part = bytes.copyOfRange(from + delimiter.size + 2, to - 2)
+        val split = part.indexOf("\r\n\r\n".encodeToByteArray(), 0)
+        Part(
+            headers = part.copyOfRange(0, split).decodeToString().lines().associate {
+                it.substringBefore(": ") to it.substringAfter(": ")
+            },
+            body = part.copyOfRange(split + 4, part.size),
+        )
+    }
+}
+
+private fun ByteArray.indexOf(
+    needle: ByteArray,
+    from: Int,
+): Int = (from..size - needle.size).firstOrNull { start -> needle.indices.all { this[start + it] == needle[it] } } ?: -1
+
+/** One camera frame of a [History], the docs' "what changed" pattern. */
+@Serializable
+data class Frame(
+    val secondsAgo: Int,
+    val frame: JevImage,
+)
+
+@Serializable
+data class History(
+    val frames: List<Frame>,
+)

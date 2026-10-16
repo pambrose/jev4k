@@ -38,6 +38,19 @@ class BlockingJevTest : StringSpec() {
     }
 
     init {
+        "ask with images attaches them after the query's own" {
+            val (api, blocking) = answering()
+            val frame = JevImage.of(JPEG_BYTES, "<frame>")
+            blocking.ask(Gestures, jsonState, frame)
+            coVerify(exactly = 1) {
+                api.evaluate(
+                    jsonState,
+                    match { set -> set.images.map { it.reference } == listOf("<thumb>", "<palm>", "<frame>") },
+                    null,
+                )
+            }
+        }
+
         "evaluate forwards state, questions and model" {
             val (api, blocking) = answering()
             blocking.evaluate(jsonState, Triage.questions, "jev-1.13.0")[Triage.urgent].noul shouldBe 0.92

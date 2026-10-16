@@ -1,6 +1,11 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.HttpClientFactory
+import com.pambrose.jev4k.internal.IMAGES_HEADER
+import com.pambrose.jev4k.internal.assetsJson
+import com.pambrose.jev4k.internal.imageRequestProblems
+import com.pambrose.jev4k.internal.multipartBody
+import com.pambrose.jev4k.internal.needsImagesHeader
 import com.pambrose.jev4k.internal.sendProblem
 import com.pambrose.jev4k.internal.JevJson
 import com.pambrose.jev4k.internal.MAX_RESPONSE_BYTES
@@ -86,16 +91,25 @@ class JevClient(
         model: String?,
         options: JevCallOptions,
     ): JevResult {
-        stateProblem(state)?.let { throw JevValidationException(listOf(it)) }
+        val problems = listOfNotNull(stateProblem(state)) + imageRequestProblems(state, questions, options.extraBody)
+        if (problems.isNotEmpty()) throw JevValidationException(problems)
         val resolvedModel = model.setting() ?: config.defaultModel
         val request = SystemOneRequest(state, resolvedModel, questions.toWire())
-        return send(HttpMethod.Post, SYSTEM_ONE_PATH, options, {
+        val images = questions.images
+        val builtIn = if (needsImagesHeader(questions)) mapOf(IMAGES_HEADER to "true") else emptyMap()
+        return send(HttpMethod.Post, SYSTEM_ONE_PATH, options, builtIn, {
             // Encoded here, inside the call, so a state that can't be encoded still becomes a JevValidationException.
             // jev4k encodes the body itself, extra fields and all, rather than installing Ktor's ContentNegotiation
-            // plugin for this one object; responses are read as raw text anyway.
+            // plugin for this one object; responses are read as raw text anyway. With images, the same JSON is the
+            // first part of a multipart body, with an assets field naming the parts that follow.
             val fields = JevJson.encodeToJsonElement(SystemOneRequest.serializer(), request).jsonObject
-            val text = JevJson.encodeToString(JsonObject.serializer(), JsonObject(fields + options.extraBody))
-            setBody(TextContent(text, ContentType.Application.Json))
+            val assets = if (images.isEmpty()) emptyMap() else mapOf("assets" to assetsJson(images))
+            val text = JevJson.encodeToString(JsonObject.serializer(), JsonObject(fields + options.extraBody + assets))
+            if (images.isEmpty()) {
+                setBody(TextContent(text, ContentType.Application.Json))
+            } else {
+                setBody(multipartBody(text, images))
+            }
         }) { body, response -> mapSystemOne(body, resolvedModel, questions, response) }
     }
 
@@ -112,7 +126,7 @@ class JevClient(
     override suspend fun models(): ModelList = models(NoCallOptions)
 
     override suspend fun models(options: JevCallOptions): ModelList =
-        send(HttpMethod.Get, MODELS_PATH, options, {}, ::mapModels)
+        send(HttpMethod.Get, MODELS_PATH, options, emptyMap(), {}, ::mapModels)
 
     override fun close() = http.close()
 
@@ -120,6 +134,7 @@ class JevClient(
         method: HttpMethod,
         path: String,
         options: JevCallOptions,
+        builtInHeaders: Map<String, String>,
         configure: HttpRequestBuilder.() -> Unit,
         parse: (body: JsonObject, response: ResponseInfo) -> T,
     ): T {
@@ -128,7 +143,7 @@ class JevClient(
         val limit = options.timeout ?: config.timeout
         val response = execute(path, endpoint, limit) {
             this.method = method
-            setHeaders(options)
+            setHeaders(options, builtInHeaders)
             options.timeout?.let { timeout { limitTo(it, ownEngine = config.engine == null) } }
             options.retry?.let { policy -> retry { follow(policy, config) } }
             configure()
@@ -147,13 +162,18 @@ class JevClient(
     }
 
     /**
-     * Every header, set rather than appended, in order of precedence: the built-in ones, then the client's, then the
-     * call's, so each replaces an earlier one of the same name instead of sending two values.
+     * Every header, set rather than appended, in order of precedence: the built-in ones (with [builtIn], such as the
+     * images opt-in), then the client's, then the call's, so each replaces an earlier one of the same name instead of
+     * sending two values.
      */
-    private fun HttpRequestBuilder.setHeaders(options: JevCallOptions) {
+    private fun HttpRequestBuilder.setHeaders(
+        options: JevCallOptions,
+        builtIn: Map<String, String>,
+    ) {
         headers[HttpHeaders.Authorization] = "Bearer ${config.apiKey}"
         accept(ContentType.Application.Json)
         headers[HttpHeaders.UserAgent] = USER_AGENT
+        builtIn.forEach { (name, value) -> headers[name] = value }
         config.headers.forEach { (name, value) -> headers[name] = value }
         options.headers.forEach { (name, value) -> headers[name] = value }
     }
