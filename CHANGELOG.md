@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- The default `User-Agent` is `jev4k/0.2.3`.
+- The default `User-Agent` is `jev4k/0.3.0`.
 - The README and the site no longer say Jev reads only text, and say that jev4k supports three question types:
   TypeSafe's experimental images and Box questions aren't supported yet.
 - Examples that pin a model version use `jev-1.14.0`, which TypeSafe released on 2026-10-14 as `jev-preview` and
