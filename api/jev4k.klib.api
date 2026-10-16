@@ -6,6 +6,10 @@
 // - Show declarations: true
 
 // Library unique name: <com.pambrose.jev4k:jev4k>
+open annotation class com.pambrose.jev4k/ExperimentalJevImages : kotlin/Annotation { // com.pambrose.jev4k/ExperimentalJevImages|null[0]
+    constructor <init>() // com.pambrose.jev4k/ExperimentalJevImages.<init>|<init>(){}[0]
+}
+
 open annotation class com.pambrose.jev4k/JevDsl : kotlin/Annotation { // com.pambrose.jev4k/JevDsl|null[0]
     constructor <init>() // com.pambrose.jev4k/JevDsl.<init>|<init>(){}[0]
 }
@@ -236,6 +240,20 @@ final class com.pambrose.jev4k/JevConfigBuilder { // com.pambrose.jev4k/JevConfi
 
 final class com.pambrose.jev4k/JevConfigException : com.pambrose.jev4k/JevException { // com.pambrose.jev4k/JevConfigException|null[0]
     constructor <init>(kotlin/String) // com.pambrose.jev4k/JevConfigException.<init>|<init>(kotlin.String){}[0]
+}
+
+final class com.pambrose.jev4k/JevImage { // com.pambrose.jev4k/JevImage|null[0]
+    final val reference // com.pambrose.jev4k/JevImage.reference|{}reference[0]
+        final fun <get-reference>(): kotlin/String // com.pambrose.jev4k/JevImage.reference.<get-reference>|<get-reference>(){}[0]
+
+    final fun toString(): kotlin/String // com.pambrose.jev4k/JevImage.toString|toString(){}[0]
+
+    final object Companion { // com.pambrose.jev4k/JevImage.Companion|null[0]
+        final fun fromBase64(kotlin/String, kotlin/String? = ...): com.pambrose.jev4k/JevImage // com.pambrose.jev4k/JevImage.Companion.fromBase64|fromBase64(kotlin.String;kotlin.String?){}[0]
+        final fun of(kotlin/ByteArray, kotlin/String? = ...): com.pambrose.jev4k/JevImage // com.pambrose.jev4k/JevImage.Companion.of|of(kotlin.ByteArray;kotlin.String?){}[0]
+        final fun read(kotlinx.io.files/Path, kotlin/String? = ...): com.pambrose.jev4k/JevImage // com.pambrose.jev4k/JevImage.Companion.read|read(kotlinx.io.files.Path;kotlin.String?){}[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<com.pambrose.jev4k/JevImage> // com.pambrose.jev4k/JevImage.Companion.serializer|serializer(){}[0]
+    }
 }
 
 final class com.pambrose.jev4k/JevNotFoundException : com.pambrose.jev4k/JevApiException // com.pambrose.jev4k/JevNotFoundException|null[0]

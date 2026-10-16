@@ -174,6 +174,9 @@ kotlin {
         // where they would be noise on the page. It does not leak to consumers: opt-in is a compile-time setting
         // for this project only.
         optIn.add("kotlinx.serialization.ExperimentalSerializationApi")
+        // jev4k's own image and Box API is marked @ExperimentalJevImages for its consumers; the library and its tests
+        // use it everywhere, so the module opts in once here instead of in every file.
+        optIn.add("com.pambrose.jev4k.ExperimentalJevImages")
         // BlockingJev is an expect class (a real one on the JVM, an empty one elsewhere); without this flag every
         // compilation warns that expect/actual classes are in Beta.
         freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -183,12 +186,13 @@ kotlin {
         commonMain {
             kotlin.srcDir(generateBuildInfo)
             dependencies {
-                // api, not implementation: each of these three shows up in the public API, so a consumer compiles
-                // against it. HttpClientEngine and JsonElement appear in signatures, and the suspend functions
-                // and the inline runBlocking wrappers need the coroutines types.
+                // api, not implementation: each of these four shows up in the public API, so a consumer compiles
+                // against it. HttpClientEngine and JsonElement appear in signatures, the suspend functions and the
+                // inline runBlocking wrappers need the coroutines types, and JevImage.read takes a kotlinx-io Path.
                 api(libs.ktor.client.core)
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.io.core)
             }
         }
         // One default engine per platform. CIO can't do HTTPS on Kotlin/Native (Ktor has no native TLS), so the

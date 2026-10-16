@@ -186,3 +186,11 @@ data class Order(
 data class Reading(
     val temperature: Double,
 )
+
+/** A PNG signature and a few bytes: jev4k checks only the signature, and no test sends these to the real API. */
+internal val PNG_BYTES =
+    byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52)
+
+/** A JPEG signature and a few bytes, as [PNG_BYTES] is for PNG. */
+internal val JPEG_BYTES =
+    byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0x00, 0x10, 0x4A, 0x46)
