@@ -30,7 +30,8 @@ branch; anything else that compiled against 0.2.2 compiles unchanged, and the bi
       base64, or neither a PNG nor a JPEG; an attached image nothing references; a generated reference placed without
       its image attached; references over 64 KiB in total; and a Box question with no image.
 - The site's Images & Box page and the README's Images section cover all of this, with compiled examples in Kotlin
-  and Java.
+  and Java. `make hotdog-example` runs a hot dog or not example that sends two bundled CC0 photos, a dog panting in
+  the sun on a hot day and an actual hot dog.
 - The README and the site's Making Calls page show how to turn on TypeSafe's long context (both context limits raised
   to 262k tokens) with the `TypeSafe-Danger-Zone-Long-Context: true` header in `JevCallOptions.headers`.
 

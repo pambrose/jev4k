@@ -7,8 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `jev4k` is a Kotlin Multiplatform DSL and client for TypeSafe's Jev "System One" model, built on the Ktor client and
 kotlinx.serialization. You describe a state and typed questions (Noul, Choice, Score, and the experimental Box), and it
 returns typed answers. The library is `com.pambrose.jev4k`, almost all of it common code under `src/commonMain/kotlin`,
-for the JVM (the primary target), Apple platforms, Linux, Windows, and Node.js (js and wasmJs). A runnable example is
-`src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt`.
+for the JVM (the primary target), Apple platforms, Linux, Windows, and Node.js (js and wasmJs). The runnable examples
+are `src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt` (`make example`) and `HotDogExample.kt` next to
+it (`make hotdog-example`), which sends the two CC0 photos in `src/jvmTest/resources/hotdog/`; `HotDogPhotosTest`
+holds them to the API's image limits.
 
 ## TypeSafe / Jev API docs
 
@@ -458,6 +460,7 @@ make zizmor                                           # audit .github's workflow
 make abi-check                                        # check the public API against api/
 make abi-update                                       # rewrite the api/ dumps after an intended change (macOS)
 make example                                          # run TriageExample against the live API (needs TYPESAFE_API_KEY)
+make hotdog-example                                   # run HotDogExample, two photos, against the live API
 make live-tests                                       # LiveSmokeTest (needs TYPESAFE_API_KEY) + every platform's probes
 make tree                                             # dependency tree
 make versions                                         # list only the outdated dependencies, plugins and Gradle

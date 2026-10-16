@@ -112,6 +112,38 @@ official SDKs send it. Images count as input tokens at the text price.
 If you cache results on the model, the state and the questions, include each attached image's bytes in the key too:
 `QuestionSet.toJson()` holds only the references.
 
+## Example: hot dog or not
+
+A runnable example asks about two photos, one request each: a dog panting in the sun on a hot day, and an actual hot
+dog. The first photo is hot and shows a dog, but it isn't a hot dog, and the questions keep those ideas apart: a Noul
+for each, and a Choice for what the photo shows.
+
+```kotlin
+--8<-- "src/jvmTest/kotlin/com/pambrose/jev4k/examples/HotDogExample.kt:query"
+```
+
+Each photo is attached to its request and placed in the state as `photo`:
+
+```kotlin
+--8<-- "src/jvmTest/kotlin/com/pambrose/jev4k/examples/HotDogExample.kt:ask"
+```
+
+Run it from a checkout:
+
+```bash
+--8<-- "ImageOutput.txt:hotdog-run"
+```
+
+One run printed this. Jev isn't fully deterministic, so the numbers can move a little from run to run:
+
+```text
+--8<-- "ImageOutput.txt:hotdog-output"
+```
+
+Both photos are CC0, from Wikimedia Commons:
+[Panting-dog-No.3](https://commons.wikimedia.org/wiki/File:Panting-dog-No.3.jpg) by Raffael Herrmann, and
+[Hot Dogs](https://commons.wikimedia.org/wiki/File:Hot_Dogs_(Alabama_Extension).jpg) by Alabama Extension.
+
 ## From Java
 
 Java ignores the opt-in annotation. Build an image with `JevImage.of(Files.readAllBytes(path))`:

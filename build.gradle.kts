@@ -497,6 +497,14 @@ tasks.register<JavaExec>("runExample") {
     mainClass = "com.pambrose.jev4k.examples.TriageExampleKt"
 }
 
+tasks.register<JavaExec>("runHotDogExample") {
+    group = "application"
+    description = "Runs the hot dog image example against the live API (needs TYPESAFE_API_KEY)"
+    val testCompilation = kotlin.jvm().compilations["test"]
+    classpath = files(testCompilation.output.allOutputs, testCompilation.runtimeDependencyFiles)
+    mainClass = "com.pambrose.jev4k.examples.HotDogExample"
+}
+
 // A pre-release qualifier is a `.` or `-` delimiter followed by a known unstable
 // keyword. `m\d` matches milestones (`-M1`/`.M2`) without catching stable classifiers
 // like `-macos`/`-MR1`, and the `[.-]` delimiter catches both dash-style (`-alpha`)

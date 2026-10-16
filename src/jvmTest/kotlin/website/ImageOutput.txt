@@ -1,0 +1,8 @@
+# --8<-- [start:hotdog-run]
+make hotdog-example                # needs TYPESAFE_API_KEY
+# --8<-- [end:hotdog-run]
+
+# --8<-- [start:hotdog-output]
+hot-day-dog.jpg: Not hotdog (hot dog 0.01, hot day 0.96, looks like DOG)
+hot-dog.jpg: Hotdog! (hot dog 1.00, hot day 0.15, looks like HOT_DOG)
+# --8<-- [end:hotdog-output]

@@ -15,6 +15,7 @@ make format             # auto-format Kotlin sources with ktlint
 make kdocs              # API docs in build/dokka/html
 make coverage           # Kover HTML + XML coverage reports
 make example            # run the example against the live API (needs TYPESAFE_API_KEY)
+make hotdog-example     # run the hot dog image example against the live API (needs TYPESAFE_API_KEY)
 make live-tests         # smoke tests and probes against the live API (needs TYPESAFE_API_KEY)
 make versions           # list the outdated dependencies, plugins and Gradle
 make versions-all       # the full dependency report, up-to-date entries included
