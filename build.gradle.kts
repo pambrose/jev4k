@@ -305,7 +305,6 @@ dokka {
         // each page links to its supertype instead.
         suppressInheritedMembers = true
         outputDirectory = layout.buildDirectory.dir("dokka/html")
-        includes.from("docs/packages.md")
     }
 
     pluginsConfiguration.html {
@@ -338,6 +337,13 @@ dokka {
         externalDocumentationLinks.register("ktor") {
             url("https://api.ktor.io/")
         }
+    }
+
+    // The module and package overview pages. A source set's includes are what Dokka renders on those pages; a
+    // publication's are only read for a multi-module overview, so this file set there never reached the site.
+    // commonMain holds all but a few platform-specific declarations, and is where a reader starts.
+    dokkaSourceSets.named("commonMain") {
+        includes.from("docs/packages.md")
     }
 
     // Link JDK types to the docs for the oldest JDK this library supports.

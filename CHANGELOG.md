@@ -50,6 +50,8 @@ branch; anything else that compiled against 0.2.2 compiles unchanged, and the bi
 
 ### Fixed
 
+- The KDocs show the module overview and the package description from `docs/packages.md`. The file was wired into
+  Dokka's HTML publication, which reads it only for a multi-module overview, so earlier releases' KDocs left both out.
 - A state, question entry or `extraBody` field nested more than 64 levels deep fails with `JevValidationException`
   before anything is sent. The API now rejects deeper JSON in the state and in each instructions or criteria value
   with a 400, so 65 to 128 levels passed jev4k's old limit of 128 and came back as `JevBadRequestException`.

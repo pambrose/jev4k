@@ -356,7 +356,8 @@ without them keep compiling.
     - The site documents the public API of the main source sets, with a tab per platform (common, jvm, native, web).
       Source sets whose names end in `Test` are suppressed, so no test class, fixture or example is included, and the
       `com.pambrose.jev4k.internal` package is excluded. `docs/packages.md` supplies the module and package overview
-      pages.
+      pages, through `commonMain`'s source-set `includes`. A publication's `includes` is only read for a multi-module
+      overview, so the file set there, as it was until 0.3.0, never reached the site.
     - kotlinx.serialization and Ktor types link to their online API docs through `externalDocumentationLinks`.
     - `moduleVersion` is `project.version`, `jvmMain`'s `jdkVersion` comes from the catalog's `jvm-target` version, and
       `suppressInheritedMembers` is on. Pages don't repeat inherited members: a subclass such as `JevRateLimitException`
