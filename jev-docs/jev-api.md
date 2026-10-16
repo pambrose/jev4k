@@ -359,6 +359,7 @@ guide (`migrating-to-v1.md`), the source of this list, was removed in October 20
 - Mirror the SDK retry table in §2 and the env-var precedence; expose `x-typesafe-request-id` on responses and errors.
   The JS SDK's generics (criteria keys → typed `choice`, score tuple → typed `legend`) are the closest model for an
   idiomatic typed Kotlin API; see `sdks.md` §4.
-- Images and Box aren't modeled by jev4k. A base64 asset can be sent today through `JevCallOptions.extraBody["assets"]`
-  plus the opt-in header in `headers`; multipart isn't possible. Compression is optional.
+- jev4k models images and Box behind `@ExperimentalJevImages`
+  (`docs/superpowers/specs/2026-10-15-image-support-design.md`): images attach to the `QuestionSet`, a request with
+  images is sent as multipart, and the opt-in header is added automatically. Compression is optional.
 - Keep the API key out of source; read `TYPESAFE_API_KEY`.

@@ -109,6 +109,7 @@ and announced that `jev-latest`, then `jev-1.13.0`, would move to it about a wee
 available for a while, and TypeSafe has said it will give 60 days' notice before deprecating it. If you've tuned
 thresholds against a particular version, pin it by name; see [Making Calls](client/calls.md#choosing-a-model).
 
-Jev reads text: strings, JSON objects, and arrays of text. TypeSafe's image support, and its Box question
-type, are experimental, and jev4k doesn't support them yet. English is Jev's primary language; other languages
-work, but test them on your own data. It isn't trained on customer requests.
+Jev reads text: strings, JSON objects, and arrays of text. It also reads PNG and JPEG images, and its Box question
+type finds where something is in an image; both are experimental, as [Images & Box](queries/images.md) explains.
+English is Jev's primary language; other languages work, but test them on your own data. It isn't trained on customer
+requests.

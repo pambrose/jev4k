@@ -53,6 +53,21 @@ without them keep compiling.
   since a mismatch is the caller's mistake (`IllegalArgumentException`). A string-keyed read returns an undeclared
   option as sent, as both official SDKs do. `QueryBuilder.question(id, q)` copies the question's map or list and
   picks the type-checking decoder for its subtype.
+- **Images and Box** (`JevImage.kt`, `internal/ImageRequest.kt`), all behind `@ExperimentalJevImages`, which the build
+  opts the module into (`compilerOptions.optIn`), so every public declaration that names an image or Box type must
+  carry the annotation by hand.
+    - A `JevImage` stands in content as its `reference` (`toString()`, `jsonOf`, `JevImageSerializer`, the builders'
+      image overloads); `JsonPrimitive` is sealed, so images can't be discovered in a JSON tree and must be attached:
+      `QueryBuilder.attach`, `JevQuery.attach`, or `ask(query, state, images...)`. `QuestionSet.images` holds each
+      instance once.
+    - The factories never throw for bad content: the problem rides on the image and `imageDefinitionProblems` reports
+      it when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws.
+    - `evaluate` runs `imageRequestProblems` (references matched as the API does, as plain text in string values,
+      never keys), adds `TypeSafe-Danger-Zone-Images: true` as a built-in header, and sends a request with images as
+      `MultiPartFormDataContent`: a `request` part with the JSON and a generated `assets` map, then `image-0`, … with a
+      filename (Ktor quotes each part name). Without images the request is the same `TextContent` as before.
+    - `BoxQuestion`/`BoxAnswer` are the fourth question and answer types; the mapper requires edges in 0..1 with
+      `left < right` and `top < bottom`.
 - **Wire** (`internal/Wire.kt`).
     - Requests are `@Serializable` DTOs, and a sealed `WireQuestion` writes the `"type"` discriminator.
     - `JevJson` sets `encodeDefaults = false`, so unset optional fields (Noul criteria) are omitted. Explicit JSON
@@ -277,9 +292,10 @@ without them keep compiling.
 - Versions, libraries, and plugins are declared in the version catalog `gradle/libs.versions.toml` and referenced from
   `build.gradle.kts` as `libs.*` (e.g. `alias(libs.plugins.kotlin.serialization)`, `api(libs.ktor.client.core)`). Add
   new dependencies to the catalog, not as inline coordinates. Kotlin-family plugins share `version.ref = "kotlin"`.
-- `ktor-client-core`, `kotlinx-serialization-json` and `kotlinx-coroutines-core` are `api` dependencies because their
-  types appear in the public API (`HttpClientEngine`, `JsonElement`, suspend functions and inline `runBlocking`
-  wrappers).
+- `ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core` and `kotlinx-io-core` are `api`
+  dependencies because their types appear in the public API (`HttpClientEngine`, `JsonElement`, suspend functions and
+  inline `runBlocking` wrappers, and the kotlinx-io `Path` that `JevImage.read` takes). kotlinx-io is pinned to the
+  version `ktor-io` brings.
 - The catalog carries two JVM versions, because the build JDK and the shipped bytecode deliberately differ:
     - `jvm-toolchain = "25"` is what compiles the project (`jvmToolchain(...)`). The foojay resolver plugin in
       `settings.gradle.kts` downloads a matching JDK automatically if one isn't installed. That plugin keeps an inline
@@ -297,7 +313,8 @@ without them keep compiling.
 - `kotlin.code.style=official` is set in `gradle.properties` (4-space indentation).
 - `compilerOptions.optIn` carries `kotlinx.serialization.ExperimentalSerializationApi` for every compilation, so no
   source file needs an `@OptIn` for it (the `JsonArrayBuilder.addAll` overloads used in the website examples are the
-  current reason). Opt-in is compile-time only and doesn't propagate to consumers of the published jar.
+  current reason). It also carries jev4k's own `com.pambrose.jev4k.ExperimentalJevImages`, which the library and its
+  tests use throughout. Opt-in is compile-time only and doesn't propagate to consumers of the published jar.
 - Detekt (`dev.detekt` 2.0.0-alpha, the line used in the author's other repos) runs as part of `check`, so `make tests`
   lints too.
     - The plain `detekt` task, the one `check` runs, defaults to `src/main` and `src/test`, which no longer exist, so
@@ -366,7 +383,7 @@ without them keep compiling.
 - The JVM jar's manifest carries `Implementation-Version` and
   `Automatic-Module-Name: com.pambrose.jev4k`, which pins the JPMS module name for consumers instead of letting it
   derive from the jar's file name. The README and the site's Installation page document what an embedding app inherits:
-  five POM dependencies (in `jev4k-jvm`'s POM: four compile, CIO at runtime), no logging binding, and how to drop
+  six POM dependencies (in `jev4k-jvm`'s POM: five compile, CIO at runtime), no logging binding, and how to drop
   CIO when supplying another engine.
 - KGP's ABI validation (`abiValidation()`) guards the public API. `api/jev4k.api` is the JVM surface, Java callers
   included, and `api/jev4k.klib.api` covers the other targets. `checkKotlinAbi` runs under `check`;
@@ -480,6 +497,8 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
 - HTTP is tested with Ktor's `MockEngine` through `testJev(...)` in `TestSupport.kt`. It injects the engine and records
   retry delays instead of sleeping, and `NoJitter` makes backoff predictable. A client on a real engine gets the same
   settings from `testDefaults(delays)`; `triageJev()`, `PAYOUT_TICKET` and `liveOptIn()` are shared there too.
+  `parts()` splits a MockEngine request's multipart body, for `ImageRequestTest`; `PNG_BYTES`/`JPEG_BYTES` are
+  signature-only fixtures, and `Gestures` is a `JevQuery` that attaches example pictures.
   `SilentServer` (JVM) is a local socket that never responds, for testing real-CIO timeouts. `RawServer` (JVM)
   answers every request with fixed bytes, for responses no real server sends, optionally over TLS with a
   self-signed certificate made by the JDK's `keytool`. `PlatformEngineTest` drives each platform's real default

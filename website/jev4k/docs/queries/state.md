@@ -60,8 +60,8 @@ send only the parts the question reads:
 --8<-- "StateExamples.kt:focused"
 ```
 
-- **Text.** Jev reads text: strings, JSON objects, and arrays of text. TypeSafe's image support is
-  experimental, and jev4k doesn't send images yet, so convert images, audio and binary data to text or fields
+- **Text, and images.** Jev reads text: strings, JSON objects, and arrays of text. PNG and JPEG images can go in the
+  state too, experimentally; see [Images & Box](images.md). Convert audio and other binary data to text or fields
   first.
 - **English works best.** Other languages, including CJK scripts, work but less well; test on your own data.
 - **Context limits.** A request's state plus all its questions must fit in 64k tokens, and the state plus any

@@ -44,6 +44,7 @@ JevClient().use { jev ->
 - [Questions and answers](#questions-and-answers)
 - [Defining questions](#defining-questions)
 - [State](#state)
+- [Images](#images)
 - [Reading results](#reading-results)
 - [Client and configuration](#client-and-configuration)
 - [Embedding in an application](#embedding-in-an-application)
@@ -166,8 +167,8 @@ jev4k supports three question types. Each returns its own answer type.
 The question definitions themselves are `NoulQuestion`, `ChoiceQuestion` and `ScoreQuestion`, subtypes of `Question`,
 named after TypeSafe's JS SDK. The DSL builds them for you.
 
-TypeSafe also offers Box, an experimental question type that finds where something is in an image. jev4k doesn't
-support it, or images, yet.
+TypeSafe's experimental Box question type finds where something is in an image. jev4k supports it, and images in the
+state, instructions and criteria, behind the `@ExperimentalJevImages` opt-in; see [Images](#images).
 
 ## Defining questions
 
@@ -314,8 +315,31 @@ jev.ask(Triage, state = Order("A-104"))                       // any @Serializab
 `@Serializable` values keep fields that equal their defaults (`"status": "open"` above), so the model sees them.
 
 Prefer an object with named fields when the state has several parts. Send only what the questions need: unrelated detail
-lowers accuracy. Jev reads text, and English works best. TypeSafe's image support is experimental, and jev4k doesn't
-send images yet.
+lowers accuracy. Jev reads text, and English works best. Images can go in the state too, experimentally; see
+[Images](#images).
+
+## Images
+
+TypeSafe's image support is experimental, so jev4k marks it `@ExperimentalJevImages`. A `JevImage` stands in content
+as its reference; `attach` it so its bytes are sent. jev4k adds the `TypeSafe-Danger-Zone-Images: true` header and
+sends the request as multipart.
+
+```kotlin
+@OptIn(ExperimentalJevImages::class)
+suspend fun findMug(jev: JevApi, bytes: ByteArray) {
+    val photo = JevImage.of(bytes)                                   // or JevImage.read(path)
+    val result =
+        jev.query(jsonOf(mapOf("photo" to photo)), model = "jev-preview") {
+            attach(photo)                                            // placing an image doesn't send it
+            noul("mug_visible", "Is there a coffee mug in `photo`?")
+            box("mug", "the coffee mug in `photo`")                  // a Box finds where it is
+        }
+    if (result.noul("mug_visible").isTrue()) println(result.box("mug").box)
+}
+```
+
+Images also go in instructions (`"Is $upload the same product as $catalog?"`) and criteria (`"thumbs_up" means
+thumb`). A `JevQuery` can attach its own example pictures. See [Images & Box](https://jev4k.com/queries/images/).
 
 ## Reading results
 
@@ -479,9 +503,9 @@ jev4k is meant to be embedded in an application, so it keeps out of the host's w
 
 ### What it puts on your classpath
 
-On the JVM, four `compile` dependencies (`ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core`,
-`kotlin-stdlib`) and one `runtime` one, the CIO engine (`ktor-client-cio`). Nothing else: no test framework, no logging
-backend, and no content-negotiation plugin, since jev4k encodes its request body itself.
+On the JVM, five `compile` dependencies (`ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core`,
+`kotlinx-io-core`, `kotlin-stdlib`) and one `runtime` one, the CIO engine (`ktor-client-cio`). Nothing else: no test
+framework, no logging backend, and no content-negotiation plugin, since jev4k encodes its request body itself.
 
 ### Logging
 

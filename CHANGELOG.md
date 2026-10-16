@@ -10,14 +10,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Experimental support for TypeSafe's images and Box questions, behind the new `@ExperimentalJevImages` opt-in.
+  `JevImage` (from bytes, base64 or a file) is placed anywhere content goes as its reference and attached with
+  `QueryBuilder.attach`, `JevQuery.attach` or the new `ask(query, state, images...)`. A request with images is sent as
+  `multipart/form-data`, with the `TypeSafe-Danger-Zone-Images: true` header added for you. `box(...)` asks a Box
+  question, read back as a `BoxAnswer` through `result.box(id)` or `result.boxes`. Structural problems, such as an
+  image nothing references or one placed but not attached, fail before sending.
 - The README and the site's Making Calls page show how to turn on TypeSafe's long context (both context limits raised
   to 262k tokens) with the `TypeSafe-Danger-Zone-Long-Context: true` header in `JevCallOptions.headers`.
 
 ### Changed
 
 - The default `User-Agent` is `jev4k/0.3.0`.
-- The README and the site no longer say Jev reads only text, and say that jev4k supports three question types:
-  TypeSafe's experimental images and Box questions aren't supported yet.
+- `Question` and `Answer` gain the subtypes `BoxQuestion` and `BoxAnswer`, so an exhaustive `when` over either without
+  an `else` branch no longer compiles. Naming either subtype needs the `@ExperimentalJevImages` opt-in.
+- `kotlinx-io-core` (0.9.1, already brought by Ktor) is now a declared `api` dependency, since `JevImage.read` takes a
+  kotlinx-io `Path`. The JVM POM lists five compile dependencies.
+- The README and the site describe images and Box, which jev4k now supports, instead of saying it doesn't.
 - Examples that pin a model version use `jev-1.14.0`, which TypeSafe released on 2026-10-14 as `jev-preview` and
   announced as `jev-latest` from about a week later. The site's model table dates that move instead of naming the
   version behind each alias, and the Concepts page's sample response reports `jev-1.14.0`, with confidence values that

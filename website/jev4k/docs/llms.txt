@@ -35,6 +35,7 @@ declared once as a typed `JevQuery` object whose property names become the ids.
 - [Typed queries](https://jev4k.com/queries/typed/): reusable `JevQuery` objects whose property names become question ids
 - [Enum choices](https://jev4k.com/queries/enums/): `choice<E>()` answering with an enum constant, via the `JevOption` interface
 - [State](https://jev4k.com/queries/state/): passing a String, a JsonElement, or any `@Serializable` value
+- [Images & Box](https://jev4k.com/queries/images/): experimental: PNG and JPEG images in the state, instructions and criteria, attached with `attach()` and sent as multipart, and Box questions that locate a target
 
 ## Reading results
 
