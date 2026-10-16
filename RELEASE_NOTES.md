@@ -52,7 +52,8 @@ suspend fun findMug(jev: JevApi, bytes: ByteArray) {
   (`jev-preview` or `jev-1.14.0`).
 
 The [Images & Box](https://jev4k.com/queries/images/) page covers the rest, from chosen references to cropping to a
-box, and has a Java example.
+box, and has a Java example. For a quick try, `make hotdog-example` sends two bundled photos, a dog panting in the sun
+on a hot day and an actual hot dog, and Jev tells them apart: "Not hotdog" for the dog, "Hotdog!" for the hot dog.
 
 ### Also in this release
 
