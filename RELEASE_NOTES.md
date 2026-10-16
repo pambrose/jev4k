@@ -3,6 +3,70 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
+## v0.3.0 — 2026-10-16
+
+jev4k now sends images. TypeSafe's image support and its Box question type are experimental: TypeSafe calls them
+"Dreamer-ready", meaning the request format, the answers and the limits can change between its releases. jev4k puts
+them behind an opt-in, `@ExperimentalJevImages`, and may change them in any release too.
+
+### Upgrading
+
+- Gradle builds: `com.pambrose.jev4k:jev4k:0.3.0`
+- Maven builds: `com.pambrose.jev4k:jev4k-jvm:0.3.0`
+
+Code that compiled against 0.2.2 compiles against 0.3.0 with one exception: `Question` and `Answer` gain the subtypes
+`BoxQuestion` and `BoxAnswer`, so an exhaustive `when` over either needs an `else` branch, or a branch for the new
+type, which needs the opt-in. The binary API only grows. `kotlinx-io-core`, which Ktor already brought in, is now a
+declared dependency, so the JVM POM lists five compile dependencies.
+
+### Images
+
+A `JevImage` holds a PNG or a JPEG, from bytes, base64 or a file. It stands in your content as a reference string, so
+it goes anywhere text does: in the state, in a question's instructions, and in its criteria. Attach it, and its bytes
+are sent with the request:
+
+```kotlin
+@OptIn(ExperimentalJevImages::class)
+suspend fun findMug(jev: JevApi, bytes: ByteArray) {
+    val photo = JevImage.of(bytes)
+    val result =
+        jev.query(jsonOf(mapOf("photo" to photo)), model = "jev-preview") {
+            attach(photo)
+            noul("mug_visible", "Is there a coffee mug in `photo`?")
+            box("mug", "the coffee mug in `photo`")
+        }
+    if (result.noul("mug_visible").isTrue()) println(result.box("mug").box)
+}
+```
+
+- **Attaching.** A `JevQuery` can attach its own pictures, such as the examples that define a Choice's options, and
+  `ask(query, state, images...)` adds a call's images after them. From Java, the blocking version is
+  `askWithImages`.
+- **Sending.** A request with images goes out as `multipart/form-data`, as the official SDKs send it, with the
+  `TypeSafe-Danger-Zone-Images: true` header TypeSafe requires. A request without images is sent exactly as before.
+- **Checking.** Before sending, jev4k reports an image it can't use, an attached image nothing references, a
+  generated reference placed without its image attached, and a Box question with no image. The API enforces its own
+  size and pixel limits.
+- **Box.** A Box question answers with a `BoundingBox`, each edge a fraction of the image's size, and a confidence.
+  It always returns a box, even for a target that isn't there, so pair it with a Noul. Box needs Jev 1.14
+  (`jev-preview` or `jev-1.14.0`).
+
+The [Images & Box](https://jev4k.com/queries/images/) page covers the rest, from chosen references to cropping to a
+box, and has a Java example.
+
+### Also in this release
+
+- **Deep JSON fails before sending.** The API now rejects a state, or an instructions or criteria value, nested more
+  than 64 levels deep. jev4k checks the same limit, so such a request fails at once with a `JevValidationException`
+  instead of reaching the server for a 400.
+- **Long context.** The README and the Making Calls page show TypeSafe's `TypeSafe-Danger-Zone-Long-Context: true`
+  header, which raises both context limits to 262k tokens.
+- **Jev 1.14.** TypeSafe released `jev-1.14.0` on 2026-10-14 as `jev-preview`, and `jev-latest` moves to it about a
+  week later. Examples that pin a version now use `jev-1.14.0`. If you've tuned thresholds on `jev-1.13.0`, pin it
+  until you've checked them against 1.14.
+
+**Full Changelog**: https://github.com/pambrose/jev4k/compare/0.2.2...0.3.0
+
 ## v0.2.2 — 2026-10-12
 
 A maintenance release. The library's API and behavior are exactly as in 0.2.1, and the one dependency that moves is

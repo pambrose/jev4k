@@ -81,7 +81,7 @@ artifact for each target, so a JVM project and a Kotlin Multiplatform project (i
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.2")
+    implementation("com.pambrose.jev4k:jev4k:0.3.0")
 }
 ```
 
@@ -91,7 +91,7 @@ Maven doesn't read Gradle's module metadata, so a Maven build depends on the JVM
 <dependency>
     <groupId>com.pambrose.jev4k</groupId>
     <artifactId>jev4k-jvm</artifactId>
-    <version>0.2.2</version>
+    <version>0.3.0</version>
 </dependency>
 ```
 
@@ -296,6 +296,7 @@ These are checked locally before anything is sent, and every problem is reported
 - non-empty instructions
 - a Choice has 1 to 255 options (`MAX_CHOICE_OPTIONS`)
 - a Score has 2 to 10 levels (`MIN_SCORE_LEVELS`..`MAX_SCORE_LEVELS`)
+- the state, and each instructions or criteria value, nests at most 64 objects or arrays deep, as the API requires
 
 ## State
 
@@ -525,7 +526,7 @@ dropped:
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.2.2") {
+    implementation("com.pambrose.jev4k:jev4k:0.3.0") {
         exclude(group = "io.ktor", module = "ktor-client-cio-jvm")
     }
     implementation("io.ktor:ktor-client-okhttp:3.6.0")

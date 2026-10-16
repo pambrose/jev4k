@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 `jev4k` is a Kotlin Multiplatform DSL and client for TypeSafe's Jev "System One" model, built on the Ktor client and
-kotlinx.serialization. You describe a state and typed questions (Noul, Choice, Score), and it returns typed answers. The
-library is `com.pambrose.jev4k`, almost all of it common code under `src/commonMain/kotlin`, for the JVM (the primary
-target), Apple platforms, Linux, Windows, and Node.js (js and wasmJs). A runnable example is
+kotlinx.serialization. You describe a state and typed questions (Noul, Choice, Score, and the experimental Box), and it
+returns typed answers. The library is `com.pambrose.jev4k`, almost all of it common code under `src/commonMain/kotlin`,
+for the JVM (the primary target), Apple platforms, Linux, Windows, and Node.js (js and wasmJs). A runnable example is
 `src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt`.
 
 ## TypeSafe / Jev API docs
@@ -21,10 +21,11 @@ the legacy preview API shape (`/preview/evaluation`, `document`, `prompts`); `je
 
 ## Architecture
 
-The question types' names follow TypeSafe's JS SDK; the answer types and the `nouls`/`choices`/`scores` views follow the
-Python SDK, and `ModelInfo`/`ModelList` are jev4k's own. A question definition is a `Question`, one of `NoulQuestion`,
-`ChoiceQuestion` or `ScoreQuestion`, which hold only what is asked: instructions and criteria. A `QuestionRef<A>` is the
-handle code holds. It pairs an id with a `Question` (`ref.question`) and a decoder for the typed answer.
+The question types' names follow TypeSafe's JS SDK; the answer types and the `nouls`/`choices`/`scores` views follow
+the Python SDK, and `ModelInfo`/`ModelList` are jev4k's own. A question definition is a `Question`, one of
+`NoulQuestion`, `ChoiceQuestion`, `ScoreQuestion` or the experimental `BoxQuestion`, which hold only what is asked:
+instructions and criteria. A `QuestionRef<A>` is the handle code holds. It pairs an id with a `Question`
+(`ref.question`) and a decoder for the typed answer.
 
 There are two DSL layers over one core model. Both produce a validated `QuestionSet`, and
 `JevApi.evaluate(state, questionSet, model)` is the only call that sends questions to the network. `JevApi.models()`
@@ -391,7 +392,8 @@ without them keep compiling.
   `make abi-update` (`updateKotlinAbi`) rewrites the dumps after an intended change and must run on a Mac, since a
   host that can't compile a target keeps that target's old declarations. The JVM dump matched 0.1.0's through the
   multiplatform move; 0.2.0's API changes since (`ModelList`, `JevCallOptions`, the millisecond members and the rest,
-  listed in the changelog) were recorded with `make abi-update`.
+  listed in the changelog) were recorded with `make abi-update`, as were 0.3.0's image and Box additions, which only
+  add to the dumps.
 - Coverage uses Kover (`org.jetbrains.kotlinx.kover`).
     - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs
       `build koverVerify koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js,

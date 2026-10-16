@@ -5,13 +5,15 @@ kotlinx.serialization. It runs on the JVM, Apple platforms, Linux, Windows, and 
 *state* (text, JSON, or any `@Serializable` value) and a set of typed *questions*. Jev answers each question with a
 typed judgment and probabilities that code can branch on, without generating any text.
 
-jev4k supports three question types:
+jev4k supports three question types, and experimentally a fourth, Box, over images (see
+[JevImage][com.pambrose.jev4k.JevImage]):
 
 | Question | Answer                                                                                                           | Use it when                             |
 |----------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
 | Noul     | [NoulAnswer][com.pambrose.jev4k.NoulAnswer]: the probability of yes                                              | a yes/no condition                      |
 | Choice   | [ChoiceAnswer][com.pambrose.jev4k.ChoiceAnswer]: the option chosen, per-option probabilities, confidence         | one of a known set of options           |
 | Score    | [ScoreAnswer][com.pambrose.jev4k.ScoreAnswer]: a probability-weighted level, per-level probabilities, confidence | a position on ordered, described levels |
+| Box      | [BoxAnswer][com.pambrose.jev4k.BoxAnswer]: a bounding box, as fractions of the image, and a confidence           | where something is in an image          |
 
 ## Two ways to ask
 

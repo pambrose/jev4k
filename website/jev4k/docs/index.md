@@ -51,6 +51,8 @@ graph TD
 - **Structured criteria**: contrastive rubrics, examples, and JSON field specs in
   [instructions and options](questions/structured.md).
 - **Any state**: text, JSON, or any `@Serializable` value.
+- **Images and Box** (experimental): PNG and JPEG images in the state, instructions and criteria, and Box questions
+  that find where something is, on the [Images & Box](queries/images.md) page.
 - **Suspend-first client** on Ktor, with a [blocking mirror](client/calls.md) on the JVM for scripts and `main`.
 - **Multiplatform**: the JVM, Apple platforms, Linux, Windows, and Node.js, with the same API on
   [every one](getting-started/installation.md#platforms).

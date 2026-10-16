@@ -6,18 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-16
+
+Experimental support for TypeSafe's images and Box questions, behind an opt-in, and the request nesting rule from
+TypeSafe's October 2026 API. The new `Question` and `Answer` subtypes break an exhaustive `when` without an `else`
+branch; anything else that compiled against 0.2.2 compiles unchanged, and the binary API only grows.
 
 ### Added
 
 - Experimental support for TypeSafe's images and Box questions, behind the new `@ExperimentalJevImages` opt-in.
-  `JevImage` (from bytes, base64 or a file) is placed anywhere content goes as its reference and attached with
-  `QueryBuilder.attach`, `JevQuery.attach` or the new `ask(query, state, images...)` (`askWithImages` on `BlockingJev`
-  from Java, so a Java `ask(query, state, null)` stays unambiguous). A request with images is sent as
-  `multipart/form-data`, with the `TypeSafe-Danger-Zone-Images: true` header added for you (also when a hand-built
-  `extraBody["assets"]` carries the images). `box(...)` asks a Box
-  question, read back as a `BoxAnswer` through `result.box(id)` or `result.boxes`. Structural problems, such as an
-  image nothing references or one placed but not attached, fail before sending.
+    - `JevImage` holds a PNG or JPEG from bytes, base64, a kotlinx-io `Path`, or on the JVM a `java.nio.file.Path` or
+      `File`. It is placed anywhere content goes as its reference: in a string template, `jsonOf`, `entry`, a
+      `@Serializable` field, or the builders' image overloads.
+    - An image is sent once it is attached: with `QueryBuilder.attach`, with `JevQuery.attach` (so a query carries its
+      own example pictures), or through the new `ask(query, state, images...)`. From Java, `BlockingJev`'s version is
+      `askWithImages`, so a Java `ask(query, state, null)` stays unambiguous.
+    - A request with images is sent as `multipart/form-data`, the JSON body first and then one part per image, with
+      the `TypeSafe-Danger-Zone-Images: true` header added for you (also when a hand-built `extraBody["assets"]`
+      carries the images).
+    - `box(...)` asks a Box question in either DSL style, answered with a `BoxAnswer` (a `BoundingBox` and a nullable
+      confidence) through `result.box(id)` or `result.boxes`.
+    - Structural problems fail before sending, with the rest of a request's problems: an image that is empty, invalid
+      base64, or neither a PNG nor a JPEG; an attached image nothing references; a generated reference placed without
+      its image attached; references over 64 KiB in total; and a Box question with no image.
+- The site's Images & Box page and the README's Images section cover all of this, with compiled examples in Kotlin
+  and Java.
 - The README and the site's Making Calls page show how to turn on TypeSafe's long context (both context limits raised
   to 262k tokens) with the `TypeSafe-Danger-Zone-Long-Context: true` header in `JevCallOptions.headers`.
 
@@ -28,7 +41,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   an `else` branch no longer compiles. Naming either subtype needs the `@ExperimentalJevImages` opt-in.
 - `kotlinx-io-core` (0.9.1, already brought by Ktor) is now a declared `api` dependency, since `JevImage.read` takes a
   kotlinx-io `Path`. The JVM POM lists five compile dependencies.
-- The README and the site describe images and Box, which jev4k now supports, instead of saying it doesn't.
+- The README and the site no longer say that Jev reads only text: they describe images and Box, and list the new
+  nesting limit with the other request limits.
 - Examples that pin a model version use `jev-1.14.0`, which TypeSafe released on 2026-10-14 as `jev-preview` and
   announced as `jev-latest` from about a week later. The site's model table dates that move instead of naming the
   version behind each alias, and the Concepts page's sample response reports `jev-1.14.0`, with confidence values that
@@ -360,7 +374,7 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
-[Unreleased]: https://github.com/pambrose/jev4k/compare/0.2.2...HEAD
+[0.3.0]: https://github.com/pambrose/jev4k/compare/0.2.2...0.3.0
 [0.2.2]: https://github.com/pambrose/jev4k/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/pambrose/jev4k/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/pambrose/jev4k/compare/0.1.0...0.2.0
