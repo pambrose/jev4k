@@ -234,7 +234,8 @@ class JevClient(
             endpoint = endpoint,
             status = e.status.value,
             headers = e.headers.toMap(),
-            cause = e,
+            // No cause: the internal exception holds Ktor's Headers and HttpStatusCode, which can't be serialized,
+            // and the detail already says why.
         )
     }
 

@@ -147,6 +147,54 @@ class ConfigTest : StringSpec() {
             }
         }
 
+        "an API key with a space or a character beyond ASCII is rejected, and a leading byte-order mark dropped" {
+            val cases = mapOf(
+                "secret​key" to "a character beyond ASCII at index 6",
+                "secret﻿key" to "a character beyond ASCII at index 6",
+                "secret key" to "a space at index 6",
+            )
+            for ((key, problem) in cases) {
+                withClue(problem) {
+                    val e = shouldThrow<JevConfigException> { config { apiKey = key } }
+                    e.message shouldContain "apiKey contains $problem"
+                    e.message shouldNotContain "secret"
+                }
+            }
+            config { apiKey = "﻿secret-key\n" }.apiKey shouldBe "secret-key"
+        }
+
+        "a header name that isn't an HTTP token, or a value beyond ASCII, is rejected without the value" {
+            val e = shouldThrow<JevConfigException> {
+                config {
+                    apiKey = "k"
+                    headers["X-Équipe"] = "fine"
+                    headers["X-Token"] = "gateway-secretĀ"
+                }
+            }
+            e.message shouldContain "header name 'X-Équipe' contains a character HTTP doesn't allow in a name"
+            e.message shouldContain "header 'X-Token' has a character beyond ASCII in its value"
+            e.message shouldNotContain "gateway-secret"
+        }
+
+        "the framing headers jev4k or the engine sets can't be configured, in any case" {
+            for (name in listOf("Content-Length", "content-type", "Transfer-Encoding", "upgrade")) {
+                withClue(name) {
+                    val e = shouldThrow<JevConfigException> {
+                        config {
+                            apiKey = "k"
+                            headers[name] = "5"
+                        }
+                    }
+                    e.message shouldContain "header '$name' is set by jev4k or the HTTP engine"
+                }
+            }
+            val tabbed = config {
+                apiKey = "k"
+                headers["X-Tab"] = "a\tb"
+            }
+            tabbed.headers["X-Tab"] shouldBe "a\tb"
+        }
+
         "a configured header Ktor would reject is reported without its value" {
             val e = shouldThrow<JevConfigException> {
                 config {

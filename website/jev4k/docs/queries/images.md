@@ -115,6 +115,17 @@ strips EXIF data and doesn't apply its orientation.
 A request with images is sent as `multipart/form-data`, the JSON body first and then one part per image, as the
 official SDKs send it. Images count as input tokens at the text price.
 
+## Uploads and timeouts
+
+The client's `timeout`, 10 seconds unless you set it, limits each attempt, and an attempt includes uploading the
+request. A request with a few large photos, or one sent over a slow link, can time out while it is still being sent,
+and a timed-out attempt is retried by default, uploading the images again. Give image calls more time, and consider
+not retrying after a timeout. A `retry` in the call's options replaces the client's whole policy:
+
+```kotlin
+--8<-- "ImageExamples.kt:timeout"
+```
+
 If you cache results on the model, the state and the questions, include each attached image's bytes in the key too:
 `QuestionSet.toJson()` holds only the references.
 

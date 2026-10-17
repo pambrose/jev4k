@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 18 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 23 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -30,7 +30,7 @@ Images and Box
 - [x] [#7](#issue-7) `JevImage.read` reads a file of any size into memory
 - [x] [#8](#issue-8) One out-of-range Box answer fails the whole response, paired Noul included
 - [ ] [#9](#issue-9) The docs say a cache key must cover each image's bytes, but `JevImage` exposes none
-- [ ] [#10](#issue-10) The per-attempt timeout covers an image upload, and the Images page doesn't say so
+- [x] [#10](#issue-10) The per-attempt timeout covers an image upload, and the Images page doesn't say so
 
 DSL and results
 
@@ -42,10 +42,10 @@ DSL and results
 
 Client and configuration
 
-- [ ] [#15](#issue-15) An oversized 2xx's `JevResponseValidationException` can't be Java-serialized
-- [ ] [#16](#issue-16) The 16 MiB response cap doesn't apply to compressed responses on Curl, Darwin and Node
-- [ ] [#17](#issue-17) `build()` accepts engine-owned headers; `Transfer-Encoding` or `Upgrade` breaks every call
-- [ ] [#18](#issue-18) A non-ASCII character in the API key or a header passes `build()`
+- [x] [#15](#issue-15) An oversized 2xx's `JevResponseValidationException` can't be Java-serialized
+- [x] [#16](#issue-16) The 16 MiB response cap doesn't apply to compressed responses on Curl, Darwin and Node
+- [x] [#17](#issue-17) `build()` accepts engine-owned headers; `Transfer-Encoding` or `Upgrade` breaks every call
+- [x] [#18](#issue-18) A non-ASCII character in the API key or a header passes `build()`
 - [ ] [#19](#issue-19) Built "immutable" objects hand Java mutable collections
 - [ ] [#20](#issue-20) Java's `RetryPolicy.with…` chain fails for some valid targets, depending on call order
 
@@ -168,14 +168,14 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
   - [x] [#14](#issue-14) Say in the `JevQuery.questions` KDoc that a read before the first question throws
   - [x] [#56](#issue-56) Read the request id from the headers, and strip a leading BOM, in `Testing.kt`
   - [x] [#57](#issue-57) Accept only canonical Score level keys, and size an unasked Score by its highest key
-- [ ] **4. Client and configuration hardening.** #17 and #18 are one pass through `headerProblem` and the key check
+- [x] **4. Client and configuration hardening.** #17 and #18 are one pass through `headerProblem` and the key check
   in `JevConfig.kt`. #15 drops a field or the cause in `JevClient.oversized`. For #16, decide between a
   byte-counting bound and a docs change; #10 is a docs change on the Images page.
-  - [ ] [#15](#issue-15) Drop the cause, or give `OversizedResponseException` serializable fields
-  - [ ] [#17](#issue-17) Reject `Content-Length`, `Content-Type`, `Transfer-Encoding` and `Upgrade` in `headerProblem`
-  - [ ] [#18](#issue-18) Reject non-ASCII characters in the key, header names and header values
-  - [ ] [#16](#issue-16) Bound the bytes actually read, or say on the three pages that a compressed body isn't capped
-  - [ ] [#10](#issue-10) Say on the Images page and in the image `ask` KDocs that `timeout` covers the upload
+  - [x] [#15](#issue-15) Drop the cause, or give `OversizedResponseException` serializable fields
+  - [x] [#17](#issue-17) Reject `Content-Length`, `Content-Type`, `Transfer-Encoding` and `Upgrade` in `headerProblem`
+  - [x] [#18](#issue-18) Reject non-ASCII characters in the key, header names and header values
+  - [x] [#16](#issue-16) Bound the bytes actually read, or say on the three pages that a compressed body isn't capped
+  - [x] [#10](#issue-10) Say on the Images page and in the image `ask` KDocs that `timeout` covers the upload
 - [ ] **5. KDocs and publishing.** The javadoc jar ships with each release, and signing runs only when one is
   published, so this group lands before 0.3.1 goes out. One edit to the `dokka {}` block, then check
   `build/dokka/html`: builder pages for `JevQuery`, only `javase/17` links, tag-based source links and no

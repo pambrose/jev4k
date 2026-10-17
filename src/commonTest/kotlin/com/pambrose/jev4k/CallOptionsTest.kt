@@ -121,6 +121,11 @@ class CallOptionsTest : StringSpec() {
             e.message shouldNotContain "abc"
         }
 
+        "a call can't set the framing headers jev4k or the engine sets either" {
+            shouldThrow<JevConfigException> { JevCallOptions { headers["transfer-encoding"] = "chunked" } }
+                .message shouldContain "header 'transfer-encoding' is set by jev4k or the HTTP engine"
+        }
+
         "withOptions merges the options of a call, and of a nested withOptions, over its own" {
             val jev = triageJev()
             val outer = jev.client.withOptions(

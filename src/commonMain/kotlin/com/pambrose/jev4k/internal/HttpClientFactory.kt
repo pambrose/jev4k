@@ -47,7 +47,10 @@ internal object HttpClientFactory {
     /**
      * Refuses a response whose declared `Content-Length` is over [MAX_RESPONSE_BYTES] before Ktor reads its body
      * into memory. That happens in the receive pipeline's `Before` phase (the SaveBody plugin), so this check runs in
-     * a phase of its own ahead of it. A body sent without a length (chunked) isn't checked; the timeout bounds it.
+     * a phase of its own ahead of it. A body without a declared length isn't checked; the timeout bounds it. That
+     * includes a compressed body on Curl, Darwin and the Js engines, which ask for compression, decompress it and drop
+     * `Content-Length` before this phase runs. Counting the bytes read instead would need Ktor's internal
+     * `HttpResponse.rawContent`, so the gap is documented rather than closed.
      */
     private fun HttpClient.limitBodySize() {
         receivePipeline.insertPhaseBefore(HttpReceivePipeline.Before, LimitBodySize)

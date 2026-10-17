@@ -3,17 +3,21 @@ package website
 import com.pambrose.jev4k.BoundingBox
 import com.pambrose.jev4k.ExperimentalJevImages
 import com.pambrose.jev4k.JevApi
+import com.pambrose.jev4k.JevCallOptions
 import com.pambrose.jev4k.JevImage
 import com.pambrose.jev4k.JevQuery
+import com.pambrose.jev4k.RetryPolicy
 import com.pambrose.jev4k.ask
 import com.pambrose.jev4k.entry
 import com.pambrose.jev4k.jsonOf
 import com.pambrose.jev4k.query
 import com.pambrose.jev4k.read
+import com.pambrose.jev4k.withOptions
 import kotlinx.serialization.Serializable
 import java.awt.image.BufferedImage
 import java.nio.file.Path
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.seconds
 
 // --8<-- [start:state]
 @OptIn(ExperimentalJevImages::class)
@@ -150,3 +154,24 @@ fun cropToBox(
     return image.getSubimage(x, y, width, height)
 }
 // --8<-- [end:crop]
+
+// --8<-- [start:timeout]
+@OptIn(ExperimentalJevImages::class)
+suspend fun inspectShelf(
+    jev: JevApi,
+    shelf: JevImage,
+) {
+    // Each attempt has 60 s to upload the image and get its answer, and a timed-out one isn't uploaded again.
+    val upload =
+        JevCallOptions {
+            timeout = 60.seconds
+            retry = RetryPolicy(retryOnTimeout = false)
+        }
+    val result =
+        jev.withOptions(upload).query("The shelf: $shelf") {
+            attach(shelf)
+            noul("gap", "Is any slot on the shelf empty?")
+        }
+    println(result.noul("gap"))
+}
+// --8<-- [end:timeout]

@@ -37,6 +37,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   `jevResult(String)` drops a leading byte-order mark, both as the client does.
 - The `JevQuery.questions` KDoc says that a read before any question has registered, such as from the `init` block
   of a base class with no questions of its own, fails.
+- Configuration and call options:
+    - `build()` refuses `Content-Length`, `Content-Type`, `Transfer-Encoding` and `Upgrade` in `headers`, in any
+      case. jev4k or the engine sets them, and a configured one failed every call with Ktor's own exception, sent a
+      conflicting length, or was dropped.
+    - An API key must be printable ASCII without spaces, and a header name an HTTP token with an ASCII value, so a
+      zero-width space pasted with a key, or an accented header name, fails `build()` instead of every call, where
+      engines disagreed on it. A leading byte-order mark on any string setting is dropped.
+- A 2xx response refused for its declared size raises a `JevResponseValidationException` that can be
+  Java-serialized; it no longer carries an internal cause holding Ktor types.
+- The README, Configuration and Errors pages say that the 16 MiB response limit applies only to a declared length,
+  which a compressed response on Linux, Apple platforms and Node.js doesn't have, since those engines decompress it
+  themselves.
+- The Images page and the image `ask` KDocs say that `timeout` covers each attempt's upload, with an example giving
+  image calls more time.
 
 ## [0.3.0] - 2026-10-16
 

@@ -116,9 +116,13 @@ without them keep compiling.
       responses are read raw. So the only `Accept` is `setHeaders`' (or the caller's), and `jev4k-jvm` needs only
       CIO at runtime. `ClientTest` pins the request bytes the plugin used to produce.
     - `HttpClientFactory.limitBodySize` inserts a receive-pipeline phase ahead of `Before`, where Ktor's `SaveBody`
-      reads the whole body into memory, and refuses a declared `Content-Length` over `MAX_RESPONSE_BYTES` (16 MiB)
-      with an internal `OversizedResponseException`, which `execute` maps by status. A chunked body isn't capped;
-      the timeout bounds it. An `HttpSend` interceptor would be too late: the receive pipeline runs inside the send.
+      reads the whole body into memory, and refuses a declared `Content-Length` over `MAX_RESPONSE_BYTES` (16 MiB) with
+      an internal `OversizedResponseException`, which `execute` maps by status (a 2xx without the internal one as its
+      cause, which holds Ktor types that can't be serialized). A body without a declared length isn't capped and the
+      timeout bounds it; that includes a compressed one on Curl, Darwin and the Js engines, which decompress it and drop
+      `Content-Length` first. Counting bytes would need Ktor's `@InternalAPI` `rawContent`, so the gap is documented on
+      the README, Configuration and Errors pages instead. An `HttpSend` interceptor would be too late: the receive
+      pipeline runs inside the send.
     - `HttpRequestRetry` must be installed **before** `HttpTimeout`, otherwise one timeout cancels every retry.
     - `expectSuccess = false`: non-2xx responses map to `JevApiException` subclasses (`apiException` in `Errors.kt`)
       after retries run out, keeping the raw body and the `x-typesafe-request-id` header. `JevApiException` lowercases
@@ -153,12 +157,14 @@ without them keep compiling.
   are trimmed, and one that is blank after trimming counts as unset. The env vars are `TYPESAFE_API_KEY` (required),
   `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal hooks (`env`, `retryDelay`, `random`, `now`) make tests
   deterministic; `env` defaults to `platformGetenv`.
-    - `build()` checks what Ktor would otherwise reject on every request, with an exception that isn't a
-      `JevException` and whose message quotes the value. `baseUrl` is parsed once: http(s), a host, no userinfo,
-      query or fragment, and plain `http://` only for a loopback host unless `allowInsecureHttp`. The API key may
-      not contain control characters. Header names and values follow Ktor's `checkHeaderName`/`checkHeaderValue`.
-      Every problem goes into one `JevConfigException`, whose messages never quote the key, a header value, or a
-      URL that could hold credentials.
+    - `build()` checks what Ktor would otherwise reject on every request, with an exception that isn't a `JevException`
+      and whose message quotes the value. `baseUrl` is parsed once: http(s), a host, no userinfo, query or fragment, and
+      plain `http://` only for a loopback host unless `allowInsecureHttp`. The API key must be visible ASCII
+      (`'!'..'~'`). A header name must be an RFC 9110 token, its value ASCII without control characters but a tab, and
+      `FRAMING_HEADERS` (`Content-Length`, `Content-Type`, `Transfer-Encoding`, `Upgrade`) are refused in any case:
+      Ktor's `UnsafeHeadersList` holds only the last two, and a configured length or type contradicts the body's or is
+      dropped. `setting()` drops a leading U+FEFF before trimming. Every problem goes into one `JevConfigException`,
+      whose messages never quote the key, a header value, or a URL that could hold credentials.
     - The retry policy is stored with a copy of its status set, since the caller's set may be mutable and the
       client re-reads it on every response. A blank per-call model falls back to the default, as a blank
       `defaultModel` does.

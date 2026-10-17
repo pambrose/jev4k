@@ -116,8 +116,9 @@ data class RetryPolicy(
 
 /**
  * Builder for [JevConfig]. Each setting resolves as: explicit value, then environment variable, then default. String
- * settings are trimmed, so the trailing newline of a value read from a file is harmless, and a value that is blank
- * after trimming counts as unset. [build] reports every problem it finds at once, without echoing a secret.
+ * settings are trimmed, and a leading byte-order mark is dropped, so the trailing newline or the mark of a value read
+ * from a file is harmless, and a value that is blank after trimming counts as unset. [build] reports every problem it
+ * finds at once, without echoing a secret.
  */
 @JevDsl
 class JevConfigBuilder {
@@ -182,8 +183,18 @@ class JevConfigBuilder {
         val problems = buildList {
             timeoutProblem(timeout)?.let(::add)
             addAll(baseUrlProblems(url, allowInsecureHttp))
-            val badChar = key.indexOfFirst { it.isControlCharacter() }
-            if (badChar >= 0) add("apiKey contains a control character at index $badChar")
+            // A key is visible ASCII. Anything else, such as a zero-width space pasted with it, goes out as UTF-8 on
+            // some engines and is refused by fetch on others, so it is caught here.
+            val badChar = key.indexOfFirst { it !in '!'..'~' }
+            if (badChar >= 0) {
+                val kind =
+                    when {
+                        key[badChar].isControlCharacter() -> "a control character"
+                        key[badChar] == ' ' -> "a space"
+                        else -> "a character beyond ASCII"
+                    }
+                add("apiKey contains $kind at index $badChar")
+            }
             headers.forEach { (name, value) -> headerProblem(name, value)?.let(::add) }
         }
         if (problems.isNotEmpty()) throw JevConfigException("Invalid configuration: ${problems.joinToString("; ")}")
@@ -211,7 +222,7 @@ internal fun timeoutProblem(timeout: Duration): String? =
     "timeout must be at least 1 millisecond (was $timeout)".takeIf { timeout.inWholeMilliseconds < 1 }
 
 /** A string setting as given, trimmed, or null when it is unset or blank. A per-call model follows the same rule. */
-internal fun String?.setting(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
+internal fun String?.setting(): String? = this?.removePrefix("\uFEFF")?.trim()?.takeIf { it.isNotEmpty() }
 
 private fun Char.isControlCharacter(): Boolean = this < ' ' || this == '\u007F'
 
@@ -259,19 +270,50 @@ private fun String.isLoopback(): Boolean {
         LOOPBACK_IPV4.matches(host)
 }
 
-/** What is wrong with a configured header, by Ktor's rules, without echoing its value, which may be a secret. */
+/**
+ * What is wrong with a configured header, without echoing its value, which may be a secret: a name that isn't an HTTP
+ * token (RFC 9110), one of the [FRAMING_HEADERS] in any case, or a value holding a control character or a character
+ * beyond ASCII, which engines send differently or refuse.
+ */
 internal fun headerProblem(
     name: String,
     value: String,
-): String? {
-    val badName = runCatching { HttpHeaders.checkHeaderName(name) }.isFailure
-    val badValue = runCatching { HttpHeaders.checkHeaderValue(value) }.isFailure
-    return when {
-        badName -> "header name '${name.escapeControls()}' contains a character HTTP doesn't allow in a name"
-        badValue -> "header '$name' has a control character in its value"
-        else -> null
+): String? =
+    when {
+        !name.isToken() -> {
+            "header name '${name.escapeControls()}' contains a character HTTP doesn't allow in a name"
+        }
+
+        FRAMING_HEADERS.any { it.equals(name, ignoreCase = true) } -> {
+            "header '$name' is set by jev4k or the HTTP engine, so it can't be configured"
+        }
+
+        value.any { it.isControlCharacter() && it != '\t' } -> {
+            "header '$name' has a control character in its value"
+        }
+
+        value.any { it > '\u007F' } -> {
+            "header '$name' has a character beyond ASCII in its value"
+        }
+
+        else -> {
+            null
+        }
     }
-}
+
+/**
+ * The headers jev4k or the engine sets. A configured length or type would contradict the body's or be dropped, and a
+ * `Transfer-Encoding` or `Upgrade` fails every request in Ktor or, spelled in lowercase, goes out beside the engine's
+ * `Content-Length`.
+ */
+private val FRAMING_HEADERS =
+    listOf(HttpHeaders.ContentLength, HttpHeaders.ContentType, HttpHeaders.TransferEncoding, HttpHeaders.Upgrade)
+
+private const val TOKEN_SYMBOLS = "!#\$%&'*+-.^_`|~"
+
+/** An HTTP token (RFC 9110 section 5.6.2): ASCII letters, digits and [TOKEN_SYMBOLS], at least one. */
+private fun String.isToken(): Boolean =
+    isNotEmpty() && all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it in TOKEN_SYMBOLS }
 
 /** A header name made printable for a message: each control character becomes a `\uXXXX` escape. */
 private fun String.escapeControls(): String =

@@ -452,7 +452,7 @@ val jev = JevClient {
 ```
 
 Each setting resolves as: the explicit value, then the environment variable, then the default. String settings are
-trimmed, and a blank one counts as unset. `baseUrl` must be `https://` (plain `http://` is for `localhost`, or
+trimmed (a leading byte-order mark too), and a blank one counts as unset. `baseUrl` must be `https://` (plain `http://` is for `localhost`, or
 anywhere with `allowInsecureHttp = true`) and carry no credentials or query. The builder reports every problem at
 once in a `JevConfigException`, and neither its messages nor `JevConfig.toString()` print the key.
 
@@ -488,7 +488,8 @@ attempt, so a call that retries on long server hints can take a couple of minute
 
 Redirects are never followed: a 3xx is a `JevApiException`, since following one would send your headers, and on
 Node.js the request body, to whatever host it names. A response declaring a body over 16 MiB is refused before the
-body is read; one sent without a length is bounded only by `timeout`.
+body is read; one without a declared length is bounded only by `timeout`. On Linux, Apple platforms and Node.js that
+includes a compressed response, since those engines decompress it themselves and drop its length.
 
 ### Concurrency
 

@@ -74,13 +74,17 @@ The client doesn't close an engine you pass in, so one engine can be shared by s
 yourself when you're done with it. `timeout` still bounds each whole attempt, but the connect and socket
 timeouts are left to an engine you supply, so settings like `endpoint.connectTimeout` above take effect.
 
-The builder checks the settings Ktor would otherwise reject on every request, and throws a `JevConfigException`
-listing every problem it found at once:
+The builder checks the settings that would otherwise fail every request, or that engines would send differently, and
+throws a `JevConfigException` listing every problem it found at once:
 
 - `baseUrl` must be an absolute `https://` URL with a host and, optionally, a path. Plain `http://` is accepted
   for this machine, or anywhere with `allowInsecureHttp = true`. Credentials, a query or a fragment are refused;
   send what a gateway needs in `headers` instead.
-- `apiKey` must not contain control characters, and `headers` must be valid HTTP names and values.
+- `apiKey` must be printable ASCII with no spaces: a zero-width space or other invisible character pasted with it would
+  make the server see a different key. A leading byte-order mark on any setting, as in a file saved with one, is
+  dropped.
+- `headers` must have HTTP token names and ASCII values without control characters (a tab is allowed). `Content-Length`,
+  `Content-Type`, `Transfer-Encoding` and `Upgrade` can't be set, since jev4k or the engine sets them.
 - `timeout` must be at least a millisecond.
 
 The messages never quote the key, a header value, or a URL that could hold credentials.
@@ -96,4 +100,6 @@ The messages never quote the key, a header value, or a URL that could hold crede
 - Redirects are never followed. A 3xx response is reported as a `JevApiException` with its status, because following
   one would send your headers, and on Node.js the request body, to whatever host it names.
 - A response whose declared `Content-Length` is over 16 MiB is refused before its body is read into memory. A body
-  sent without a length isn't checked; the per-attempt `timeout` bounds how long it can stream.
+  without a declared length isn't checked; the per-attempt `timeout` bounds how long it can stream. On Linux, Apple
+  platforms and Node.js a compressed response has no declared length either: Curl, `NSURLSession` and fetch ask for
+  compression, decompress the body themselves and drop its length. On the JVM and Windows the engine doesn't ask for it.
