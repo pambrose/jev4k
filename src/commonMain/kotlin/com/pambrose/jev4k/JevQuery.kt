@@ -41,8 +41,10 @@ interface JevOption {
  * [JevOption.entry]. An argument is evaluated before the builder runs, though, so a failing `entry()` or
  * `jsonEntry()` passed as the instructions still throws from the initializer.
  *
- * [questions] can be read at any time. A read before every property is initialized, from an `init` block or a base
- * class, sees only the questions declared so far; the next read includes the rest.
+ * [questions] can be read once the first question has registered. A read before every property is initialized, from
+ * an `init` block or a base class, sees only the questions declared so far; the next read includes the rest. A read
+ * before any question has registered, such as from the `init` block of a base class with no questions of its own,
+ * fails with a [JevValidationException], since a set needs at least one question.
  *
  * The builders take the instructions first and an optional `id` second, the reverse of the inline [QueryBuilder]'s
  * `(id, instructions)`. Both are strings, so pass `id` by name (`noul("Is this urgent?", id = "urgent")`): a
@@ -70,7 +72,8 @@ abstract class JevQuery {
     /**
      * Attaches [image] to every request that asks these questions, and returns it, so a picture can be declared and
      * attached at once: `private val thumb = attach(JevImage.of(thumbBytes))`. Reading a file here, with
-     * [JevImage.read], does I/O in the object's initializer; a missing file then fails the object's first use.
+     * [JevImage.read], does I/O in the object's initializer, and a missing file makes the object unusable: on the JVM
+     * its first use throws `ExceptionInInitializerError`, and every later use `NoClassDefFoundError`.
      */
     @ExperimentalJevImages
     protected fun attach(image: JevImage): JevImage {
@@ -127,7 +130,7 @@ abstract class JevQuery {
         levels: ScoreBuilder.() -> Unit,
     ): QuestionProvider<ScoreAnswer> = QuestionProvider(id) { scoreRef(it, instructions, levels) }
 
-    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. */
+    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. Needs Jev 1.14. */
     @ExperimentalJevImages
     protected fun box(
         instructions: String,

@@ -3,13 +3,76 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
+## v0.4.0 — 2026-10-16
+
+> [!WARNING]
+> **Some things 0.3.0 accepted are now refused.** The binary API only grows, and Kotlin code that compiled against
+> 0.3.0 compiles unchanged, but each of these now fails:
+>
+> - **From Java,** changing a collection a built object hands out: a config's or a call's headers, a call's extra body
+>   fields, the retry statuses, a `QuestionSet`'s ids or images, a Choice's options, a Score's levels, a result's
+>   answers. It throws `UnsupportedOperationException`. 0.3.0 allowed it once a collection had two entries, which could
+>   change a live client's retry rule or slip an unchecked header past the builder.
+> - **When the questions are validated:** a number, boolean or null criteria value (a Choice option may still be
+>   null), an image reference inside another (`img1` inside `img10`), which the API can't tell apart, and an image
+>   over the API's 16 MiB limit.
+> - **When the client or call options are built:** `Content-Length`, `Content-Type`, `Transfer-Encoding` or
+>   `Upgrade` in `headers`, an API key with a space or a character beyond ASCII, and a header name that isn't an HTTP
+>   token or a value beyond ASCII. Most of these already failed every call, or were sent differently by each engine.
+> - **When a response is parsed:** a Score level key written as `01` or `+1`, which fails the call with a
+>   `JevResponseValidationException`.
+> - **When an answer is read:** an option the question never declared, through `enumChoice<E>` with a broader enum.
+
+0.4.0 comes from a review of 0.3.0, which found 72 issues across the library, the documentation site and its
+examples, the tests, the build and CI; all of them are fixed. Most change nothing you call; the ones below change what
+you see.
+
+### Upgrading
+
+- Gradle builds: `com.pambrose.jev4k:jev4k:0.4.0`
+- Maven builds: `com.pambrose.jev4k:jev4k-jvm:0.4.0`
+
+Apart from the cases in the warning above, code that worked against 0.3.0 works against 0.4.0.
+
+### Images and Box (experimental)
+
+- **One bad Box no longer fails the whole response.** An out-of-range or out-of-order Box fails only when it is read,
+  so the Noul you paired with it can still be read.
+- **Fewer false alarms.** Text that only looks like a generated image reference, such as a state stored by an
+  earlier run, is sent as text; the check now recognizes only references this process generated. A generated
+  reference whose bytes are in a hand-built `extraBody["assets"]` can be sent, and two copies of a picture with the
+  same reference and bytes are sent once.
+- **Sizes and base64.** An image over the API's 16 MiB limit carries that problem, and `JevImage.read` stops reading
+  there, so a large file, a device or a pipe can't fill memory. `fromBase64` ignores whitespace, so `base64` tool
+  output decodes.
+- **New:** `JevImage.copyBytes()`, for a cache key that has to cover an image's bytes.
+
+### Also in this release
+
+- **Choice confidence, corrected.** The site said a Choice's `confidence` tells a close runner-up from a scattered
+  tail. TypeSafe's formula uses only the top probability, so it can't; the pages now say so, and point to
+  `ranked()` for a near-tie.
+- **Java.** `RetryPolicy.withBackoffMillis(initial, max)` sets both backoff limits at once, which changing them one
+  at a time couldn't do in some orders, and an oversized 2xx's `JevResponseValidationException` can now be
+  Java-serialized.
+- **Testing helpers.** `jevApiException` reads the request id from its headers, `jevResult(String)` drops a leading
+  byte-order mark, and `QuestionSet.toString()` names the set's ids, so a mock's "no answer found" message tells one
+  set from another.
+- **KDocs.** The `JevQuery` builders are documented, JDK types link to Java 17's docs, and a release's source links
+  open its tag.
+- **The site's examples** follow their own pages' advice: each image is sent once, the due-date example reads a
+  stated year, the function-calling example can say no, and every policy check goes in one request.
+
+**Full Changelog**: https://github.com/pambrose/jev4k/compare/0.3.0...0.4.0
+
 ## v0.3.0 — 2026-10-16
 
 > [!WARNING]
 > **One source break: `Question` and `Answer` have new subtypes.** `BoxQuestion` and `BoxAnswer` join them, so a
-> `when` over either that lists every subtype and has no `else` branch no longer compiles. Add an `else` branch, or a
-> branch for the new type, which needs the `@ExperimentalJevImages` opt-in. Nothing else breaks: other code compiles
-> unchanged, and the binary API only grows.
+> Kotlin `when` or a Java pattern `switch` over either that lists every subtype, with no `else` or `default` branch,
+> no longer compiles. In Kotlin, add an `else` branch, or a branch for the new type, which needs the
+> `@ExperimentalJevImages` opt-in. In Java, add a `default ->` branch, or a `case` for the new type, which Java can
+> name without any opt-in. Nothing else breaks: other code compiles unchanged, and the binary API only grows.
 
 jev4k now sends images. TypeSafe's image support and its Box question type are experimental: TypeSafe calls them
 "Dreamer-ready", meaning the request format, the answers and the limits can change between its releases. jev4k puts

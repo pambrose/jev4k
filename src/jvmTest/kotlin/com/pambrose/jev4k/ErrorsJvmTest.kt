@@ -1,11 +1,15 @@
 package com.pambrose.jev4k
 
+import com.pambrose.jev4k.internal.MAX_RESPONSE_BYTES
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
@@ -54,6 +58,15 @@ class ErrorsJvmTest : StringSpec() {
             copy.retryAfter shouldBe 750.milliseconds
             copy.headers["retry-after-ms"] shouldBe listOf("750")
             copy.endpoint shouldBe error.endpoint
+        }
+
+        "a 2xx refused for its declared size survives it too" {
+            val huge = headersOf(HttpHeaders.ContentLength, "${MAX_RESPONSE_BYTES + 1}")
+            val jev = testJev { respond("{}", HttpStatusCode.OK, huge) }
+            val error = shouldThrow<JevResponseValidationException> { jev.client.ask(Triage, state = PAYOUT_TICKET) }
+            val copy = roundTrip(error)
+            copy.status shouldBe 200
+            copy.message shouldBe error.message
         }
 
         "a response validation error keeps its field path" {

@@ -56,8 +56,23 @@ private class EarlyRead : JevQuery() {
     val second by noul("Is this the second question?")
 }
 
+/** Reads its questions before declaring any, as the init block of a base class with none of its own would. */
+private class NoQuestionsYet : JevQuery() {
+    val seenDuringInit = questions.size
+    val first by noul("Is this the first question?")
+}
+
 class DslTest : StringSpec() {
     init {
+        "a QuestionSet names its ids and how many images it carries" {
+            val set = questions {
+                attach(JevImage.of(PNG_BYTES, "<p>"))
+                noul("a", "Is <p> a cat?")
+                noul("b", "Is it a dog?")
+            }
+            set.toString() shouldBe "QuestionSet(ids=[a, b], images=1)"
+        }
+
         "the inline builder records questions in declaration order" {
             val set = questions {
                 noul("urgent", "Does this convey urgency?")
@@ -187,6 +202,19 @@ class DslTest : StringSpec() {
             wrongKeys.message shouldContain "Question 'dept' declares options [billing, technical, sales]"
             wrongKeys.message shouldContain "(its option keys: [RED, GREEN])"
             shouldThrow<IllegalArgumentException> { r.enumChoice<TwoDepts>("dept") }.message shouldContain "[sales]"
+        }
+
+        "a broader enum still rejects an option the question never declared, even one it has a constant for" {
+            val set = questions { choice("dept", "Which team?") { options("billing", "technical", "sales") } }
+            val answer = """{"choice":"legal","probabilities":{"legal":0.7,"sales":0.3},"confidence":0.6}"""
+            val r = jevResult("""{"answers":{"dept":$answer}}""", set)
+            shouldThrow<JevResponseValidationException> { r.enumChoice<MoreDepts>("dept") }.message shouldContain
+                "unknown option 'legal'; expected one of [billing, technical, sales]"
+        }
+
+        "reading a JevQuery's questions before any has registered fails, as its KDoc says" {
+            shouldThrow<JevValidationException> { NoQuestionsYet() }.problems shouldBe
+                listOf("A request needs at least one question")
         }
 
         "a JevQuery read during initialization still sends the questions declared after the read" {

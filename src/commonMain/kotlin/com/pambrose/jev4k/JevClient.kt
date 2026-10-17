@@ -145,7 +145,7 @@ class JevClient(
         val response = execute(path, endpoint, limit) {
             this.method = method
             setHeaders(options, builtInHeaders)
-            options.timeout?.let { timeout { limitTo(it, ownEngine = config.engine == null) } }
+            options.timeout?.let { timeout { limitTo(it, config) } }
             options.retry?.let { policy -> retry { follow(policy, config) } }
             configure()
         }
@@ -234,7 +234,8 @@ class JevClient(
             endpoint = endpoint,
             status = e.status.value,
             headers = e.headers.toMap(),
-            cause = e,
+            // No cause: the internal exception holds Ktor's Headers and HttpStatusCode, which can't be serialized,
+            // and the detail already says why.
         )
     }
 

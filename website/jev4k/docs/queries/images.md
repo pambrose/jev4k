@@ -23,10 +23,11 @@ client's or the call's headers replaces it.
 
 ## Placing and attaching
 
-A `JevImage` comes from bytes (`JevImage.of`), base64 text (`JevImage.fromBase64`), or a file (`JevImage.read`, with a
-kotlinx-io `Path` anywhere, or a `java.nio.file.Path` or `File` on the JVM). Each one has a reference, a string that
-stands for the image wherever it is placed. Its `toString()` is that reference, so string templates, `jsonOf`, `entry`
-and `@Serializable` fields all place it. The API replaces every occurrence of a reference with the image.
+A `JevImage` comes from bytes (`JevImage.of`), base64 text (`JevImage.fromBase64`, standard alphabet; whitespace such as
+line breaks is ignored), or a file (`JevImage.read`, with a kotlinx-io `Path` anywhere, or a `java.nio.file.Path` or
+`File` on the JVM). Each one has a reference, a string that stands for the image wherever it is placed. Its `toString()`
+is that reference, so string templates, `jsonOf`, `entry` and `@Serializable` fields all place it. The API replaces
+every occurrence of a reference with the image.
 
 Placing an image doesn't send it. `attach` it in the query block, or in a `JevQuery`, so its bytes go with the
 questions. jev4k refuses to send a request that attaches an image nothing references, or that places a generated
@@ -55,8 +56,9 @@ travel with every request that asks it; `ask(query, state, images...)` adds the 
 --8<-- "ImageExamples.kt:criteria"
 ```
 
-`JevImage.read` in an object's initializer, as above, reads the file there, and a missing file fails the object's
-first use with an `ExceptionInInitializerError`. When that matters, read the bytes elsewhere and use `JevImage.of`.
+`JevImage.read` in an object's initializer, as above, reads the file there, and a missing file makes the object
+unusable until the process restarts: on the JVM its first use throws `ExceptionInInitializerError`, and every later use
+`NoClassDefFoundError`. When that matters, read the bytes elsewhere and use `JevImage.of`.
 
 A `@Serializable` field of type `JevImage` is written as its reference:
 
@@ -66,9 +68,14 @@ A `@Serializable` field of type `JevImage` is written as its reference:
 
 ## Your own references
 
-A generated reference is `jev4k-image-` followed by a UUID. You can choose your own, for prompts kept in
-configuration, but the API matches references as plain text anywhere inside a string: a reference `cat` also matches
-inside `category`. Use delimiters that can't occur in your text.
+A generated reference is `jev4k-image-` followed by a UUID, whose first group is the same for every image one process
+generates. jev4k refuses to send a request that places one of its own references without attaching the image, while text
+that only looks like one, such as a state stored by an earlier run, is sent as text.
+
+You can choose your own references, for prompts kept in configuration, but the API matches references as plain text
+anywhere inside a string: a reference `cat` also matches inside `category`. Use delimiters that can't occur in your
+text, and don't let one reference occur inside another (`img1` inside `img10`), which jev4k refuses. Next to untrusted
+text, use generated references: a user who types a chosen reference into their text gets the image put there.
 
 ```kotlin
 --8<-- "ImageExamples.kt:references"
@@ -95,22 +102,38 @@ To crop to the box, multiply each edge by the image's size in pixels:
 
 Before sending, jev4k reports every problem at once, as a `JevValidationException`:
 
-- an image that is empty, isn't valid base64, or is neither a PNG nor a JPEG
-- a reference that is blank or longer than 1,024 bytes, two images sharing a reference, or references over 64 KiB in
-  total
-- an attached image that no string references, or a generated reference placed without its image attached
+- an image that is empty, larger than 16 MiB, isn't valid base64, or is neither a PNG nor a JPEG
+- a reference that is blank or longer than 1,024 bytes, two images with different bytes sharing a reference, a
+  reference inside another, or references over 64 KiB in total
+- an attached image that no string references, or a generated reference placed without its image attached (or its
+  bytes in `extraBody["assets"]`)
 - a Box question with no image, attached or in `extraBody["assets"]`, or `extraBody["assets"]` on a request that
   attaches images
 
-The API enforces its own size and pixel limits (each side 256 to 1568 pixels, 16 MiB per file, 32 MiB per request),
-answering with a 400 or a 413. Resize and rotate images before sending them; the API strips EXIF data and doesn't apply
-its orientation.
+`JevImage.read` doesn't read a file past 16 MiB. The API enforces the rest of its limits, answering with a 400 or a 413:
+each side 256 to 1568 pixels, and 78,400 to 2,458,624 pixels in total, so a 256 × 256 image is too small; all of a
+request's images 32 MiB once the API has processed them, which can make an image larger than the file sent; and the
+whole request 32 MiB once every reference is replaced by its image. Resize and rotate images before sending them; the
+API strips EXIF data and doesn't apply its orientation.
 
 A request with images is sent as `multipart/form-data`, the JSON body first and then one part per image, as the
 official SDKs send it. Images count as input tokens at the text price.
 
-If you cache results on the model, the state and the questions, include each attached image's bytes in the key too:
-`QuestionSet.toJson()` holds only the references.
+## Uploads and timeouts
+
+The client's `timeout`, 10 seconds unless you set it, limits each attempt, and an attempt includes uploading the
+request. A request with a few large photos, or one sent over a slow link, can time out while it is still being sent,
+and a timed-out attempt is retried by default, uploading the images again. Give image calls more time, and consider
+not retrying after a timeout. A `retry` in the call's options replaces the client's whole policy:
+
+```kotlin
+--8<-- "ImageExamples.kt:timeout"
+```
+
+If you cache results on the model, the state and the questions, key on `QuestionSet.toJson().toString()`, whose text
+keeps each Choice's option order, and include each attached image's bytes (`JevImage.copyBytes()`), since `toJson()`
+holds only the references. A generated reference is new for every instance, so it makes each key unique even when the
+bytes are the same; choose references for a cache that should hit.
 
 ## Example: hot dog or not
 

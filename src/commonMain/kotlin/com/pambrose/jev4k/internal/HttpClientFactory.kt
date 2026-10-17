@@ -47,7 +47,10 @@ internal object HttpClientFactory {
     /**
      * Refuses a response whose declared `Content-Length` is over [MAX_RESPONSE_BYTES] before Ktor reads its body
      * into memory. That happens in the receive pipeline's `Before` phase (the SaveBody plugin), so this check runs in
-     * a phase of its own ahead of it. A body sent without a length (chunked) isn't checked; the timeout bounds it.
+     * a phase of its own ahead of it. A body without a declared length isn't checked; the timeout bounds it. That
+     * includes a compressed body on Curl, Darwin and the Js engines, which ask for compression, decompress it and drop
+     * `Content-Length` before this phase runs. Counting the bytes read instead would need Ktor's internal
+     * `HttpResponse.rawContent`, so the gap is documented rather than closed.
      */
     private fun HttpClient.limitBodySize() {
         receivePipeline.insertPhaseBefore(HttpReceivePipeline.Before, LimitBodySize)
@@ -73,7 +76,7 @@ internal object HttpClientFactory {
         // whole retry loop: one expiry cancels every later attempt before it reaches the server.
         install(HttpRequestRetry) { follow(config.retry, config) }
 
-        install(HttpTimeout) { limitTo(config.timeout, ownEngine = config.engine == null) }
+        install(HttpTimeout) { limitTo(config.timeout, config) }
 
         // Headers are set on each request instead (JevClient.send). DefaultRequest merges its headers with a
         // request's own rather than letting either replace the other, so a per-call header would be sent twice.
@@ -96,18 +99,19 @@ internal fun HttpRequestRetryConfig.follow(
 }
 
 /**
- * [timeout] for each attempt. CIO prefers the connect and socket timeouts over its own endpoint.connectTimeout /
- * endpoint.socketTimeout, so setting them would overrule whatever a caller tuned on an engine they supplied. They are
- * only filled in for jev4k's own engine ([ownEngine]); a default engine that has no such timeout (Js has neither,
- * Darwin no connect timeout) ignores them.
+ * [timeout] for each attempt, as both the client's plugin and a call's options set it. CIO prefers the connect and
+ * socket timeouts over its own endpoint.connectTimeout / endpoint.socketTimeout, so setting them would overrule
+ * whatever a caller tuned on an engine they supplied. They are only filled in for jev4k's own engine, when
+ * [JevConfig.engine] is null; a default engine that has no such timeout (Js has neither, Darwin no connect timeout)
+ * ignores them.
  */
 internal fun HttpTimeoutConfig.limitTo(
     timeout: Duration,
-    ownEngine: Boolean,
+    config: JevConfig,
 ) {
     val millis = timeout.inWholeMilliseconds
     requestTimeoutMillis = millis
-    if (ownEngine) {
+    if (config.engine == null) {
         connectTimeoutMillis = millis
         socketTimeoutMillis = millis
     }

@@ -5,7 +5,9 @@ icon: lucide/braces
 # Structured Criteria
 
 Instructions, Choice option descriptions, Score levels, and Noul `whenTrue`/`whenFalse` criteria all accept
-JSON, not just strings. Start with plain strings. Reach for structure when guidance would otherwise blur
+JSON, not just strings: text, a JSON object or a JSON array. A bare number, boolean or null is refused when the set is
+validated (an undescribed Choice option is the one null), so put a number in an object that names it. Start with plain
+strings. Reach for structure when guidance would otherwise blur
 together in a dense sentence:
 
 - **what** an option covers, **what it doesn't**, and a few **examples**

@@ -9,8 +9,8 @@ import kotlin.math.roundToInt
  * A typed answer to one question.
  *
  * New subtypes may be added in a minor release when TypeSafe adds a kind of question, and [UnknownAnswer] holds any
- * answer of a type this version doesn't know. A `when` over [Answer] that must keep compiling across upgrades should
- * therefore end in an `else` branch.
+ * answer of a type this version doesn't know. A Kotlin `when` or a Java pattern `switch` over [Answer] that must keep
+ * compiling across upgrades should therefore end in an `else` (in Java, `default`) branch.
  */
 sealed interface Answer
 
@@ -43,8 +43,10 @@ enum class NoulBand { NO, UNCERTAIN, YES }
 
 /**
  * The answer to a Choice: the highest-probability option, the probability of every option, and a
- * [confidence][ChoiceAnswer.confidence] from 0 to 1 derived from how concentrated
- * [probabilities][ChoiceAnswer.probabilities] is. Confidence is not the winner's probability.
+ * [confidence][ChoiceAnswer.confidence] from 0 to 1. Confidence is not the winner's probability, but it depends on
+ * nothing else: it rescales that probability so that an even split across the options is 0 and certainty is 1. A
+ * close runner-up therefore shows only in [probabilities][ChoiceAnswer.probabilities]; compare the top two entries of
+ * [ranked][ChoiceAnswer.ranked] to catch a near-tie.
  */
 data class ChoiceAnswer<K : Any>(
     val choice: K,
@@ -150,9 +152,13 @@ class ModelList(
     override fun toString(): String = models.toString()
 }
 
-/** Raised by a question's decoder when the server's answer doesn't fit the question that was asked. */
+/**
+ * Raised by a question's decoder when the server's answer doesn't fit the question that was asked. [field] locates the
+ * problem inside the answer, such as `box.right`, when it lies in one field.
+ */
 internal class AnswerDecodingException(
     message: String,
+    val field: String? = null,
 ) : RuntimeException(message)
 
 internal val Answer.typeName: String
@@ -173,7 +179,44 @@ internal fun decodeNoul(answer: Answer): NoulAnswer = answer as? NoulAnswer ?: m
 
 internal fun decodeScore(answer: Answer): ScoreAnswer = answer as? ScoreAnswer ?: mismatch("score", answer)
 
-internal fun decodeBox(answer: Answer): BoxAnswer = answer as? BoxAnswer ?: mismatch("box", answer)
+internal fun decodeBox(answer: Answer): BoxAnswer {
+    val box = answer as? BoxAnswer ?: mismatch("box", answer)
+    box.contractProblem()?.let { throw it }
+    return box
+}
+
+/**
+ * What breaks a Box's contract: an edge or the confidence outside 0..1, `left` not less than `right`, or `top` not less
+ * than `bottom`. It is checked when the Box is read, not when the response is parsed, so one bad Box leaves the other
+ * answers readable.
+ */
+private fun BoxAnswer.contractProblem(): AnswerDecodingException? {
+    val outside =
+        listOf("top" to box.top, "bottom" to box.bottom, "left" to box.left, "right" to box.right)
+            .firstOrNull { (_, edge) -> edge !in 0.0..1.0 }
+    val confidence = confidence
+    return when {
+        outside != null -> {
+            AnswerDecodingException("expected a number from 0 to 1, got ${outside.second}", "box.${outside.first}")
+        }
+
+        box.left >= box.right -> {
+            AnswerDecodingException("left (${box.left}) must be less than right (${box.right})", "box.left")
+        }
+
+        box.top >= box.bottom -> {
+            AnswerDecodingException("top (${box.top}) must be less than bottom (${box.bottom})", "box.top")
+        }
+
+        confidence != null && confidence !in 0.0..1.0 -> {
+            AnswerDecodingException("expected a number from 0 to 1, got $confidence", "confidence")
+        }
+
+        else -> {
+            null
+        }
+    }
+}
 
 @Suppress("UNCHECKED_CAST")
 internal fun decodeChoice(answer: Answer): ChoiceAnswer<String> =

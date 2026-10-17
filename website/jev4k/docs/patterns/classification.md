@@ -28,7 +28,8 @@ Each option's description is its subtree, so the model sees what lives under a b
 ## Large option sets in two stages
 
 When the options are many and their short descriptions look alike, rank them all cheaply, then judge the top few
-against their full details:
+against their full details. A Choice takes at most 255 options, so a larger roster goes in as several Choices in the
+same request, and each one's top three go on:
 
 ```kotlin
 --8<-- "ClassificationExamples.kt:shortlist-rerank"

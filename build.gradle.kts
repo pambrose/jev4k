@@ -104,7 +104,7 @@ tasks.named { it == "prepareKotlinIdeaImport" }.configureEach {
 // The simulator platforms (ios, tvos, watchos) with at least one available device, from the same simctl listing KGP
 // reads to pick a device. It is a ValueSource so the configuration cache keeps only this set: the raw listing's sizes
 // and timestamps change whenever a simulator runs, which would discard the cache after every simulator test. Only a
-// Mac with Xcode has simctl; anywhere else, or if the listing fails, the set is empty.
+// Mac with Xcode has simctl; anywhere else, or if the listing fails (which is logged), the set is empty.
 abstract class SimulatorPlatformsWithDevices : ValueSource<Set<String>, ValueSourceParameters.None> {
     @get:Inject
     abstract val execOperations: ExecOperations
@@ -124,19 +124,34 @@ abstract class SimulatorPlatformsWithDevices : ValueSource<Set<String>, ValueSou
             devices.filterValues { it.isNotEmpty() }.keys
                 .map { it.substringAfterLast('.').substringBefore('-').lowercase() }
                 .toSortedSet()
+        }.onFailure {
+            Logging.getLogger(SimulatorPlatformsWithDevices::class.java)
+                .warn("Couldn't list the simulator devices, so the tvOS and watchOS simulator tests are skipped: $it")
         }.getOrDefault(emptySet())
     }
 }
 
 val simulatorPlatformsWithDevices: Set<String> = providers.of(SimulatorPlatformsWithDevices::class) {}.get()
 
+// A platform without a device has its simulator tests disabled, and a disabled task named on the command line only
+// reports SKIPPED. CI's Apple row passes -Pjev4k.requireSimulators=true, so a runner image that loses a simulator
+// runtime fails the build instead of shipping that platform untested.
+if (providers.gradleProperty("jev4k.requireSimulators").orNull.toBoolean()) {
+    val missing = listOf("ios", "tvos", "watchos") - simulatorPlatformsWithDevices
+    if (missing.isNotEmpty()) {
+        throw GradleException(
+            "jev4k.requireSimulators is set, but no simulator device is available for ${missing.joinToString()}",
+        )
+    }
+}
+
 kotlin {
     jvmToolchain(jvmToolchainVersion)
 
     // KGP's ABI validation: `check` runs checkKotlinAbi against the dumps committed under api/, and
     // `make abi-update` (updateKotlinAbi) rewrites them after an intended API change. jev4k.api is the JVM surface,
-    // Java callers included; jev4k.klib.api covers the other targets. Regenerate the dumps on macOS, the only host
-    // that compiles every target.
+    // Java callers included; jev4k.klib.api covers the other targets. Regenerate the dumps on macOS: Linux compiles
+    // the Apple klibs too, but only a Mac has been checked to write a complete klib dump.
     abiValidation()
 
     jvm {
@@ -296,6 +311,11 @@ tasks.withType<ConfigurableKtLintTask>().configureEach {
 // KDoc site: `make kdocs` writes it to build/dokka/html, and the docs workflow publishes it at /kdocs/.
 val repoUrl = "https://github.com/pambrose/jev4k"
 
+// The git ref the KDocs' source links open. A released javadoc jar can't be replaced, and master moves on, so the
+// release paths pass the tag: docs.yml on a tag, and `make publish-maven-central` with the version. Everything else
+// (a local build, a PR, a manual deploy from master) links to master, since an unreleased version has no tag yet.
+val sourceRef = providers.gradleProperty("jev4k.sourceRef").orElse("master").get()
+
 dokka {
     moduleName = "jev4k"
     moduleVersion = project.version.toString()
@@ -316,7 +336,14 @@ dokka {
         // Document only the library: test sources (test classes, fixtures, the examples) are never included.
         if (name.endsWith("Test")) suppress = true
 
-        documentedVisibilities(VisibilityModifier.Public)
+        // Protected too: JevQuery's builders (noul, choice, score, box, attach) are protected, since subclasses call
+        // them, and they are half of the DSL.
+        documentedVisibilities(VisibilityModifier.Public, VisibilityModifier.Protected)
+
+        // Link JDK types to the docs for the oldest JDK this library supports. It is set on every source set: Dokka
+        // resolves a JDK link through whichever source set's links sort first, so setting it on jvmMain alone left
+        // every link at the toolchain's version.
+        jdkVersion = jvmTargetVersion.toInt()
 
         perPackageOption {
             matchingRegex = "com\\.pambrose\\.jev4k\\.internal.*"
@@ -326,7 +353,7 @@ dokka {
         // "View source" links on every declaration, in whichever source set it lives.
         sourceLink {
             localDirectory = file("src")
-            remoteUrl("$repoUrl/tree/master/src")
+            remoteUrl("$repoUrl/tree/$sourceRef/src")
             remoteLineSuffix = "#L"
         }
 
@@ -337,6 +364,10 @@ dokka {
         externalDocumentationLinks.register("ktor") {
             url("https://api.ktor.io/")
         }
+        // kotlinx-io is an api dependency: JevImage.read takes its Path.
+        externalDocumentationLinks.register("kotlinx-io") {
+            url("https://kotlinlang.org/api/kotlinx-io/")
+        }
     }
 
     // The module and package overview pages. A source set's includes are what Dokka renders on those pages; a
@@ -344,11 +375,6 @@ dokka {
     // commonMain holds all but a few platform-specific declarations, and is where a reader starts.
     dokkaSourceSets.named("commonMain") {
         includes.from("docs/packages.md")
-    }
-
-    // Link JDK types to the docs for the oldest JDK this library supports.
-    dokkaSourceSets.named("jvmMain") {
-        jdkVersion = jvmTargetVersion.toInt()
     }
 }
 

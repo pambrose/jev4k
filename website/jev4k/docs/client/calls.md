@@ -78,8 +78,10 @@ need something else, as both official SDKs allow, without a second client:
 
 A setting left unset keeps the client's value. `jev.withOptions(options)` returns a `JevApi` that applies them to
 every call, `query`, `ask` and `blocking()` included; options passed to a call on it are merged over its own.
-Options are checked when they're built, and a problem is a `JevConfigException`. `extraBody` is an escape hatch for
-API parameters jev4k doesn't model yet; whether the service accepts a field is up to TypeSafe.
+Options are checked when they're built, and a problem is a `JevConfigException`. Headers follow the client's rules:
+names are HTTP tokens and values ASCII, and `Content-Length`, `Content-Type`, `Transfer-Encoding` and `Upgrade` can't be
+set. Each `extraBody` field may nest at most 64 levels. `extraBody` is an escape hatch for API parameters jev4k doesn't
+model yet; whether the service accepts a field is up to TypeSafe.
 
 ### Long context
 
@@ -123,10 +125,12 @@ the options and call the plain ones, so a fake needn't implement them. A MockK m
 code under test passes options or uses `withOptions`: `coEvery { jev.evaluate(any(), any(), any(), any()) }`. To
 exercise the real client without a network, give it a Ktor `MockEngine` through the `engine` setting.
 
-Build what the fake returns with `jevResult(body, questions)`, which maps a response body exactly as the client
-does, and `jevApiException(status)` for the error path. Recording a real response and replaying it keeps a
+Build what the fake returns with `jevResult(body, questions)`, which maps a response body exactly as the client does (a
+leading byte-order mark included), and `jevApiException(status)` for the error path, which reads the retry hint and the
+`x-typesafe-request-id` from its `headers` as the client does. Recording a real response and replaying it keeps a
 fixture honest, and a malformed one, or text that isn't a JSON object at all, still raises
-`JevResponseValidationException`.
+`JevResponseValidationException`. A `QuestionSet` prints its ids, so a mock's "no answer found" message shows which set
+it received.
 
 A result answers only the handles of the question set it was built for. Code that builds its questions on every
 call (inline handles, or a `JevQuery` class) sends a new set each time, so a MockK mock should build the result from

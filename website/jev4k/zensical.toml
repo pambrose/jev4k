@@ -19,7 +19,7 @@ site_name = "jev4k"
 site_description = "A Kotlin DSL and client for TypeSafe's Jev System One model"
 site_author = "Paul Ambrose"
 
-# Published to GitHub Pages by .github/workflows/docs.yml on every push to master.
+# Published to GitHub Pages by .github/workflows/docs.yml when a release is published, or on a manual run.
 site_url = "https://jev4k.com/"
 
 repo_url = "https://github.com/pambrose/jev4k"

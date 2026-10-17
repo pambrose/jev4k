@@ -40,7 +40,8 @@ internal fun mapSystemOne(
     val answersJson = reader.optionalObject(body, "answers", "answers").orEmpty().filterValues { it != JsonNull }
     // Declared questions first, in request order, then anything extra the server sent.
     val ids = questions.ids.filter { it in answersJson } + answersJson.keys.filter { questions[it] == null }
-    val answers = ids.associateWith { reader.answer(it, answersJson.getValue(it), questions[it]?.question) }
+    val answers =
+        ids.associateWith { reader.answer(it, answersJson.getValue(it), questions[it]?.question) }.readOnlyMap()
 
     // Metadata degrades where an answer would fail: a quirk in the token counters or the model name must not
     // throw away answers that parsed cleanly. Both are documented as optional.
@@ -119,7 +120,7 @@ private class BodyReader(
                             levels?.withIndex()?.associate { (index, level) -> index to level }.orEmpty()
                         },
                     confidence = requiredDouble(obj, "confidence", path),
-                    levelCount = levels?.size ?: maxOf(legend.size, probabilities.size),
+                    levelCount = levels?.size ?: ((probabilities.keys + legend.keys).maxOrNull()?.plus(1) ?: 0),
                 )
             }
 
@@ -173,32 +174,20 @@ private class BodyReader(
     ): Double =
         obj[key]?.takeUnless { it == JsonNull }?.let { number(it, "$path.$key") } ?: fail("$path.$key", "missing")
 
+    // The edges and the confidence must be finite numbers here. Their range and order are checked when the Box is
+    // read (decodeBox), so one bad Box doesn't take the other answers, such as the Noul paired with it, down too.
     private fun boxAnswer(
         obj: JsonObject,
         path: String,
     ): BoxAnswer {
         val boxPath = "$path.box"
         val edges = optionalObject(obj, "box", boxPath) ?: fail(boxPath, "missing")
-        val box =
-            BoundingBox(
-                top = fraction(edges["top"], "$boxPath.top"),
-                bottom = fraction(edges["bottom"], "$boxPath.bottom"),
-                left = fraction(edges["left"], "$boxPath.left"),
-                right = fraction(edges["right"], "$boxPath.right"),
-            )
-        if (box.left >= box.right) fail("$boxPath.left", "left (${box.left}) must be less than right (${box.right})")
-        if (box.top >= box.bottom) fail("$boxPath.top", "top (${box.top}) must be less than bottom (${box.bottom})")
-        val confidence = obj["confidence"]?.takeUnless { it == JsonNull }?.let { fraction(it, "$path.confidence") }
-        return BoxAnswer(box, confidence)
-    }
 
-    /** A number from 0 to 1, as a Box's edges and confidence are. */
-    private fun fraction(
-        value: JsonElement?,
-        path: String,
-    ): Double {
-        val number = number(value ?: fail(path, "missing"), path)
-        return number.takeIf { it in 0.0..1.0 } ?: fail(path, "expected a number from 0 to 1, got $number")
+        fun edge(name: String): Double = number(edges[name] ?: fail("$boxPath.$name", "missing"), "$boxPath.$name")
+
+        val box = BoundingBox(top = edge("top"), bottom = edge("bottom"), left = edge("left"), right = edge("right"))
+        val confidence = obj["confidence"]?.takeUnless { it == JsonNull }?.let { number(it, "$path.confidence") }
+        return BoxAnswer(box, confidence)
     }
 
     private fun doubles(
@@ -208,7 +197,10 @@ private class BodyReader(
         optionalObject(obj, "probabilities", "$path.probabilities").orEmpty()
             .mapValues { (key, value) -> number(value, "$path.probabilities.$key") }
 
-    /** Keys a map by level number; one outside `0 until levelCount`, when the question's levels are known, fails. */
+    /**
+     * Keys a map by level number. A key must be written as the number is (`1`, not `01` or `+1`), so no two keys name
+     * one level, and one outside `0 until levelCount`, when the question's levels are known, fails.
+     */
     private fun <V> byLevel(
         map: Map<String, V>,
         path: String,
@@ -216,7 +208,8 @@ private class BodyReader(
     ): Map<Int, V> =
         map.entries
             .map { (key, value) ->
-                val level = key.toIntOrNull() ?: fail("$path.$key", "expected an integer level")
+                val level =
+                    key.toIntOrNull()?.takeIf { it.toString() == key } ?: fail("$path.$key", "expected a level number")
                 if (level < 0 || (levelCount != null && level >= levelCount)) {
                     val range = levelCount?.let { "0..${it - 1}" } ?: "0 or more"
                     fail("$path.$key", "level $level is outside the question's levels ($range)")

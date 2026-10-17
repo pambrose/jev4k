@@ -5,6 +5,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldMatch
+import kotlinx.io.Buffer
 import kotlinx.io.IOException
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
@@ -41,7 +42,28 @@ class JevImageTest : StringSpec() {
             JevImage.fromBase64(Base64.encode(PNG_BYTES)).bytes shouldBe PNG_BYTES
             JevImage.fromBase64(Base64.encode(JPEG_BYTES).trimEnd('=')).bytes shouldBe JPEG_BYTES
             JevImage.fromBase64("data:image/png;base64,iVBORw0KGgo=").problem shouldBe
-                "is not valid base64: use the standard alphabet, with no whitespace and no data: prefix"
+                "is not valid base64: use the standard alphabet, with no data: prefix"
+        }
+
+        "base64 whitespace is ignored, as the base64 tool's line breaks need, but the URL-safe alphabet isn't" {
+            val wrapped = Base64.encode(PNG_BYTES).chunked(8).joinToString("\r\n", postfix = "\n")
+            JevImage.fromBase64(wrapped).bytes shouldBe PNG_BYTES
+            JevImage.fromBase64(" \t${Base64.encode(JPEG_BYTES)} ").problem shouldBe null
+            JevImage.fromBase64(Base64.UrlSafe.encode(byteArrayOf(-5, -1, -2))).problem shouldBe
+                "is not valid base64: use the standard alphabet, with no data: prefix"
+        }
+
+        "bytes over the API's 16 MiB limit carry a problem" {
+            val big = PNG_BYTES.copyOf(MAX_IMAGE_BYTES + 1)
+            JevImage.of(big).problem shouldBe "is over the API's limit of 16 MiB per image"
+            JevImage.of(big.copyOf(MAX_IMAGE_BYTES)).problem shouldBe null
+        }
+
+        "a source is read only up to the limit, so one with no end can't fill memory" {
+            val huge = JevImage.readCapped(Buffer().apply { write(ByteArray(MAX_IMAGE_BYTES + 1)) }, "<huge>")
+            huge.problem shouldBe "is over the API's limit of 16 MiB per image"
+            huge.bytes.size shouldBe 0
+            JevImage.readCapped(Buffer().apply { write(PNG_BYTES) }, null).bytes shouldBe PNG_BYTES
         }
 
         "a generated reference is distinctive and unique" {
@@ -49,6 +71,13 @@ class JevImageTest : StringSpec() {
             val b = JevImage.of(PNG_BYTES)
             a.reference shouldMatch GENERATED_REFERENCE
             a.reference shouldNotBe b.reference
+        }
+
+        "a generated reference carries this process's tag, so one from another process isn't recognized" {
+            val a = JevImage.of(PNG_BYTES).reference
+            val b = JevImage.of(PNG_BYTES).reference
+            a.take(20) shouldBe b.take(20)
+            GENERATED_REFERENCE.matches(foreignReference(a)) shouldBe false
         }
 
         "a chosen reference is kept as given" {
@@ -74,6 +103,14 @@ class JevImageTest : StringSpec() {
 
         "a JevImage can't be decoded from its reference" {
             shouldThrow<SerializationException> { Json.decodeFromString<JevImage>("\"<photo>\"") }
+        }
+
+        "copyBytes hands out a copy of the bytes, for a cache key" {
+            val image = JevImage.of(PNG_BYTES)
+            val copy = image.copyBytes()
+            copy shouldBe PNG_BYTES
+            copy[0] = 0
+            image.copyBytes() shouldBe PNG_BYTES
         }
 
         "of copies the bytes it is given" {

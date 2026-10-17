@@ -54,8 +54,13 @@ Messages include the status and request id, and never the API key. Header names 
 `e.headers["retry-after"]` finds the header however the server spelled it and whichever engine read it.
 
 A redirect isn't followed, so a 3xx arrives as a plain `JevApiException`. A response declaring a body over 16 MiB is
-refused unread: a 2xx as a `JevResponseValidationException`, anything else as its status's exception with a null
-`body`, the message saying why.
+refused unread: a 2xx as a `JevResponseValidationException`, anything else as its status's exception with a null `body`,
+the message saying why. A body without a declared length, which on Linux, Apple platforms and Node.js includes a
+compressed one, isn't checked; see [Configuration](configuration.md).
+
+Some problems with a 2xx surface only when an answer is read, so the other answers stay readable: a missing answer, a
+Box whose edges or confidence are out of range or whose edges are out of order, and an option the question never
+declared, read through `enumChoice` with a broader enum. Each raises `JevResponseValidationException`.
 
 On Linux and Windows, any bare `IllegalStateException` raised during a call is also a `JevConnectionException`,
 because that is how the Curl and WinHttp engines report a failed connection; the original is kept as its cause.

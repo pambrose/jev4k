@@ -35,8 +35,11 @@ in code:
 --8<-- "ExtractionExamples.kt:date-assemble"
 ```
 
-Every part can say `none`: the enums have a `NONE`, and the month and day are string Choices with a `"none"`
-option, because an enum of months couldn't. A `none` in a part the date needs leaves it null, marked for review.
+Every part can say `none`: the enums have a `NONE`, and the month, day and year are string Choices with a `"none"`
+option, because an enum of months couldn't. A `none` in a part the date needs leaves it null, marked for review. A
+stated year is used as written; with none stated, the next occurrence of the date counts, and a year outside the list
+comes back `"out_of_range"`, leaving the date for review. Relative dates stop at the day after tomorrow here; TypeSafe's
+cookbook adds a weekday and a week offset for ones like "next Thursday".
 
 Validate in code, too. In TypeSafe's example, a document containing a *different* date made the mode come back
 as "absolute" with no month. Only the incomplete parts and the low minimum confidence (0.46) caught it.
@@ -45,9 +48,12 @@ as "absolute" with no month. Only the incomplete parts and the low minimum confi
 
 Map a natural-language command onto an ordinary typed function:
 
-- a Choice picks the function
-- a Choice per closed-set argument fills in its value
+- a Choice picks the function, with a `none_of_these` option for a command that fits none
+- a Choice per closed-set argument fills in its value, with an escape option of its own
 - a "stated" Noul per optional argument decides whether the user specified it at all
+
+Make the call only when neither escape option won and the weakest part the call uses is confident, as the date
+example above gates on its parts.
 
 ```kotlin
 --8<-- "ExtractionExamples.kt:function-calling"

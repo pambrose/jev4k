@@ -567,6 +567,26 @@ class ClientTest : StringSpec() {
             jev.requests shouldHaveSize 1
         }
 
+        // A real state is usually objects, which the check counts as levels just as it does arrays.
+        "a state of nested objects is held to the same limit" {
+            val jev = triageJev()
+            shouldThrow<JevValidationException> { jev.client.ask(Triage, state = nestedObjects(MAX_SEND_DEPTH + 1)) }
+                .message shouldContain "state is nested more than $MAX_SEND_DEPTH levels deep"
+            jev.client.ask(Triage, state = nestedObjects(MAX_SEND_DEPTH))
+            jev.requests shouldHaveSize 1
+        }
+
+        "the response depth scan skips brackets inside strings, escaped quotes included" {
+            val brackets = testJev { respondJson("""{"answers":{},"note":"${"[".repeat(200)}"}""") }
+            brackets.client.ask(Triage, state = PAYOUT_TICKET).answers shouldBe emptyMap()
+
+            // Read as the string's end, the escaped quote would hide the deep array from the scan.
+            val escaped = """{"answers":{},"note":"\"","extra":${nestedArrayText(MAX_JSON_DEPTH)}}"""
+            val deep = testJev { respondJson(escaped) }
+            shouldThrow<JevResponseValidationException> { deep.client.ask(Triage, state = PAYOUT_TICKET) }
+                .message shouldContain "nested more than $MAX_JSON_DEPTH levels deep"
+        }
+
         "a response nested too deeply is a response error, not a stack overflow" {
             // The body object is the first level, so MAX_JSON_DEPTH arrays inside it is one level too many.
             val tooDeep = testJev { respondJson("""{"answers":{},"extra":${nestedArrayText(MAX_JSON_DEPTH)}}""") }
@@ -705,11 +725,23 @@ class ClientTest : StringSpec() {
             perCall?.connectTimeoutMillis shouldBe null
         }
 
-        "jev4k's own engine gets the timeout for connecting and reading as well" {
-            val own = HttpTimeoutConfig().apply { limitTo(4.seconds, ownEngine = true) }
+        // The plugin and a call's options both set the timeout through limitTo(timeout, config), so this covers each.
+        "jev4k's own engine gets the timeout for connecting and reading as well, and a supplied one doesn't" {
+            val ownEngine = JevConfigBuilder().apply { testDefaults() }.build()
+            val own = HttpTimeoutConfig().apply { limitTo(4.seconds, ownEngine) }
             own.requestTimeoutMillis shouldBe 4_000L
             own.connectTimeoutMillis shouldBe 4_000L
             own.socketTimeoutMillis shouldBe 4_000L
+
+            val engine = closeAfterSpec(MockEngine { respondJson(TRIAGE_RESPONSE) })
+            val supplied = JevConfigBuilder().apply {
+                testDefaults()
+                this.engine = engine
+            }.build()
+            val theirs = HttpTimeoutConfig().apply { limitTo(4.seconds, supplied) }
+            theirs.requestTimeoutMillis shouldBe 4_000L
+            theirs.connectTimeoutMillis shouldBe null
+            theirs.socketTimeoutMillis shouldBe null
         }
     }
 }

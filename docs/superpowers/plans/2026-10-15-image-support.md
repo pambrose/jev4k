@@ -1,5 +1,8 @@
 # Image and Box Support Implementation Plan
 
+Status: carried out in full and released in 0.3.0 (2026-10-16). The step boxes below were not ticked as the
+work went; the commits on the 0.3.0 release PR record it.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

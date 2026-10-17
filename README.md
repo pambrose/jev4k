@@ -81,7 +81,7 @@ artifact for each target, so a JVM project and a Kotlin Multiplatform project (i
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.3.0")
+    implementation("com.pambrose.jev4k:jev4k:0.4.0")
 }
 ```
 
@@ -91,7 +91,7 @@ Maven doesn't read Gradle's module metadata, so a Maven build depends on the JVM
 <dependency>
     <groupId>com.pambrose.jev4k</groupId>
     <artifactId>jev4k-jvm</artifactId>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
 </dependency>
 ```
 
@@ -162,15 +162,17 @@ answer type.
 
 - A Noul value near 0.5 means yes and no are about equally likely. It doesn't mean "medium"; use a Score to measure
   degree.
-- `confidence` (Choice and Score only) summarizes how concentrated the probabilities are. It isn't the winning option's
-  probability. Nouls have no confidence.
+- `confidence` runs from 0 to 1. A Choice's rescales the winning option's probability so that an even split is 0; a
+  close runner-up shows only in `probabilities`. A Score's also counts how far the probability sits from the most likely
+  level. A Box's says how sure the model is of the edges, and can be null. Nouls have no confidence.
 - Every answer is limited to the options or levels you defined.
 
-The question definitions themselves are `NoulQuestion`, `ChoiceQuestion` and `ScoreQuestion`, subtypes of `Question`,
-named after TypeSafe's JS SDK. The DSL builds them for you.
+The question definitions themselves are `NoulQuestion`, `ChoiceQuestion`, `ScoreQuestion` and the experimental
+`BoxQuestion`, subtypes of `Question`, named after TypeSafe's JS SDK. The DSL builds them for you.
 
 TypeSafe's experimental Box question type finds where something is in an image. jev4k supports it, and images in the
-state, instructions and criteria, behind the `@ExperimentalJevImages` opt-in; see [Images](#images).
+state, instructions and criteria, behind the `@ExperimentalJevImages` opt-in; see [Images](#images). Box needs Jev 1.14
+(`jev-preview` or `jev-1.14.0`).
 
 ## Defining questions
 
@@ -296,6 +298,7 @@ These are checked locally before anything is sent, and every problem is reported
 - non-empty instructions
 - a Choice has 1 to 255 options (`MAX_CHOICE_OPTIONS`)
 - a Score has 2 to 10 levels (`MIN_SCORE_LEVELS`..`MAX_SCORE_LEVELS`)
+- each option, level or Noul definition is text, a JSON object or a JSON array (an undescribed Choice option is null)
 - the state, and each instructions or criteria value, nests at most 64 objects or arrays deep, as the API requires
 
 ## State
@@ -341,8 +344,10 @@ suspend fun findMug(jev: JevApi, bytes: ByteArray) {
 }
 ```
 
-Images also go in instructions (`"Is $upload the same product as $catalog?"`) and criteria (`"thumbs_up" means
-thumb`). A `JevQuery` can attach its own example pictures. See [Images & Box](https://jev4k.com/queries/images/).
+Images also go in instructions (`"Is the uploaded product the one shown in $catalog?"`) and criteria (`"thumbs_up" means
+thumb`); each place a reference appears sends the image again, so place each image once. A `JevQuery` can attach its own
+example pictures. `timeout` covers each attempt's upload, and a timed-out attempt uploads again, so give image calls
+more time with `JevCallOptions`. See [Images & Box](https://jev4k.com/queries/images/).
 
 ## Reading results
 
@@ -358,7 +363,7 @@ thumb`). A `JevQuery` can attach its own example pictures. See [Images & Box](ht
 | `model` / `requestedModel`              | The model that answered, as reported, and the name you sent (e.g. `jev-latest`) |
 | `usage`                                 | `inputTokens` / `outputTokens`                                                  |
 | `requestId`                             | The `x-typesafe-request-id` header, for support tickets and logs                |
-| `raw`                                   | The response body as received                                                   |
+| `raw`                                   | The parsed response body                                                       |
 
 The answer types have helpers for common decisions:
 
@@ -380,7 +385,8 @@ frustration.legendText(2)   // "Very angry, strong language"
 
 Asking for an id or handle that wasn't in the request, or reading a Noul as a Choice, throws `IllegalArgumentException`.
 A missing or malformed answer from the server throws `JevResponseValidationException`, with a field path such as
-`answers.urgent.noul`.
+`answers.urgent.noul`. A missing answer, and a Box whose edges are out of range or out of order, fail only when they're
+read, so the other answers, such as the Noul paired with a Box, can still be read.
 
 **Gate on confidence where it matters.** Choose thresholds per action, tuned on your own data. A read-only action can go
 ahead at lower confidence than a destructive one:
@@ -451,9 +457,12 @@ val jev = JevClient {
 ```
 
 Each setting resolves as: the explicit value, then the environment variable, then the default. String settings are
-trimmed, and a blank one counts as unset. `baseUrl` must be `https://` (plain `http://` is for `localhost`, or
-anywhere with `allowInsecureHttp = true`) and carry no credentials or query. The builder reports every problem at
-once in a `JevConfigException`, and neither its messages nor `JevConfig.toString()` print the key.
+trimmed (a leading byte-order mark too), and a blank one counts as unset. `baseUrl` must be `https://` (plain `http://`
+is for `localhost`, or anywhere with `allowInsecureHttp = true`) and carry no credentials or query. The key must be
+printable ASCII with no spaces, and `headers` must have HTTP token names and ASCII values; `Content-Length`,
+`Content-Type`, `Transfer-Encoding` and `Upgrade` can't be set, here or in `JevCallOptions`. A missing key fails on its
+own; otherwise the builder reports every problem at once in a `JevConfigException`, and neither its messages nor
+`JevConfig.toString()` print the key.
 
 ### Running with Ollaya
 
@@ -487,7 +496,8 @@ attempt, so a call that retries on long server hints can take a couple of minute
 
 Redirects are never followed: a 3xx is a `JevApiException`, since following one would send your headers, and on
 Node.js the request body, to whatever host it names. A response declaring a body over 16 MiB is refused before the
-body is read; one sent without a length is bounded only by `timeout`.
+body is read; one without a declared length is bounded only by `timeout`. On Linux, Apple platforms and Node.js that
+includes a compressed response, since those engines decompress it themselves and drop its length.
 
 ### Concurrency
 
@@ -526,7 +536,7 @@ dropped:
 
 ```kotlin
 dependencies {
-    implementation("com.pambrose.jev4k:jev4k:0.3.0") {
+    implementation("com.pambrose.jev4k:jev4k:0.4.0") {
         exclude(group = "io.ktor", module = "ktor-client-cio-jvm")
     }
     implementation("io.ktor:ktor-client-okhttp:3.6.0")
@@ -555,13 +565,14 @@ That exact code is [`JavaInterop.java`](src/jvmTest/java/website/JavaInterop.jav
 sources so it can't drift.
 
 Kotlin's `Duration` doesn't cross to Java either, so each setting of that type has a counterpart in milliseconds:
-`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, `with…` methods on `RetryPolicy` (whose constructor
-Java can't call), `JevCallOptionsBuilder.setTimeoutMillis`, and `JevRateLimitException.getRetryAfterMillis()`:
+`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, `with…` methods on `RetryPolicy` (whose full
+constructor Java can't call; `new RetryPolicy()` works), `JevCallOptionsBuilder.setTimeoutMillis`, and
+`JevRateLimitException.getRetryAfterMillis()`:
 
 ```java
 return new JevClient(builder -> {
     builder.setTimeoutMillis(2 * JevDefaults.TIMEOUT_MILLIS);
-    builder.setRetry(new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250));
+    builder.setRetry(new RetryPolicy().withMaxRetries(4).withBackoffMillis(250, 2_000));
     return Unit.INSTANCE;
 });
 ```
@@ -586,6 +597,10 @@ four things are out of reach from Java:
 Everything else is callable: `evaluate`, `models`, the inline `noul`, `choice` and `score` builders, the other
 result accessors, and enums implementing `JevOption`. Only the getters that return a `Duration`, such as
 `JevConfig.timeout` and `RetryPolicy.initialBackoff`, stay Kotlin-only.
+
+The collections a built object hands out are read-only from Java too, as Kotlin's types promise: a config's or a call's
+headers, the retry statuses, a `QuestionSet`'s ids, a Choice's options, a Score's levels and a result's answers. Their
+mutators throw `UnsupportedOperationException`.
 
 ### Module name
 
@@ -687,8 +702,10 @@ These points are condensed from TypeSafe's documentation. A compressed copy of t
 ## Development
 
 Building jev4k needs JDK 25; Gradle's toolchain support downloads it if it's missing. The JVM jar itself targets
-Java 17, so applications on 17 or newer can embed it. Only a Mac, with Xcode, builds every target; Linux and Windows
-build everything but the Apple ones, which is why releases are published from a Mac.
+Java 17, so applications on 17 or newer can embed it. Only a Mac, with Xcode, links every target, and it runs every test
+but mingwX64's (CI runs those on Windows) and iosX64's, which need an Intel Mac: iosX64 is compiled and published, but
+its tests run nowhere. Linux compiles the Apple targets too, but can't link or run them, which is why releases are
+published from a Mac.
 
 Copy [`.env.example`](.env.example) to `.env` (gitignored) and set `TYPESAFE_API_KEY` in it. Gradle loads that
 file into the environment of the test and example tasks, so `make example` and `make live-tests` work without
@@ -703,17 +720,20 @@ make zizmor                 # audit the GitHub Actions workflows with zizmor, as
 make format                 # auto-format with ktlint
 make kdocs                  # API docs in build/dokka/html
 make example                # run the example against the live API (needs TYPESAFE_API_KEY)
+make hotdog-example         # run the hot dog image example against the live API (needs TYPESAFE_API_KEY)
 make live-tests             # smoke tests and probes against the live API (needs TYPESAFE_API_KEY)
 make api-docs               # refresh the cached TypeSafe docs in jev-docs/
 make site                   # serve the documentation site (website/jev4k) locally
 make publish-local-snapshot # publish <version>-SNAPSHOT to ~/.m2
 ```
 
-The runnable example is [`TriageExample.kt`](src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt). The
-unit tests use Kotest, MockK, and Ktor's `MockEngine`, and most of them run on every platform. One timeout test drives
-the real CIO engine against a loopback socket, and one test per platform dials a loopback port nothing listens on, so
-no traffic ever leaves the machine. Live tests run only when `JEV4K_LIVE=1`, which `make live-tests` sets; the JVM
-smoke tests also need `TYPESAFE_API_KEY`, and fail, naming it, when it's missing.
+The runnable examples are [`TriageExample.kt`](src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt) and
+[`HotDogExample.kt`](src/jvmTest/kotlin/com/pambrose/jev4k/examples/HotDogExample.kt), which sends two bundled photos.
+The unit tests use Kotest, MockK, and Ktor's `MockEngine`, and most of them run on every platform. Five tests drive the
+real CIO engine against loopback servers (a timeout, an untrusted certificate, a body cut short, an oversized declared
+body and an unparseable response), and one test per platform dials a loopback port nothing listens on, so no traffic
+ever leaves the machine. Live tests run only when `JEV4K_LIVE=1`, which `make live-tests` sets; the JVM smoke tests also
+need `TYPESAFE_API_KEY`, and fail, naming it, when it's missing.
 
 ## Thanks to TypeSafe
 

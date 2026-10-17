@@ -50,13 +50,14 @@ strings, for example with contrastive `what` / `not_for` / `examples` fields. Se
 
 jev4k checks these locally and reports every problem at once, before anything is sent:
 
-| Rule                  | Limit                                                      |
-|-----------------------|------------------------------------------------------------|
-| Questions per request | At least one; ids unique and non-blank                     |
-| Instructions          | Must not be blank                                          |
-| Choice options        | 1 to 255 (`MAX_CHOICE_OPTIONS`); keys unique and non-blank |
-| Score levels          | 2 to 10 (`MIN_SCORE_LEVELS`..`MAX_SCORE_LEVELS`)           |
-| JSON nesting          | At most 64 levels, in the state and in each entry          |
+| Rule                  | Limit                                                                     |
+|-----------------------|---------------------------------------------------------------------------|
+| Questions per request | At least one; ids unique and non-blank                                    |
+| Instructions          | Non-blank text, or a non-empty JSON object or array                       |
+| Criteria values       | Text, a JSON object or a JSON array; an undescribed Choice option is null |
+| Choice options        | 1 to 255 (`MAX_CHOICE_OPTIONS`); keys unique and non-blank                |
+| Score levels          | 2 to 10 (`MIN_SCORE_LEVELS`..`MAX_SCORE_LEVELS`)                          |
+| JSON nesting          | At most 64 levels, in the state and in each entry                         |
 
 A request's state plus all its questions must also fit Jev's context window: 64k tokens in total, and 32k
 for the state plus the single longest question. [Long context](../client/calls.md#long-context) raises both to 262k.

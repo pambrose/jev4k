@@ -88,8 +88,8 @@ suspend fun shortlistBothRoles(
     jev: JevApi,
     resumes: Map<String, String>,
 ) {
-    val results = assessResumes(jev, resumes)                 // asks Jev once per resume
-    val engineers = rankCandidates(results, seniorEngineer)   // no new requests
+    val results = assessResumes(jev, resumes)                  // asks Jev once per resume
+    val engineers = rankCandidates(results, seniorEngineer)    // no new requests
     val managers = rankCandidates(results, engineeringManager) // no new requests
     println("engineers: $engineers\nmanagers: $managers")
 }

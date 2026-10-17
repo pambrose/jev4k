@@ -78,6 +78,34 @@ class ImageAttachTest : StringSpec() {
             set.images.map { it.reference } shouldBe listOf("<thumb>", "<palm>", "<frame>")
         }
 
+        "two instances with the same reference and the same bytes are kept once, as a helper that reads again makes" {
+            fun logo() = JevImage.of(PNG_BYTES, "<logo>")
+            val first = logo()
+            val set =
+                questions {
+                    attach(first, logo())
+                    noul("brand", "Is <logo> the brand's logo?")
+                }
+            set.images shouldBe listOf(first)
+        }
+
+        "a reference inside another is refused, since the API can't tell them apart" {
+            shouldThrow<JevValidationException> {
+                questions {
+                    attach(JevImage.of(PNG_BYTES, "img1"), JevImage.of(JPEG_BYTES, "img10"))
+                    noul("same", "Is img1 the same shelf as img10?")
+                }
+            }.problems shouldBe listOf("image reference 'img1' occurs inside 'img10', so the API can't tell them apart")
+            val generated = JevImage.of(PNG_BYTES)
+            shouldThrow<JevValidationException> {
+                questions {
+                    attach(generated, JevImage.of(JPEG_BYTES, "image"))
+                    noul("same", "Is $generated like image?")
+                }
+            }.problems shouldContain
+                "image reference 'image' occurs inside '${generated.reference}', so the API can't tell them apart"
+        }
+
         "set validation reports every image problem along with the rest" {
             val problems =
                 shouldThrow<JevValidationException> {
@@ -99,8 +127,7 @@ class ImageAttachTest : StringSpec() {
                     "Question ids must not be blank",
                     "image '<gif>' is neither a PNG nor a JPEG; the API takes only those two",
                     "image '<empty>' is empty",
-                    "image '<b64>' is not valid base64: use the standard alphabet, with no whitespace and no " +
-                        "data: prefix",
+                    "image '<b64>' is not valid base64: use the standard alphabet, with no data: prefix",
                     "image references must not be blank",
                     "image reference '${"é".repeat(40)}…' is longer than 1024 bytes of UTF-8",
                     "two different images share the reference '<twin>'",

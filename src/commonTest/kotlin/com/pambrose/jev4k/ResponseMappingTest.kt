@@ -395,6 +395,28 @@ class ResponseMappingTest : StringSpec() {
                 "answers.frustration.legend.-1"
         }
 
+        "jevResult drops a leading byte-order mark, as the client does" {
+            jevResult("﻿" + documentedResponse, documented).noul("is_urgent").noul shouldBe 0.92
+        }
+
+        "a Score level key must be written as its number, so two keys can't name one level" {
+            for (key in listOf("01", "+1")) {
+                val probabilities = """{"0":0.1,"$key":0.2,"1":0.7}"""
+                val body = """{"frustration":{"score":1,"confidence":0.5,"probabilities":$probabilities}}"""
+                withClue(key) {
+                    shouldThrow<JevResponseValidationException> { single(body) }.fieldPath shouldBe
+                        "answers.frustration.probabilities.$key"
+                }
+            }
+        }
+
+        "an unasked Score counts its levels up to the highest key, so normalized stays within 0..1" {
+            val extra = """{"extra":{"type":"score","score":2.0,"confidence":0.5,"probabilities":{"0":0.0,"2":1.0}}}"""
+            val score = single(extra).answers["extra"].shouldBeInstanceOf<ScoreAnswer>()
+            score.levelCount shouldBe 3
+            score.normalized shouldBe 1.0
+        }
+
         "an answer the request didn't ask for has no known levels, so only a negative level is refused" {
             val extra = """{"is_urgent":{"noul":0.5},"extra":{"type":"score","score":7,"confidence":0.5,""" +
                 """"probabilities":{"7":1.0}}}"""

@@ -11,12 +11,17 @@ sure" is one you can build safe automation on.
 
 - **Noul**: `noul` is the probability of yes. There's no separate confidence; a value near 0.5 is the
   model saying "I can't tell".
-- **Choice / Score**: `probabilities` is the full distribution, and `confidence` (0–1) summarizes how
-  concentrated it is. A single peak gives high confidence; probability spread across options gives low
-  confidence.
+- **Choice / Score**: `probabilities` is the full distribution, and `confidence` (0–1) summarizes it: 1 when all
+  of the probability is on one answer, 0 when it's spread evenly.
 
-Confidence is not the winner's probability. A winner at 0.45 with a runner-up at 0.44 and a winner at 0.45 with
-the rest scattered thinly are different situations, and `confidence` is what separates them.
+Confidence is not the winner's probability, and the two kinds are worked out differently:
+
+- A **Choice**'s confidence rescales the winner's probability so that an even split across the options is 0 and
+  certainty is 1. Nothing else counts, so a winner at 0.45 with a runner-up at 0.44 and a winner at 0.45 with the
+  rest scattered thinly get the same confidence. When a near-tie matters, compare the top two entries of
+  `ranked()`.
+- A **Score**'s confidence also counts how far the probability sits from the most likely level: probability on a
+  neighboring level lowers it less than the same probability on a distant one.
 
 ## Three bands
 

@@ -58,7 +58,7 @@ public final class JavaInterop {
         // --8<-- [start:settings]
         return new JevClient(builder -> {
             builder.setTimeoutMillis(2 * JevDefaults.TIMEOUT_MILLIS);
-            builder.setRetry(new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250));
+            builder.setRetry(new RetryPolicy().withMaxRetries(4).withBackoffMillis(250, 2_000));
             return Unit.INSTANCE;
         });
         // --8<-- [end:settings]
@@ -105,15 +105,24 @@ public final class JavaInterop {
     // --8<-- [start:images]
     static BoundingBox findMug(BlockingJev blocking, byte[] photoBytes) throws InterruptedException {
         JevImage photo = JevImage.of(photoBytes);
-        JevResult r = blocking.query("The photo: " + photo.getReference(), qb -> {
+        // Box needs Jev 1.14, so name a model that has it.
+        JevResult r = blocking.query("The photo: " + photo.getReference(), "jev-preview", qb -> {
             qb.attach(photo);
             qb.noul("mug_visible", "Is there a coffee mug in the photo?");
             qb.box("mug", "the coffee mug in the photo");
             return Unit.INSTANCE;
         });
-        return r.box("mug").getBox();
+        // A Box always returns a box, so read it only when the Noul says the mug is there.
+        return r.noul("mug_visible").isTrue(0.5) ? r.box("mug").getBox() : null;
     }
     // --8<-- [end:images]
+
+    // Java-visible members the site's examples don't show: the other millisecond setters, and an image's bytes.
+    static long javaOnlyMembers(JevImage image) {
+        RetryPolicy policy =
+            new RetryPolicy().withInitialBackoffMillis(250).withMaxBackoffMillis(2_000).withMaxRetryAfterMillis(30_000);
+        return policy.getMaxRetries() + image.copyBytes().length;
+    }
 
     // A literal null model must keep resolving to ask(query, state, model): Java sees the image overloads under
     // another name, askWithImages, so they can't make this call ambiguous.

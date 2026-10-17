@@ -5,6 +5,8 @@ import com.pambrose.jev4k.internal.sendProblem
 import com.pambrose.jev4k.internal.WireQuestion
 import com.pambrose.jev4k.internal.enumTypeName
 import com.pambrose.jev4k.internal.toWire
+import com.pambrose.jev4k.internal.readOnlyList
+import com.pambrose.jev4k.internal.readOnlyMap
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonArray
@@ -29,8 +31,9 @@ const val MAX_SCORE_LEVELS = 10
  * (usually a string). Named after the TypeSafe JS SDK's `Question` / `NoulQuestion` / `ChoiceQuestion`
  * / `ScoreQuestion`. A [QuestionRef] pairs one with an id.
  *
- * As with [Answer], new subtypes may be added in a minor release when TypeSafe adds a kind of question, so a `when`
- * over [Question] that must keep compiling across upgrades should end in an `else` branch.
+ * As with [Answer], new subtypes may be added in a minor release when TypeSafe adds a kind of question, so a Kotlin
+ * `when` or a Java pattern `switch` over [Question] that must keep compiling across upgrades should end in an `else`
+ * (in Java, `default`) branch.
  */
 sealed interface Question {
     val instructions: JsonElement
@@ -61,6 +64,7 @@ data class ScoreQuestion(
 /**
  * Find one thing in an image: the answer is a [BoxAnswer], the box around it. Box takes no criteria, and needs an
  * image attached to the request. It always returns a box, even for a target that isn't there, so ask a Noul too.
+ * Box needs Jev 1.14 (`jev-preview` or `jev-1.14.0`).
  */
 @ExperimentalJevImages
 data class BoxQuestion(
@@ -100,14 +104,15 @@ class QuestionSet internal constructor(
     questions: List<QuestionRef<*>>,
     images: List<JevImage> = emptyList(),
 ) : Iterable<QuestionRef<*>> {
-    private val questions: List<QuestionRef<*>> = questions.toList()
+    private val questions: List<QuestionRef<*>> = questions.readOnlyList()
 
     /**
-     * The images attached to these questions, each instance once, in the order they were attached. They are sent with
+     * The images attached to these questions, each once, in the order they were attached. An instance attached twice,
+     * or a second instance with the same reference and the same bytes, is kept only the first time. They are sent with
      * every request that asks this set.
      */
     @ExperimentalJevImages
-    val images: List<JevImage> = images.distinct()
+    val images: List<JevImage> = images.distinctImages().readOnlyList()
 
     init {
         val problems = validate(this.questions, this.images)
@@ -119,7 +124,7 @@ class QuestionSet internal constructor(
     private val byId: Map<String, QuestionRef<*>> = this.questions.associateBy { it.id }
 
     // this.questions, the copy: a bare `questions` here would read the constructor parameter, the caller's list.
-    val ids: List<String> = this.questions.map { it.id }
+    val ids: List<String> = this.questions.map { it.id }.readOnlyList()
 
     val size: Int get() = questions.size
 
@@ -130,9 +135,15 @@ class QuestionSet internal constructor(
 
     override fun iterator(): Iterator<QuestionRef<*>> = questions.iterator()
 
+    /** The ids and the number of images, so one set can be told from another in a log or a mock's failure message. */
+    override fun toString(): String = "QuestionSet(ids=$ids, images=${images.size})"
+
     /**
-     * The `questions` object exactly as it is sent, e.g. for logging or cache keys. It holds the references of attached
-     * [images], not their bytes, so a cache key for a set with images must cover each image's bytes too.
+     * The `questions` object exactly as it is sent, e.g. for logging or cache keys. Key a cache on its text,
+     * `toJson().toString()`: the object compares as a map, which ignores order, while a Choice's option order is part
+     * of the question. It holds the references of attached [images][QuestionSet.images], not their bytes, so a key for
+     * a set with images must cover each image's bytes too ([JevImage.copyBytes]). A generated reference is new for
+     * every instance, so it makes the key unique even for identical bytes.
      */
     fun toJson(): JsonObject =
         JevJson.encodeToJsonElement(MapSerializer(String.serializer(), WireQuestion.serializer()), toWire()).jsonObject
@@ -155,6 +166,21 @@ private fun JsonElement.isEmptyEntry(): Boolean =
         is JsonObject -> isEmpty()
 
         is JsonArray -> isEmpty()
+    }
+
+/**
+ * Why this criteria value isn't one the API takes: it types each one as text, an object or an array, and a Choice
+ * option may also be null.
+ */
+private fun JsonElement.criteriaTypeProblem(
+    name: String,
+    question: Question,
+): String? =
+    when {
+        this !is JsonPrimitive || isString -> null
+        question !is ChoiceQuestion -> "$name must be text, a JSON object or a JSON array"
+        this is JsonNull -> null
+        else -> "$name must be text, a JSON object, a JSON array or null"
     }
 
 private const val INSTRUCTIONS_REQUIRED =
@@ -185,7 +211,11 @@ private fun validate(
 ): List<String> =
     buildList {
         if (question.instructions.isEmptyEntry()) add("question '$id': $INSTRUCTIONS_REQUIRED")
-        for ((name, entry) in question.sentEntries()) entry.sendProblem(name)?.let { add("question '$id': $it") }
+        // Every entry after the first, the instructions checked above, is a criteria value.
+        question.sentEntries().forEachIndexed { index, (name, entry) ->
+            val problem = entry.sendProblem(name) ?: entry.takeIf { index > 0 }?.criteriaTypeProblem(name, question)
+            problem?.let { add("question '$id': $it") }
+        }
         when (question) {
             is NoulQuestion -> {
                 // Noul criteria are optional; nothing else to check.
@@ -250,7 +280,7 @@ internal fun choiceRef(
     val builder = ChoiceBuilder().apply(options)
     return QuestionRef(
         id = id,
-        question = ChoiceQuestion(instructions, builder.options.toMap()),
+        question = ChoiceQuestion(instructions, builder.options.readOnlyMap()),
         decode = ::decodeChoice,
         problems = builder.duplicates.map { "duplicate Choice option '$it'" },
     )
@@ -261,7 +291,7 @@ internal fun scoreRef(
     instructions: JsonElement,
     levels: ScoreBuilder.() -> Unit,
 ): QuestionRef<ScoreAnswer> =
-    QuestionRef(id, ScoreQuestion(instructions, ScoreBuilder().apply(levels).levels.toList()), ::decodeScore)
+    QuestionRef(id, ScoreQuestion(instructions, ScoreBuilder().apply(levels).levels.readOnlyList()), ::decodeScore)
 
 internal fun boxRef(
     id: String,

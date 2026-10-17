@@ -48,4 +48,7 @@ Verify an agent's tool calls with one question per property rather than one ques
 --8<-- "VerificationExamples.kt:tool-trace"
 ```
 
-Each failing check names the specific problem, which is easier to act on than a single low score.
+Each failing check names the specific problem, which is easier to act on than a single low score. The example follows
+TypeSafe's, which asks all four; in production, run the deterministic checks in code first, as the top of this page
+says. A schema validator settles `schema_violation` and comparing the fields settles the unit and date checks, which
+leaves Jev the judgment calls, such as `wrong_tool`.

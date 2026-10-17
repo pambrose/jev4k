@@ -17,6 +17,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.random.Random
 
@@ -27,6 +28,13 @@ internal fun json(text: String): JsonElement = Json.parseToJsonElement(text)
 internal fun nestedArrays(depth: Int): JsonElement {
     var element: JsonElement = JsonPrimitive(1)
     repeat(depth) { element = JsonArray(listOf(element)) }
+    return element
+}
+
+/** A number wrapped in [depth] nested objects, e.g. `{"a":{"a":1}}` for 2. */
+internal fun nestedObjects(depth: Int): JsonElement {
+    var element: JsonElement = JsonPrimitive(1)
+    repeat(depth) { element = JsonObject(mapOf("a" to element)) }
     return element
 }
 
@@ -194,6 +202,13 @@ internal val PNG_BYTES =
 /** A JPEG signature and a few bytes, as [PNG_BYTES] is for PNG. */
 internal val JPEG_BYTES =
     byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0x00, 0x10, 0x4A, 0x46)
+
+/**
+ * A reference this process generated, rewritten as another process would have generated it: every character of the
+ * tag after `jev4k-image-` is changed.
+ */
+internal fun foreignReference(generated: String): String =
+    generated.replaceRange(12, 20, generated.substring(12, 20).map { if (it == '0') '1' else '0' }.joinToString(""))
 
 /** A Choice defined by example pictures, TypeSafe's "define options by example" pattern. */
 object Gestures : JevQuery() {
