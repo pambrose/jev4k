@@ -6,7 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-## [Unreleased]
+## [0.4.0] - 2026-10-16
+
+The fixes from a review of 0.3.0, plus three small additions. The binary API only grows, but some things 0.3.0 accepted
+are now refused: Java code changing a collection a built object hands out; a reference inside another image's reference;
+a number, boolean or null criteria value; a framing header, or a non-ASCII key or header, in the configuration; an
+undeclared option read through a broader enum; and a Score level key written as `01` or `+1`.
 
 ### Added
 
@@ -20,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- The default `User-Agent` is `jev4k/0.4.0`.
 - The collections a built object holds are read-only to Java too: a config's and a call's headers and extra body
   fields, the retry statuses (including `RetryPolicy.NONE`'s), a `QuestionSet`'s ids, iteration and images, a
   Choice's options, a Score's levels, and a result's answers. Java used to get a mutable `LinkedHashMap`,
@@ -496,7 +502,7 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
-[Unreleased]: https://github.com/pambrose/jev4k/compare/0.3.0...HEAD
+[0.4.0]: https://github.com/pambrose/jev4k/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/pambrose/jev4k/compare/0.2.2...0.3.0
 [0.2.2]: https://github.com/pambrose/jev4k/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/pambrose/jev4k/compare/0.2.0...0.2.1
