@@ -43,7 +43,9 @@ SITE_DIR := $(WEBSITE_DIR)/jev4k
 
 # Signing credentials for Maven Central: the GPG key comes from the local keyring
 # (GPG_SIGNING_KEY_ID) and its passphrase from the macOS keychain. Maven Central credentials are read by Gradle
-# from ~/.gradle/gradle.properties (mavenCentralUsername / mavenCentralPassword).
+# from ~/.gradle/gradle.properties (mavenCentralUsername / mavenCentralPassword). Every process the build starts
+# inherits these variables, and a daemon keeps them until it stops, so the release checklist stops the Gradle and
+# Kotlin daemons after a publish.
 GPG_ENV = \
 	ORG_GRADLE_PROJECT_signingInMemoryKey="$$(gpg --armor --export-secret-keys "$$GPG_SIGNING_KEY_ID")" \
 	ORG_GRADLE_PROJECT_signingInMemoryKeyId="$$GPG_SIGNING_KEY_ID" \
@@ -272,7 +274,7 @@ publish-snapshot: _require-version _require-macos _check-gpg-env  ## Publish a -
 	$(GPG_ENV) $(GRADLE) -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenCentral
 
 publish-maven-central: _require-version _require-macos _check-gpg-env  ## Publish a release artifact to Maven Central
-	$(GPG_ENV) $(GRADLE) publishAndReleaseToMavenCentral
+	$(GPG_ENV) $(GRADLE) -Pjev4k.sourceRef=$(VERSION) publishAndReleaseToMavenCentral
 
 # Gradle's documented upgrade procedure: the first run rewrites gradle-wrapper.properties using the *old*
 # wrapper jar; the second run regenerates the wrapper itself with the new version. Both runs carry the

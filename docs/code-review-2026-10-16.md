@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 23 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 28 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -52,9 +52,9 @@ Client and configuration
 Java interop and the KDocs
 
 - [x] [#21](#issue-21) The 0.3.0 notes miss a Java source break: an exhaustive pattern `switch` over `Answer`
-- [ ] [#22](#issue-22) The KDocs leave out every `JevQuery` builder (`noul`, `choice`, `score`, `box`, `attach`)
-- [ ] [#23](#issue-23) The KDocs link JDK types to the Java 25 docs, not Java 17's
-- [ ] [#24](#issue-24) KDoc source links point at `master`, so released javadoc jars land on the wrong lines
+- [x] [#22](#issue-22) The KDocs leave out every `JevQuery` builder (`noul`, `choice`, `score`, `box`, `attach`)
+- [x] [#23](#issue-23) The KDocs link JDK types to the Java 25 docs, not Java 17's
+- [x] [#24](#issue-24) KDoc source links point at `master`, so released javadoc jars land on the wrong lines
 
 Tests
 
@@ -66,7 +66,7 @@ Tests
 
 Build, CI and release
 
-- [ ] [#30](#issue-30) The publish targets put the GPG secret key and passphrase in the environment of forked processes
+- [x] [#30](#issue-30) The publish targets put the GPG secret key and passphrase in the environment of forked processes
 - [ ] [#31](#issue-31) The tvOS and watchOS simulator tests can drop out of CI silently
 - [ ] [#32](#issue-32) Codecov's coverage gate gates nothing, yet the release checklist counts it under `ci-ok`
 - [ ] [#33](#issue-33) CI runs an unpinned `binfmt` image with `--privileged`
@@ -93,7 +93,7 @@ Documentation and examples
 - [ ] [#48](#issue-48) The tool-trace example asks Jev checks the page says belong in code
 - [ ] [#49](#issue-49) Maintainer notes and `zensical.toml` still describe the state before 0.3.0
 - [ ] [#50](#issue-50) Three places still say the retry defaults match "the official SDKs"
-- [ ] [#51](#issue-51) Two unresolved KDoc links: `QuestionSet.toJson`'s `[images]` and kotlinx-io's `Path`
+- [x] [#51](#issue-51) Two unresolved KDoc links: `QuestionSet.toJson`'s `[images]` and kotlinx-io's `Path`
 - [x] [#52](#issue-52) README says `confidence` is "Choice and Score only", below a Box row that has one
 - [ ] [#53](#issue-53) The Installation page lists three `api` dependencies; kotlinx-io-core is a fourth
 - [ ] [#54](#issue-54) "A missing file fails the object's first use" understates a permanent failure on the JVM
@@ -176,16 +176,16 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
   - [x] [#18](#issue-18) Reject non-ASCII characters in the key, header names and header values
   - [x] [#16](#issue-16) Bound the bytes actually read, or say on the three pages that a compressed body isn't capped
   - [x] [#10](#issue-10) Say on the Images page and in the image `ask` KDocs that `timeout` covers the upload
-- [ ] **5. KDocs and publishing.** The javadoc jar ships with each release, and signing runs only when one is
+- [x] **5. KDocs and publishing.** The javadoc jar ships with each release, and signing runs only when one is
   published, so this group lands before 0.3.1 goes out. One edit to the `dokka {}` block, then check
   `build/dokka/html`: builder pages for `JevQuery`, only `javase/17` links, tag-based source links and no
   `data-unresolved-link`. The publish targets that set #24's ref are the ones #30 changes. Confirm that signing
   still works locally, without uploading anything.
-  - [ ] [#22](#issue-22) Document protected members as well as public ones
-  - [ ] [#23](#issue-23) Set `jdkVersion` to the catalog's `jvm-target` for every source set
-  - [ ] [#24](#issue-24) Pass the source-link ref in as a property, set by `docs.yml` and the publish targets
-  - [ ] [#51](#issue-51) Link `[images][QuestionSet.images]`, and register kotlinx-io's API docs
-  - [ ] [#30](#issue-30) Sign through gpg-agent instead of exporting the key into the environment
+  - [x] [#22](#issue-22) Document protected members as well as public ones
+  - [x] [#23](#issue-23) Set `jdkVersion` to the catalog's `jvm-target` for every source set
+  - [x] [#24](#issue-24) Pass the source-link ref in as a property, set by `docs.yml` and the publish targets
+  - [x] [#51](#issue-51) Link `[images][QuestionSet.images]`, and register kotlinx-io's API docs
+  - [x] [#30](#issue-30) Stop the Gradle and Kotlin daemons after a publish (chosen over signing through gpg-agent)
 
 ### Any time
 

@@ -135,7 +135,8 @@ class QuestionSet internal constructor(
 
     /**
      * The `questions` object exactly as it is sent, e.g. for logging or cache keys. It holds the references of attached
-     * [images], not their bytes, so a cache key for a set with images must cover each image's bytes too.
+     * [images][QuestionSet.images], not their bytes, so a cache key for a set with images must cover each image's
+     * bytes too.
      */
     fun toJson(): JsonObject =
         JevJson.encodeToJsonElement(MapSerializer(String.serializer(), WireQuestion.serializer()), toWire()).jsonObject

@@ -51,6 +51,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   themselves.
 - The Images page and the image `ask` KDocs say that `timeout` covers each attempt's upload, with an example giving
   image calls more time.
+- KDocs:
+    - `JevQuery`'s builders (`noul`, `choice`, `score`, `box`, `attach`) are documented. They are protected, and only
+      public members were.
+    - JDK types link to Java 17's docs, the oldest JDK jev4k supports, instead of Java 25's.
+    - kotlinx-io's `Path` links to its API docs, and `QuestionSet.toJson`'s link to `images` resolves.
+    - A release's source links open its tag instead of `master`, so a published javadoc jar keeps pointing at the
+      lines it documents.
 
 ## [0.3.0] - 2026-10-16
 

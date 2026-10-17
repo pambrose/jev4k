@@ -296,6 +296,11 @@ tasks.withType<ConfigurableKtLintTask>().configureEach {
 // KDoc site: `make kdocs` writes it to build/dokka/html, and the docs workflow publishes it at /kdocs/.
 val repoUrl = "https://github.com/pambrose/jev4k"
 
+// The git ref the KDocs' source links open. A released javadoc jar can't be replaced, and master moves on, so the
+// release paths pass the tag: docs.yml on a tag, and `make publish-maven-central` with the version. Everything else
+// (a local build, a PR, a manual deploy from master) links to master, since an unreleased version has no tag yet.
+val sourceRef = providers.gradleProperty("jev4k.sourceRef").orElse("master").get()
+
 dokka {
     moduleName = "jev4k"
     moduleVersion = project.version.toString()
@@ -316,7 +321,14 @@ dokka {
         // Document only the library: test sources (test classes, fixtures, the examples) are never included.
         if (name.endsWith("Test")) suppress = true
 
-        documentedVisibilities(VisibilityModifier.Public)
+        // Protected too: JevQuery's builders (noul, choice, score, box, attach) are protected, since subclasses call
+        // them, and they are half of the DSL.
+        documentedVisibilities(VisibilityModifier.Public, VisibilityModifier.Protected)
+
+        // Link JDK types to the docs for the oldest JDK this library supports. It is set on every source set: Dokka
+        // resolves a JDK link through whichever source set's links sort first, so setting it on jvmMain alone left
+        // every link at the toolchain's version.
+        jdkVersion = jvmTargetVersion.toInt()
 
         perPackageOption {
             matchingRegex = "com\\.pambrose\\.jev4k\\.internal.*"
@@ -326,7 +338,7 @@ dokka {
         // "View source" links on every declaration, in whichever source set it lives.
         sourceLink {
             localDirectory = file("src")
-            remoteUrl("$repoUrl/tree/master/src")
+            remoteUrl("$repoUrl/tree/$sourceRef/src")
             remoteLineSuffix = "#L"
         }
 
@@ -337,6 +349,10 @@ dokka {
         externalDocumentationLinks.register("ktor") {
             url("https://api.ktor.io/")
         }
+        // kotlinx-io is an api dependency: JevImage.read takes its Path.
+        externalDocumentationLinks.register("kotlinx-io") {
+            url("https://kotlinlang.org/api/kotlinx-io/")
+        }
     }
 
     // The module and package overview pages. A source set's includes are what Dokka renders on those pages; a
@@ -344,11 +360,6 @@ dokka {
     // commonMain holds all but a few platform-specific declarations, and is where a reader starts.
     dokkaSourceSets.named("commonMain") {
         includes.from("docs/packages.md")
-    }
-
-    // Link JDK types to the docs for the oldest JDK this library supports.
-    dokkaSourceSets.named("jvmMain") {
-        jdkVersion = jvmTargetVersion.toInt()
     }
 }
 

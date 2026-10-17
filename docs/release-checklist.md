@@ -116,6 +116,14 @@ Then:
 - [ ] `make publish-maven-central`. It runs `publishAndReleaseToMavenCentral`, and
   `publishToMavenCentral(automaticRelease = true)` promotes the staging repository on its own, so there is
   nothing to click in the Central portal.
+- [ ] Then stop the processes the publish started. It hands Gradle the signing key and its passphrase as
+  environment variables, every process the build starts inherits them, and a daemon keeps its environment until it
+  stops (a Gradle daemon three hours after its last build):
+
+  ```bash
+  ./gradlew --stop                                          # the Gradle daemon, and its workers, Dokka's among them
+  pkill -f org.jetbrains.kotlin.daemon.KotlinCompileDaemon  # the Kotlin compile daemon
+  ```
 - [ ] Confirm the artifact is really there before tagging:
 
   ```bash
@@ -139,6 +147,9 @@ Then:
   ```bash
   git tag <version> && git push origin <version>
   ```
+
+  The javadoc jars published in step 5 link their sources to `tree/<version>`, so those links work once this tag
+  exists. The squash commit's tree is the published one, so they open the right lines.
 
 - [ ] Create the release with the `v`-prefixed title and the notes for this version:
 

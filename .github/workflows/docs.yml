@@ -71,8 +71,11 @@ jobs:
                 with:
                     cache-disabled: true
             # Dokka documents every source set, the native ones included, so it downloads the Kotlin/Native
-            # toolchain; ci.yml's ~/.konan cache isn't restored here, for the reason above.
-            -   run: ./gradlew dokkaGeneratePublicationHtml
+            # toolchain; ci.yml's ~/.konan cache isn't restored here, for the reason above. On a tag (a release, or
+            # a manual run from one) the source links open that tag, since master moves on; otherwise master.
+            -   run: ./gradlew dokkaGeneratePublicationHtml -Pjev4k.sourceRef="$SOURCE_REF"
+                env:
+                    SOURCE_REF: ${{ github.ref_type == 'tag' && github.ref_name || 'master' }}
 
             # Copy KDocs into the Zensical site output; the site's "KDocs" page links to /kdocs/.
             -   run: cp -r build/dokka/html website/jev4k/site/kdocs

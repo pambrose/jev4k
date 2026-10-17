@@ -220,8 +220,9 @@ without them keep compiling.
   It deploys to GitHub Pages only when a release is published, or on manual dispatch, so jev4k.com never shows a
   version that isn't on Maven Central yet; a separate deploy job can be re-run on its own. A release runs on its
   tag, so the `github-pages` environment allows tags matching `[0-9]*.[0-9]*.[0-9]*` as well as `master`.
-  `zensical.toml` sets `site_url`, `repo_url` and `edit_uri`, and Dokka's `sourceLink`/`homepageLink` point at
-  `github.com/pambrose/jev4k` on `master`. The repository's Pages source must be set to "GitHub Actions".
+  `zensical.toml` sets `site_url`, `repo_url` and `edit_uri`, and Dokka's `homepageLink` points at
+  `github.com/pambrose/jev4k`; its source links open the ref in `jev4k.sourceRef` (see Build). The repository's Pages
+  source must be set to "GitHub Actions".
 - **Custom domain.** The site is served at <https://jev4k.com/>, not `pambrose.github.io/jev4k/`, so page URLs carry no
   path prefix. `docs/CNAME` holds the bare domain and Zensical copies it to `site/CNAME`; GitHub Pages reads the domain
   from that file, and without it an Actions-published site can lose the custom domain set under Settings → Pages on a
@@ -370,17 +371,22 @@ without them keep compiling.
       up-to-date `jvmTest` won't re-run on its own. `make tests` and `make live-tests` pass `--rerun` to each test task,
       so they always see the current values. (`--rerun-tasks` would also recompile all sixteen targets.)
 - Dokka (`org.jetbrains.dokka` 2.2.0) builds the KDoc site. `make kdocs` writes it to `build/dokka/html`.
-    - The site documents the public API of the main source sets, with a tab per platform (common, jvm, native, web).
-      Source sets whose names end in `Test` are suppressed, so no test class, fixture or example is included, and the
-      `com.pambrose.jev4k.internal` package is excluded. `docs/packages.md` supplies the module and package overview
-      pages, through `commonMain`'s source-set `includes`. A publication's `includes` is only read for a multi-module
-      overview, so the file set there, as it was until 0.3.0, never reached the site.
-    - kotlinx.serialization and Ktor types link to their online API docs through `externalDocumentationLinks`.
-    - `moduleVersion` is `project.version`, `jvmMain`'s `jdkVersion` comes from the catalog's `jvm-target` version, and
-      `suppressInheritedMembers` is on. Pages don't repeat inherited members: a subclass such as `JevRateLimitException`
-      links to `JevApiException` for `status`, `body` and `requestId`.
-    - `sourceLink` (rooted at `src/`, so it covers every source set) and `homepageLink` point at
-      `github.com/pambrose/jev4k` on `master`.
+    - The site documents the public and protected API of the main source sets (protected for `JevQuery`'s builders),
+      with a tab per platform (common, jvm, native, web). Source sets whose names end in `Test` are suppressed, so no
+      test class, fixture or example is included, and the `com.pambrose.jev4k.internal` package is excluded.
+      `docs/packages.md` supplies the module and package overview pages, through `commonMain`'s source-set `includes`. A
+      publication's `includes` is only read for a multi-module overview, so the file set there, as it was until 0.3.0,
+      never reached the site.
+    - kotlinx.serialization, Ktor and kotlinx-io types link to their online API docs through
+      `externalDocumentationLinks`.
+    - `moduleVersion` is `project.version`, every source set's `jdkVersion` comes from the catalog's `jvm-target`
+      version (Dokka resolves a JDK link through whichever source set's links sort first, so setting it on `jvmMain`
+      alone left every link at 25), and `suppressInheritedMembers` is on. Pages don't repeat inherited members: a
+      subclass such as `JevRateLimitException` links to `JevApiException` for `status`, `body` and `requestId`.
+    - `sourceLink` (rooted at `src/`, so it covers every source set) opens `tree/<jev4k.sourceRef>`, a Gradle
+      property that defaults to `master`. A released javadoc jar can't be replaced while `master` moves on, so
+      `docs.yml` passes the tag when it runs on one and `make publish-maven-central` passes the version, which step 6
+      of the release checklist then tags. `homepageLink` points at `github.com/pambrose/jev4k`.
     - In a class comment, refer to a constructor property as `[name][Class.name]`. A bare `[name]` points at the
       constructor parameter, which Dokka leaves unlinked.
 - Java interop is a deliberate, narrow contract: `@JvmOverloads` on `JevClient`'s builder constructor, `BlockingJev`'s
