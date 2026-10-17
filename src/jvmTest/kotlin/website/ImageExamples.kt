@@ -16,7 +16,8 @@ import com.pambrose.jev4k.withOptions
 import kotlinx.serialization.Serializable
 import java.awt.image.BufferedImage
 import java.nio.file.Path
-import kotlin.math.roundToInt
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.time.Duration.Companion.seconds
 
 // --8<-- [start:state]
@@ -147,11 +148,12 @@ fun cropToBox(
     image: BufferedImage,
     box: BoundingBox,
 ): BufferedImage {
-    val x = (box.left * image.width).toInt().coerceIn(0, image.width - 1)
-    val y = (box.top * image.height).toInt().coerceIn(0, image.height - 1)
-    val width = ((box.right - box.left) * image.width).roundToInt().coerceIn(1, image.width - x)
-    val height = ((box.bottom - box.top) * image.height).roundToInt().coerceIn(1, image.height - y)
-    return image.getSubimage(x, y, width, height)
+    // Round each edge outward, so the crop never cuts into the box, and keep at least one pixel inside the image.
+    val left = floor(box.left * image.width).toInt().coerceIn(0, image.width - 1)
+    val top = floor(box.top * image.height).toInt().coerceIn(0, image.height - 1)
+    val right = ceil(box.right * image.width).toInt().coerceIn(left + 1, image.width)
+    val bottom = ceil(box.bottom * image.height).toInt().coerceIn(top + 1, image.height)
+    return image.getSubimage(left, top, right - left, bottom - top)
 }
 // --8<-- [end:crop]
 

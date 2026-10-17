@@ -145,7 +145,7 @@ class JevClient(
         val response = execute(path, endpoint, limit) {
             this.method = method
             setHeaders(options, builtInHeaders)
-            options.timeout?.let { timeout { limitTo(it, ownEngine = config.engine == null) } }
+            options.timeout?.let { timeout { limitTo(it, config) } }
             options.retry?.let { policy -> retry { follow(policy, config) } }
             configure()
         }

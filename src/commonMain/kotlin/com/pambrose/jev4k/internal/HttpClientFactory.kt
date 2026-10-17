@@ -76,7 +76,7 @@ internal object HttpClientFactory {
         // whole retry loop: one expiry cancels every later attempt before it reaches the server.
         install(HttpRequestRetry) { follow(config.retry, config) }
 
-        install(HttpTimeout) { limitTo(config.timeout, ownEngine = config.engine == null) }
+        install(HttpTimeout) { limitTo(config.timeout, config) }
 
         // Headers are set on each request instead (JevClient.send). DefaultRequest merges its headers with a
         // request's own rather than letting either replace the other, so a per-call header would be sent twice.
@@ -99,18 +99,19 @@ internal fun HttpRequestRetryConfig.follow(
 }
 
 /**
- * [timeout] for each attempt. CIO prefers the connect and socket timeouts over its own endpoint.connectTimeout /
- * endpoint.socketTimeout, so setting them would overrule whatever a caller tuned on an engine they supplied. They are
- * only filled in for jev4k's own engine ([ownEngine]); a default engine that has no such timeout (Js has neither,
- * Darwin no connect timeout) ignores them.
+ * [timeout] for each attempt, as both the client's plugin and a call's options set it. CIO prefers the connect and
+ * socket timeouts over its own endpoint.connectTimeout / endpoint.socketTimeout, so setting them would overrule
+ * whatever a caller tuned on an engine they supplied. They are only filled in for jev4k's own engine, when
+ * [JevConfig.engine] is null; a default engine that has no such timeout (Js has neither, Darwin no connect timeout)
+ * ignores them.
  */
 internal fun HttpTimeoutConfig.limitTo(
     timeout: Duration,
-    ownEngine: Boolean,
+    config: JevConfig,
 ) {
     val millis = timeout.inWholeMilliseconds
     requestTimeoutMillis = millis
-    if (ownEngine) {
+    if (config.engine == null) {
         connectTimeoutMillis = millis
         socketTimeoutMillis = millis
     }

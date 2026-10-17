@@ -17,6 +17,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.random.Random
 
@@ -27,6 +28,13 @@ internal fun json(text: String): JsonElement = Json.parseToJsonElement(text)
 internal fun nestedArrays(depth: Int): JsonElement {
     var element: JsonElement = JsonPrimitive(1)
     repeat(depth) { element = JsonArray(listOf(element)) }
+    return element
+}
+
+/** A number wrapped in [depth] nested objects, e.g. `{"a":{"a":1}}` for 2. */
+internal fun nestedObjects(depth: Int): JsonElement {
+    var element: JsonElement = JsonPrimitive(1)
+    repeat(depth) { element = JsonObject(mapOf("a" to element)) }
     return element
 }
 

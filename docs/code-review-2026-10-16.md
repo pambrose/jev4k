@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 28 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 35 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -58,11 +58,11 @@ Java interop and the KDocs
 
 Tests
 
-- [ ] [#25](#issue-25) The per-call retry tests vary only `maxRetries`
+- [x] [#25](#issue-25) The per-call retry tests vary only `maxRetries`
 - [x] [#26](#issue-26) No test checks the images header for a hand-built `extraBody["assets"]` without a Box
-- [ ] [#27](#issue-27) The depth tests use only nested arrays and strings without brackets or escapes
-- [ ] [#28](#issue-28) `CropExampleTest` can't catch swapped axes or a wrong origin
-- [ ] [#29](#issue-29) `CioExclusionTest` pins only `JevConfigBuilder.build()`, not a client making a call
+- [x] [#27](#issue-27) The depth tests use only nested arrays and strings without brackets or escapes
+- [x] [#28](#issue-28) `CropExampleTest` can't catch swapped axes or a wrong origin
+- [x] [#29](#issue-29) `CioExclusionTest` pins only `JevConfigBuilder.build()`, not a client making a call
 
 Build, CI and release
 
@@ -88,8 +88,8 @@ Documentation and examples
 
 ### Nit
 
-- [ ] [#46](#issue-46) No test pins that jev4k's own engine gets the connect and socket timeouts
-- [ ] [#47](#issue-47) An `ImageRequestTest` title promises call headers it doesn't test
+- [x] [#46](#issue-46) No test pins that jev4k's own engine gets the connect and socket timeouts
+- [x] [#47](#issue-47) An `ImageRequestTest` title promises call headers it doesn't test
 - [ ] [#48](#issue-48) The tool-trace example asks Jev checks the page says belong in code
 - [ ] [#49](#issue-49) Maintainer notes and `zensical.toml` still describe the state before 0.3.0
 - [ ] [#50](#issue-50) Three places still say the retry defaults match "the official SDKs"
@@ -101,7 +101,7 @@ Documentation and examples
 - [x] [#56](#issue-56) `jevApiException` ignores the request-id header; `jevResult(String)` rejects a BOM
 - [x] [#57](#issue-57) Score level keys parse loosely, and an unasked Score's `levelCount` counts keys
 - [ ] [#58](#issue-58) `QuestionSet` has no `toString`
-- [ ] [#59](#issue-59) `cropToBox` truncates the edge but rounds the size, dropping a column inside the box
+- [x] [#59](#issue-59) `cropToBox` truncates the edge but rounds the size, dropping a column inside the box
 - [ ] [#60](#issue-60) Three places say Java can't call `RetryPolicy`'s constructor, then call `new RetryPolicy()`
 - [ ] [#61](#issue-61) README and a KDoc say every config problem is reported at once; a missing key is reported alone
 - [ ] [#62](#issue-62) `raw` is called "the response body exactly as received"; it's a parsed `JsonObject`
@@ -189,14 +189,14 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
 
 ### Any time
 
-- [ ] **6. Test gaps.** #59 changes `cropToBox` and #28 is its test, so do them together. The rest are test-only.
-  - [ ] [#25](#issue-25) Vary the backoff, the statuses and `respectRetryAfter` in the per-call retry tests
-  - [ ] [#27](#issue-27) Add depth cases for nested objects, brackets inside a string and an escaped quote
-  - [ ] [#28](#issue-28) Crop with a box whose axes differ, and check the crop's origin
-  - [ ] [#59](#issue-59) Compute both edges the same way in `cropToBox`: floor the start, ceil the end
-  - [ ] [#29](#issue-29) Make a call, not just `build()`, through the CIO-less class loader
-  - [ ] [#46](#issue-46) Share one `timeoutConfig` between the two call sites, and test it
-  - [ ] [#47](#issue-47) Rename the images-header test, or add the call-header case it names
+- [x] **6. Test gaps.** #59 changes `cropToBox` and #28 is its test, so do them together. The rest are test-only.
+  - [x] [#25](#issue-25) Vary the backoff, the statuses and `respectRetryAfter` in the per-call retry tests
+  - [x] [#27](#issue-27) Add depth cases for nested objects, brackets inside a string and an escaped quote
+  - [x] [#28](#issue-28) Crop with a box whose axes differ, and check the crop's origin
+  - [x] [#59](#issue-59) Compute both edges the same way in `cropToBox`: floor the start, ceil the end
+  - [x] [#29](#issue-29) Make a call, not just `build()`, through the CIO-less class loader
+  - [x] [#46](#issue-46) Share one `timeoutConfig` between the two call sites, and test it
+  - [x] [#47](#issue-47) Rename the images-header test, or add the call-header case it names
 - [ ] **7. Build, CI and release hygiene.** `ci.yml` (#31, #33, #70, #71), `docs.yml` (#36, #69), Codecov and the
   checklist (#32, #72), `refresh.sh` (#35) and wording (#34, #68). Run `make zizmor` after the workflow edits.
   - [ ] [#31](#issue-31) Fail CI's Apple row when a simulator platform has no device

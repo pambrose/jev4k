@@ -51,6 +51,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   themselves.
 - The Images page and the image `ask` KDocs say that `timeout` covers each attempt's upload, with an example giving
   image calls more time.
+- The site's `cropToBox` example rounds each edge of the box outward, so it no longer drops a column or row that lies
+  inside the box.
 - KDocs:
     - `JevQuery`'s builders (`noul`, `choice`, `score`, `box`, `attach`) are documented. They are protected, and only
       public members were.

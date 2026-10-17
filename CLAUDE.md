@@ -174,10 +174,11 @@ without them keep compiling.
   unchanged). Actual files carry a platform suffix (`Platform.jvm.kt`, `Engine.linux.kt`) so JVM facade names never
   clash. No engine gets a timeout of its own: `HttpTimeout` sets one on every request, and CIO, for one, ignores its
   `requestTimeout` whenever a request carries that capability.
-    - On the JVM, `defaultEngine` is a getter in its own `Engine.jvm.kt`. As a stored value next to `platformGetenv`
-      it would load CIO in the class initializer that every environment lookup runs, and a consumer who supplies an
-      engine and excludes `ktor-client-cio` (as the README suggests) couldn't build a client. `CioExclusionTest`
-      runs jev4k in a class loader that hides CIO to pin this.
+    - On the JVM, `defaultEngine` is a getter in its own `Engine.jvm.kt`. As a stored value next to `platformGetenv` it
+      would load CIO in the class initializer that every environment lookup runs, and a consumer who supplies an engine
+      and excludes `ktor-client-cio` (as the README suggests) couldn't build a client. `CioExclusionTest` runs jev4k in
+      a class loader that hides CIO and ktor-network-tls to pin this: a config reads the environment, and `CioFreeCalls`
+      (a jvmTest helper, not a spec) builds a client on a `MockEngine`, makes a blocking call and maps a failed one.
     - Default engines: CIO on the JVM (`jvmMain`), Darwin (`appleMain`), Curl (`linuxMain`), WinHttp (`mingwMain`),
       and the Js engine bundled in `ktor-client-core` (`webMain`, shared by js and wasmJs). CIO can't be used
       natively: Ktor's native TLS fails with "TLS sessions are not supported on Native platform".

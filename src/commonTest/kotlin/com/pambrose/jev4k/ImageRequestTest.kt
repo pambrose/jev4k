@@ -71,6 +71,14 @@ class ImageRequestTest : StringSpec() {
                 noul("cat", "Is there a cat in the photo?")
             }
             jev.requests.single().headers.getAll(IMAGES_HEADER) shouldBe listOf("false")
+
+            val plain = testJev { respondJson(NO_ANSWERS) }
+            val optOut = JevCallOptions { headers["typesafe-danger-zone-images"] = "false" }
+            plain.client.withOptions(optOut).query("A photo: $photo") {
+                attach(photo)
+                noul("cat", "Is there a cat in the photo?")
+            }
+            plain.requests.single().headers.getAll(IMAGES_HEADER) shouldBe listOf("false")
         }
 
         "a Box question is sent with its image and its answer comes back typed" {
