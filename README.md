@@ -167,8 +167,8 @@ answer type.
   level. A Box's says how sure the model is of the edges, and can be null. Nouls have no confidence.
 - Every answer is limited to the options or levels you defined.
 
-The question definitions themselves are `NoulQuestion`, `ChoiceQuestion` and `ScoreQuestion`, subtypes of `Question`,
-named after TypeSafe's JS SDK. The DSL builds them for you.
+The question definitions themselves are `NoulQuestion`, `ChoiceQuestion`, `ScoreQuestion` and the experimental
+`BoxQuestion`, subtypes of `Question`, named after TypeSafe's JS SDK. The DSL builds them for you.
 
 TypeSafe's experimental Box question type finds where something is in an image. jev4k supports it, and images in the
 state, instructions and criteria, behind the `@ExperimentalJevImages` opt-in; see [Images](#images).
@@ -452,9 +452,10 @@ val jev = JevClient {
 ```
 
 Each setting resolves as: the explicit value, then the environment variable, then the default. String settings are
-trimmed (a leading byte-order mark too), and a blank one counts as unset. `baseUrl` must be `https://` (plain `http://` is for `localhost`, or
-anywhere with `allowInsecureHttp = true`) and carry no credentials or query. The builder reports every problem at
-once in a `JevConfigException`, and neither its messages nor `JevConfig.toString()` print the key.
+trimmed (a leading byte-order mark too), and a blank one counts as unset. `baseUrl` must be `https://` (plain `http://`
+is for `localhost`, or anywhere with `allowInsecureHttp = true`) and carry no credentials or query. A missing key fails
+on its own; otherwise the builder reports every problem at once in a `JevConfigException`, and neither its messages nor
+`JevConfig.toString()` print the key.
 
 ### Running with Ollaya
 
@@ -557,8 +558,9 @@ That exact code is [`JavaInterop.java`](src/jvmTest/java/website/JavaInterop.jav
 sources so it can't drift.
 
 Kotlin's `Duration` doesn't cross to Java either, so each setting of that type has a counterpart in milliseconds:
-`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, `with…` methods on `RetryPolicy` (whose constructor
-Java can't call), `JevCallOptionsBuilder.setTimeoutMillis`, and `JevRateLimitException.getRetryAfterMillis()`:
+`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, `with…` methods on `RetryPolicy` (whose full
+constructor Java can't call; `new RetryPolicy()` works), `JevCallOptionsBuilder.setTimeoutMillis`, and
+`JevRateLimitException.getRetryAfterMillis()`:
 
 ```java
 return new JevClient(builder -> {
@@ -705,17 +707,20 @@ make zizmor                 # audit the GitHub Actions workflows with zizmor, as
 make format                 # auto-format with ktlint
 make kdocs                  # API docs in build/dokka/html
 make example                # run the example against the live API (needs TYPESAFE_API_KEY)
+make hotdog-example         # run the hot dog image example against the live API (needs TYPESAFE_API_KEY)
 make live-tests             # smoke tests and probes against the live API (needs TYPESAFE_API_KEY)
 make api-docs               # refresh the cached TypeSafe docs in jev-docs/
 make site                   # serve the documentation site (website/jev4k) locally
 make publish-local-snapshot # publish <version>-SNAPSHOT to ~/.m2
 ```
 
-The runnable example is [`TriageExample.kt`](src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt). The
-unit tests use Kotest, MockK, and Ktor's `MockEngine`, and most of them run on every platform. One timeout test drives
-the real CIO engine against a loopback socket, and one test per platform dials a loopback port nothing listens on, so
-no traffic ever leaves the machine. Live tests run only when `JEV4K_LIVE=1`, which `make live-tests` sets; the JVM
-smoke tests also need `TYPESAFE_API_KEY`, and fail, naming it, when it's missing.
+The runnable examples are [`TriageExample.kt`](src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt) and
+[`HotDogExample.kt`](src/jvmTest/kotlin/com/pambrose/jev4k/examples/HotDogExample.kt), which sends two bundled photos.
+The unit tests use Kotest, MockK, and Ktor's `MockEngine`, and most of them run on every platform. Five tests drive the
+real CIO engine against loopback servers (a timeout, an untrusted certificate, a body cut short, an oversized declared
+body and an unparseable response), and one test per platform dials a loopback port nothing listens on, so no traffic
+ever leaves the machine. Live tests run only when `JEV4K_LIVE=1`, which `make live-tests` sets; the JVM smoke tests also
+need `TYPESAFE_API_KEY`, and fail, naming it, when it's missing.
 
 ## Thanks to TypeSafe
 

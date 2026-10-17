@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 55 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 67 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -78,38 +78,38 @@ Documentation and examples
 
 - [x] [#37](#issue-37) The Java Box example asks on the default model, which can't answer Box yet
 - [x] [#38](#issue-38) Two image examples send each image twice, against the sentence above them
-- [ ] [#39](#issue-39) The Images page leaves out the total-pixel minimum, so 256 × 256 looks valid
+- [x] [#39](#issue-39) The Images page leaves out the total-pixel minimum, so 256 × 256 looks valid
 - [x] [#40](#issue-40) The due-date example ignores a stated year
 - [x] [#41](#issue-41) The function-calling example has no route Choice, no escape and no confidence gate
 - [x] [#42](#issue-42) The parameterized-query example sends one request per policy, and can't be merged as written
 - [x] [#43](#issue-43) Two classification examples don't guard the 255-option limit
 - [x] [#44](#issue-44) CHANGELOG and CLAUDE.md name the wrong exception for an over-deep `extraBody` field
-- [ ] [#45](#issue-45) The jev-1.13 limits table lists a weakness TypeSafe dropped, and misses Choice option order
+- [x] [#45](#issue-45) The jev-1.13 limits table lists a weakness TypeSafe dropped, and misses Choice option order
 
 ### Nit
 
 - [x] [#46](#issue-46) No test pins that jev4k's own engine gets the connect and socket timeouts
 - [x] [#47](#issue-47) An `ImageRequestTest` title promises call headers it doesn't test
 - [x] [#48](#issue-48) The tool-trace example asks Jev checks the page says belong in code
-- [ ] [#49](#issue-49) Maintainer notes and `zensical.toml` still describe the state before 0.3.0
-- [ ] [#50](#issue-50) Three places still say the retry defaults match "the official SDKs"
+- [x] [#49](#issue-49) Maintainer notes and `zensical.toml` still describe the state before 0.3.0
+- [x] [#50](#issue-50) Three places still say the retry defaults match "the official SDKs"
 - [x] [#51](#issue-51) Two unresolved KDoc links: `QuestionSet.toJson`'s `[images]` and kotlinx-io's `Path`
 - [x] [#52](#issue-52) README says `confidence` is "Choice and Score only", below a Box row that has one
-- [ ] [#53](#issue-53) The Installation page lists three `api` dependencies; kotlinx-io-core is a fourth
-- [ ] [#54](#issue-54) "A missing file fails the object's first use" understates a permanent failure on the JVM
-- [ ] [#55](#issue-55) `isPlatformConnectionError`'s common KDoc says the JVM needs no rule of its own
+- [x] [#53](#issue-53) The Installation page lists three `api` dependencies; kotlinx-io-core is a fourth
+- [x] [#54](#issue-54) "A missing file fails the object's first use" understates a permanent failure on the JVM
+- [x] [#55](#issue-55) `isPlatformConnectionError`'s common KDoc says the JVM needs no rule of its own
 - [x] [#56](#issue-56) `jevApiException` ignores the request-id header; `jevResult(String)` rejects a BOM
 - [x] [#57](#issue-57) Score level keys parse loosely, and an unasked Score's `levelCount` counts keys
 - [ ] [#58](#issue-58) `QuestionSet` has no `toString`
 - [x] [#59](#issue-59) `cropToBox` truncates the edge but rounds the size, dropping a column inside the box
-- [ ] [#60](#issue-60) Three places say Java can't call `RetryPolicy`'s constructor, then call `new RetryPolicy()`
-- [ ] [#61](#issue-61) README and a KDoc say every config problem is reported at once; a missing key is reported alone
+- [x] [#60](#issue-60) Three places say Java can't call `RetryPolicy`'s constructor, then call `new RetryPolicy()`
+- [x] [#61](#issue-61) README and a KDoc say every config problem is reported at once; a missing key is reported alone
 - [x] [#62](#issue-62) `raw` is called "the response body exactly as received"; it's a parsed `JsonObject`
 - [x] [#63](#issue-63) The Score example shows confidence 0.54; TypeSafe's formula gives 0.55
 - [x] [#64](#issue-64) One run of trailing comments is misaligned
-- [ ] [#65](#issue-65) Three places describe one real-CIO test; `ClientJvmTest` has five
-- [ ] [#66](#issue-66) The README and the development page leave out the hot dog example
-- [ ] [#67](#issue-67) Box and `attach` are missing from several summaries and tables
+- [x] [#65](#issue-65) Three places describe one real-CIO test; `ClientJvmTest` has five
+- [x] [#66](#issue-66) The README and the development page leave out the hot dog example
+- [x] [#67](#issue-67) Box and `attach` are missing from several summaries and tables
 - [x] [#68](#issue-68) Several places say Linux skips the Apple targets; it compiles all of their klibs
 - [x] [#69](#issue-69) The `docs.yml` jobs have no `timeout-minutes`
 - [x] [#70](#issue-70) CI's failure artifacts leave out the Docker Linux test logs
@@ -220,21 +220,21 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
   - [x] [#62](#issue-62) Call `raw` the parsed response body
   - [x] [#63](#issue-63) Correct the Score example's confidence to 0.55
   - [x] [#64](#issue-64) Align the trailing comments in `CompositeScoringExamples.kt`
-- [ ] **9. Documentation text.** Text-only changes to the README, the site, KDoc, CLAUDE.md and the maintainer
+- [x] **9. Documentation text.** Text-only changes to the README, the site, KDoc, CLAUDE.md and the maintainer
   notes.
-  - [ ] [#39](#issue-39) Add the total-pixel limits to the Images page
-  - [ ] [#45](#issue-45) Replace the dropped weakness with Choice option order in the jev-1.13 table
-  - [ ] [#49](#issue-49) Bring `jev-api.md`, the API check, the image spec and plan, `zensical.toml` and CLAUDE.md
+  - [x] [#39](#issue-39) Add the total-pixel limits to the Images page
+  - [x] [#45](#issue-45) Replace the dropped weakness with Choice option order in the jev-1.13 table
+  - [x] [#49](#issue-49) Bring `jev-api.md`, the API check, the image spec and plan, `zensical.toml` and CLAUDE.md
     up to 0.3.0
-  - [ ] [#50](#issue-50) Say the retry defaults follow the JS SDK
-  - [ ] [#53](#issue-53) List kotlinx-io-core among the `api` dependencies
-  - [ ] [#54](#issue-54) Say a failed `object` stays unusable on the JVM
-  - [ ] [#55](#issue-55) Say what the JVM's `isPlatformConnectionError` adds
-  - [ ] [#60](#issue-60) Say "the full constructor" where Java can't call `RetryPolicy`'s
-  - [ ] [#61](#issue-61) Qualify "every problem at once" for a missing key
-  - [ ] [#65](#issue-65) Describe all five of `ClientJvmTest`'s real-CIO cases
-  - [ ] [#66](#issue-66) Mention `HotDogExample` and `make hotdog-example`
-  - [ ] [#67](#issue-67) Add Box and `attach` to the summaries and tables, marked experimental
+  - [x] [#50](#issue-50) Say the retry defaults follow the JS SDK
+  - [x] [#53](#issue-53) List kotlinx-io-core among the `api` dependencies
+  - [x] [#54](#issue-54) Say a failed `object` stays unusable on the JVM
+  - [x] [#55](#issue-55) Say what the JVM's `isPlatformConnectionError` adds
+  - [x] [#60](#issue-60) Say "the full constructor" where Java can't call `RetryPolicy`'s
+  - [x] [#61](#issue-61) Qualify "every problem at once" for a missing key
+  - [x] [#65](#issue-65) Describe all five of `ClientJvmTest`'s real-CIO cases
+  - [x] [#66](#issue-66) Mention `HotDogExample` and `make hotdog-example`
+  - [x] [#67](#issue-67) Add Box and `attach` to the summaries and tables, marked experimental
 
 ### 0.4.0
 

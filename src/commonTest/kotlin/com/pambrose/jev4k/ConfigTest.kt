@@ -305,7 +305,7 @@ class ConfigTest : StringSpec() {
             withClue(text) { Regex("engine=(CIO|Darwin|Curl|WinHttp|Js),").containsMatchIn(text) shouldBe true }
         }
 
-        "retry policy defaults match the official SDKs" {
+        "retry policy defaults match the JS SDK" {
             val policy = RetryPolicy()
             policy.maxRetries shouldBe 2
             policy.initialBackoff shouldBe 500.milliseconds

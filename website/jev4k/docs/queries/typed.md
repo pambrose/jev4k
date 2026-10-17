@@ -30,12 +30,17 @@ A handle only works on results of requests that included it. Reading one from an
 A `JevQuery` has the same builders as the [inline DSL](inline.md), but the id comes from the property name, so
 instructions are the first argument:
 
-| Function                       | Returns a handle to    |
-|--------------------------------|------------------------|
-| `noul(instructions) { ... }`   | `NoulAnswer`           |
-| `choice(instructions) { ... }` | `ChoiceAnswer<String>` |
-| `choice<E>(instructions)`      | `ChoiceAnswer<E>`      |
-| `score(instructions) { ... }`  | `ScoreAnswer`          |
+| Function                       | Returns a handle to                  |
+|--------------------------------|--------------------------------------|
+| `noul(instructions) { ... }`   | `NoulAnswer`                         |
+| `choice(instructions) { ... }` | `ChoiceAnswer<String>`               |
+| `choice<E>(instructions)`      | `ChoiceAnswer<E>`                    |
+| `score(instructions) { ... }`  | `ScoreAnswer`                        |
+| `box(instructions)`            | `BoxAnswer` (experimental)           |
+| `attach(image)`                | the `JevImage` itself (experimental) |
+
+`box` and `attach`, which attaches an image to every request that asks the query, are experimental; see
+[Images & Box](images.md).
 
 ## Custom ids
 

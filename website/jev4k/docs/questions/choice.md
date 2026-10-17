@@ -78,6 +78,10 @@ Choice takes up to 255 options, so a list that gets an `other` added can hold up
 TypeSafe reports that a Choice works reliably up to about 240 options. For larger sets, go level by level
 through a hierarchy or rank in stages; see [Classification](../patterns/classification.md).
 
+Order matters too: TypeSafe has seen `jev-1.13` lean toward the option that comes first. For a decision that counts,
+check that the answer holds with the options reordered. An enum-backed Choice offers its constants in declaration
+order, so build that check from a reordered list of string options.
+
 ## Enum options
 
 `choice<E>()` offers every constant of an enum and answers with the constant itself:

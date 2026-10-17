@@ -42,10 +42,10 @@ To run a single test class:
   pinned SHA that isn't a commit of its action, use `GH_TOKEN` or the gh CLI's login, and are skipped without
   either. CI runs the same audits: a pull request fails on any finding, while pushes to `master` and a weekly run
   report to the repository's code scanning alerts.
-- **No traffic leaves the machine in unit tests.** They exercise the client through Ktor's `MockEngine`, apart
-  from one timeout test that drives the real CIO engine against a loopback socket, and one test per platform
-  that dials a loopback port nothing listens on, to check how that platform's default engine reports a refused
-  connection.
+- **No traffic leaves the machine in unit tests.** They exercise the client through Ktor's `MockEngine`, apart from five
+  tests that drive the real CIO engine against loopback servers (a timeout, an untrusted certificate, a body cut short,
+  an oversized declared body and an unparseable response), and one test per platform that dials a loopback port nothing
+  listens on, to check how that platform's default engine reports a refused connection.
 - **Live tests are opt-in.** They run only when `JEV4K_LIVE=1`, which `make live-tests` sets. The JVM smoke
   tests also need `TYPESAFE_API_KEY`, and fail, naming it, when it's missing; the probes that run on
   every platform send an invalid key and a 1 ms timeout, so they spend no tokens.
@@ -66,7 +66,7 @@ to every page. Point a coding agent at `https://jev4k.com/llms.txt` and it can f
 | `src/commonMain/kotlin/com/pambrose/jev4k` | the library, shared by every platform                             |
 | `src/jvmMain`, `src/nativeMain`, …         | per-platform code: `BlockingJev`, the default engines, `getenv`   |
 | `src/commonTest/kotlin/com/pambrose/jev4k` | the Kotest tests that run on every platform                       |
-| `src/jvmTest/kotlin/com/pambrose/jev4k`    | the JVM-only tests (MockK, blocking, live smoke) and the example  |
+| `src/jvmTest/kotlin/com/pambrose/jev4k`    | the JVM-only tests (MockK, blocking, live smoke), both examples   |
 | `src/jvmTest/kotlin/website`               | the code examples used by this site                               |
 | `src/jvmTest/java/website`                 | the Java example used by this site                                |
 | `api/`                                     | the public API dumps checked by `make tests`                      |

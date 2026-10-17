@@ -30,7 +30,7 @@ blank after trimming counts as unset.
 | `baseUrl`           | `TYPESAFE_BASE_URL`      | `https://api.typesafe.ai`                                                      |
 | `defaultModel`      | `TYPESAFE_DEFAULT_MODEL` | `jev-latest`                                                                   |
 | `timeout`           |                          | 10 seconds per HTTP attempt                                                    |
-| `retry`             |                          | `RetryPolicy()`, matching the official SDKs; see [Retries & Errors](errors.md) |
+| `retry`             |                          | `RetryPolicy()`, matching the JS SDK; see [Retries & Errors](errors.md)        |
 | `engine`            |                          | the platform's default engine, created by the client (CIO on the JVM)          |
 | `headers`           |                          | none; extra headers sent with every request                                    |
 | `allowInsecureHttp` |                          | `false`; allows a plain `http://` `baseUrl` on a host other than this machine  |

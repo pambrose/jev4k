@@ -352,7 +352,8 @@ guide (`migrating-to-v1.md`), the source of this list, was removed in October 20
   kotlinx.serialization `JsonElement`) with string convenience builders.
 - Question/Answer are sealed hierarchies discriminated by `"type"` (`noul`/`choice`/`score`, and now `box`). Choice
   option keys and Score level keys are strings on the wire; expose Score levels as `Int` and `legend` values as JSON.
-  Decode an unknown answer type to a raw fallback rather than failing; jev4k decodes `box` that way (`UnknownAnswer`).
+  Decode an unknown answer type to a raw fallback rather than failing, as jev4k does with `UnknownAnswer`; since 0.3.0
+  it decodes `box` as a `BoxAnswer`.
 - Validate client-side against the documented bounds: Choice ≤ 255 options, Score 2–10 levels (the docs give no minimum
   option count for Choice; 11 Score levels returns a server error), nesting ≤ 64 per value, finite numbers only. Both
   SDKs also reject an empty `questions` map.

@@ -102,5 +102,5 @@ any single one. Before relying on thresholds:
 | Large, irrelevant state                                | Filter first; send only what the question needs               |
 | Adversarial content                                    | Write precise criteria; test edge cases before deploying      |
 | Contradictory instructions and criteria                | Align the two                                                 |
-| Structural invariants (`P(q) + P(not q)` needn't be 1) | Ask each decision one way; enforce identities in code         |
+| Choice option order (it leans toward the first option) | Reorder the options and check the answer holds                |
 | Generation                                             | Use a generative model; let Jev choose among its outputs      |

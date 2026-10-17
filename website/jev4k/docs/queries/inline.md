@@ -22,8 +22,12 @@ id that wasn't in the request, or reading a Noul as a Choice, throws `IllegalArg
 | `choice(id, instructions) { ... }` | a Choice with string options           | `"key" means "..."`, `option(key, desc?)`, `options(vararg keys)` |
 | `choice<E>(id, instructions)`      | a Choice over the constants of an enum | none: the enum is the option list                                 |
 | `score(id, instructions) { ... }`  | a Score                                | `level(...)`, `levels(vararg ...)`                                |
+| `box(id, instructions)`            | a Box (experimental)                   | none                                                              |
 | `question(id, question)`           | a prebuilt `Question` value            | none                                                              |
 | `include(query)`                   | every question of a `JevQuery`         | none                                                              |
+| `attach(vararg images)`            | images to send (experimental)          | none                                                              |
+
+`box` and `attach` are experimental; see [Images & Box](images.md).
 
 Every `instructions` argument can be a `String` or a `JsonElement`; see
 [Structured Criteria](../questions/structured.md).
@@ -58,7 +62,8 @@ questions about many states:
 
 ## Building questions directly
 
-The DSL builds `NoulQuestion`, `ChoiceQuestion` and `ScoreQuestion` values, named after TypeSafe's JS SDK. You can
+The DSL builds `NoulQuestion`, `ChoiceQuestion`, `ScoreQuestion` and the experimental `BoxQuestion` values, named after
+TypeSafe's JS SDK. You can
 build them yourself, for example from configuration, and add them with `question(id, value)`:
 
 ```kotlin

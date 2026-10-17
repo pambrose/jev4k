@@ -72,7 +72,8 @@ abstract class JevQuery {
     /**
      * Attaches [image] to every request that asks these questions, and returns it, so a picture can be declared and
      * attached at once: `private val thumb = attach(JevImage.of(thumbBytes))`. Reading a file here, with
-     * [JevImage.read], does I/O in the object's initializer; a missing file then fails the object's first use.
+     * [JevImage.read], does I/O in the object's initializer, and a missing file makes the object unusable: on the JVM
+     * its first use throws `ExceptionInInitializerError`, and every later use `NoClassDefFoundError`.
      */
     @ExperimentalJevImages
     protected fun attach(image: JevImage): JevImage {

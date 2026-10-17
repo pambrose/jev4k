@@ -33,6 +33,7 @@ With the [inline DSL](../queries/inline.md), read answers by the ids you gave th
 | `NoulAnswer`      | `noul`                                                         | `isTrue(threshold = 0.5)`, `band(no = 0.30, yes = 0.70)`             |
 | `ChoiceAnswer<K>` | `choice`, `probabilities`, `confidence`                        | `topProbability`, `probability(option)`, `ranked()`                  |
 | `ScoreAnswer`     | `score`, `probabilities`, `legend`, `confidence`, `levelCount` | `normalized`, `nearestLevel`, `mostLikelyLevel`, `legendText(level)` |
+| `BoxAnswer`       | `box` (a `BoundingBox`), `confidence` (may be null)            | none; experimental, see [Images & Box](../queries/images.md)         |
 
 - **Choice probabilities** are in the order the options were declared.
 - **Score probabilities and legend** are keyed by level number, and the legend holds the level entries that

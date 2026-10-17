@@ -35,8 +35,8 @@ object JevDefaults {
  * honored up to [maxRetryAfter][RetryPolicy.maxRetryAfter]. The Python SDK shares the retries, backoff and statuses
  * but doesn't cap hints, and adds a 30 s budget per call, which jev4k doesn't have: `timeout` applies per attempt.
  *
- * Java can't call the constructor or `copy`, whose `Duration` parameters Kotlin hides from it. It starts from
- * `new RetryPolicy()` and changes one setting at a time with the `with…` methods, which take milliseconds:
+ * Java can't call the full constructor or `copy`, whose `Duration` parameters Kotlin hides from it. It starts from the
+ * no-argument `new RetryPolicy()` and changes one setting at a time with the `with…` methods, which take milliseconds:
  * `new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250)`.
  */
 data class RetryPolicy(
@@ -117,8 +117,8 @@ data class RetryPolicy(
 /**
  * Builder for [JevConfig]. Each setting resolves as: explicit value, then environment variable, then default. String
  * settings are trimmed, and a leading byte-order mark is dropped, so the trailing newline or the mark of a value read
- * from a file is harmless, and a value that is blank after trimming counts as unset. [build] reports every problem it
- * finds at once, without echoing a secret.
+ * from a file is harmless, and a value that is blank after trimming counts as unset. [build] fails on a missing API
+ * key first, on its own, and otherwise reports every problem it finds at once, without echoing a secret.
  */
 @JevDsl
 class JevConfigBuilder {

@@ -16,8 +16,10 @@ internal expect fun platformGetenv(name: String): String?
 internal expect val defaultEngine: HttpClientEngineFactory<HttpClientEngineConfig>
 
 /**
- * True when [cause] is the default engine's own way of saying that no connection was made. The JVM, Darwin and
- * CIO engines throw an `IOException`, which is already recognized; Curl, WinHttp and the Js engine don't.
+ * True when [cause] is the default engine's own way of saying that no connection was made. Darwin and CIO report a
+ * refused connection as an `IOException`, which is already recognized; Curl, WinHttp and the Js engine don't. The JVM
+ * actual still adds CIO's other failures: an untrusted certificate (a `GeneralSecurityException`) and a response it
+ * can't parse (a `ParserException`).
  */
 internal expect fun isPlatformConnectionError(cause: Throwable): Boolean
 

@@ -22,7 +22,7 @@ typed values, down to enum-valued choices that work with an exhaustive `when`.
 ``` mermaid
 graph TD
   S[State: text, JSON, or @Serializable] --> R
-  Q[Questions: Noul, Choice, Score] --> R
+  Q[Questions: Noul, Choice, Score, and the experimental Box] --> R
   R[jev.ask / jev.query] -->|one HTTP request| J[Jev]
   J -->|typed answers + probabilities| A[JevResult]
   A --> C[Your code: branch, rank, threshold, escalate]
@@ -56,8 +56,8 @@ graph TD
 - **Suspend-first client** on Ktor, with a [blocking mirror](client/calls.md) on the JVM for scripts and `main`.
 - **Multiplatform**: the JVM, Apple platforms, Linux, Windows, and Node.js, with the same API on
   [every one](getting-started/installation.md#platforms).
-- **SDK-parity retries**: the official SDKs' [retry and timeout rules](client/errors.md), including
-  server `Retry-After` hints.
+- **SDK-parity retries**: the official JS SDK's [retry rules](client/errors.md), including server
+  `Retry-After` hints.
 - **Validation before sending**: every problem with a request is reported at once, without a network call.
 
 <div class="grid cards" markdown>

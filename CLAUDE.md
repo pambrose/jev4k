@@ -106,7 +106,7 @@ without them keep compiling.
       `bodyJson` is null. Both checks are iterative, so they can't overflow themselves. Windows sets this limit: its
       1 MB main-thread stack crashed the mingwX64 test binary encoding 512 levels, so the limit is 128.
 - **Client** (`JevClient.kt`, `internal/HttpClientFactory.kt`, `internal/Retry.kt`).
-    - `HttpRequestRetry` reproduces the official SDKs' retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
+    - `HttpRequestRetry` reproduces the JS SDK's retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.
       A `Retry-After` HTTP-date, which the Python SDK also reads, counts from the config's internal `now` clock.
     - `followRedirects = false`: a 3xx becomes a `JevApiException`, since Ktor strips only `Authorization` on a
@@ -245,9 +245,10 @@ without them keep compiling.
 - **Commands.** `make site` serves the site with live reload. `make site-build` builds it into `website/jev4k/site` and
   copies the Dokka KDocs to `site/kdocs`; the `KDocs` nav entry, `api.md`, is an ordinary page that links there.
   `make check-site` and `make upgrade-site` manage the Python dependencies.
-- **Examples are never written inline in pages.** They live in `src/jvmTest/kotlin/website` (`package website`) and
-  are pulled in with `--8<-- "File.kt:section"` inside a fenced block. `pymdownx.snippets` resolves them from that
-  folder, with `check_paths` and `dedent_subsections` on.
+- **Examples are never written inline in pages.** They live in `src/jvmTest/kotlin/website` (`package website`) and are
+  pulled in with `--8<-- "File.kt:section"` inside a fenced block. `pymdownx.snippets` resolves them from that folder,
+  the Java example's and the repository root (for `HotDogExample.kt`, which the Images page shows), with `check_paths`
+  and `dedent_subsections` on.
     - A section is the region between `// --8<-- [start:section]` and `// --8<-- [end:section]` (`#` markers in `.txt`
       files).
     - To show a directive literally in a page, prefix it with `;`.
@@ -507,9 +508,12 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
 
 - Test classes are named `*Test`. Each is a Kotest `StringSpec()` with an `init {}` block.
     - Specs for common code go in `src/commonTest/kotlin/com/pambrose/jev4k/`, so they run on every platform the host
-      supports. `src/jvmTest` keeps what needs the JVM: MockK specs, `BlockingJevTest`, `LiveSmokeTest`,
-      `ClientJvmTest` (the blocking wrapper and the real-CIO timeout case), `CioExclusionTest`, `SilentServer`, the
-      example, and the website examples. A class name can't be in both, so a JVM-only remainder is named `…JvmTest`.
+      supports. `src/jvmTest` keeps what needs the JVM: MockK specs, `BlockingJevTest`, `LiveSmokeTest`, `ClientJvmTest`
+      (the blocking wrapper, and five cases on a real CIO engine: a timeout, an untrusted certificate, a body cut short,
+      an oversized declared body and an unparseable response), `CioExclusionTest` with its `CioFreeCalls` helper,
+      `ErrorsJvmTest`, `JevImageJvmTest`, `HotDogPhotosTest`, `CropExampleTest`, `SilentServer` and `RawServer`, the two
+      runnable examples (`TriageExample`, `HotDogExample`), and the website examples. A class name can't be in both, so
+      a JVM-only remainder is named `…JvmTest`.
     - Kotest runs the non-JVM targets through the `io.kotest` plugin and KSP, which generate each target's entry
       point. The plugin only does that for test tasks the host can run, so `build.gradle.kts` adds the processor to
       `kspLinuxX64Test` and `kspLinuxArm64Test` itself; without that, a Linux test binary linked on a Mac holds no

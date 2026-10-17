@@ -55,8 +55,9 @@ travel with every request that asks it; `ask(query, state, images...)` adds the 
 --8<-- "ImageExamples.kt:criteria"
 ```
 
-`JevImage.read` in an object's initializer, as above, reads the file there, and a missing file fails the object's
-first use with an `ExceptionInInitializerError`. When that matters, read the bytes elsewhere and use `JevImage.of`.
+`JevImage.read` in an object's initializer, as above, reads the file there, and a missing file makes the object
+unusable until the process restarts: on the JVM its first use throws `ExceptionInInitializerError`, and every later use
+`NoClassDefFoundError`. When that matters, read the bytes elsewhere and use `JevImage.of`.
 
 A `@Serializable` field of type `JevImage` is written as its reference:
 
@@ -108,9 +109,11 @@ Before sending, jev4k reports every problem at once, as a `JevValidationExceptio
 - a Box question with no image, attached or in `extraBody["assets"]`, or `extraBody["assets"]` on a request that
   attaches images
 
-`JevImage.read` doesn't read a file past 16 MiB. The API enforces its own pixel and request limits (each side 256 to
-1568 pixels, 32 MiB per request), answering with a 400 or a 413. Resize and rotate images before sending them; the API
-strips EXIF data and doesn't apply its orientation.
+`JevImage.read` doesn't read a file past 16 MiB. The API enforces the rest of its limits, answering with a 400 or a 413:
+each side 256 to 1568 pixels, and 78,400 to 2,458,624 pixels in total, so a 256 × 256 image is too small; all of a
+request's images 32 MiB once the API has processed them, which can make an image larger than the file sent; and the
+whole request 32 MiB once every reference is replaced by its image. Resize and rotate images before sending them; the
+API strips EXIF data and doesn't apply its orientation.
 
 A request with images is sent as `multipart/form-data`, the JSON body first and then one part per image, as the
 official SDKs send it. Images count as input tokens at the text price.

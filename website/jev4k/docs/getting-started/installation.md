@@ -12,9 +12,10 @@ icon: lucide/download
   missing.
 - **A TypeSafe API key.**
 
-jev4k is built on the Ktor client, kotlinx.serialization, and kotlinx.coroutines. Ktor core,
-kotlinx.serialization-json and kotlinx.coroutines are exposed as `api` dependencies, because their types (`JsonElement`,
-`HttpClientEngine`, suspend functions) appear in jev4k's public API.
+jev4k is built on the Ktor client, kotlinx.serialization, kotlinx.coroutines and kotlinx-io. Ktor core,
+kotlinx.serialization-json, kotlinx.coroutines and kotlinx-io-core are exposed as `api` dependencies, because their
+types (`JsonElement`, `HttpClientEngine`, suspend functions, and the `Path` that `JevImage.read` takes) appear in
+jev4k's public API.
 
 ## Platforms
 
@@ -108,7 +109,7 @@ The repository includes a runnable example that uses both DSL styles against the
 
 jev4k is a library meant to be embedded in an application, so it keeps out of the host's way.
 
-### What it puts on your classpath.
+### What it puts on your classpath
 
 On the JVM, five `compile` dependencies (`ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core`,
 `kotlinx-io-core`, `kotlin-stdlib`) and one `runtime` one, the CIO engine (`ktor-client-cio`). Nothing else: no test
@@ -140,8 +141,8 @@ jev4k is a Kotlin library, but the inline builder DSL works from Java through `j
 ```
 
 Kotlin's `Duration` doesn't cross to Java either, so each setting of that type has a counterpart in milliseconds:
-`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, and `with…` methods on `RetryPolicy`, whose
-constructor Java can't call:
+`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, and `with…` methods on `RetryPolicy`, whose full
+constructor Java can't call (`new RetryPolicy()`, with every default, works):
 
 ```java title="Settings in milliseconds"
 --8<-- "JavaInterop.java:settings"

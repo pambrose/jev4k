@@ -78,6 +78,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
       clause loop handle empty input.
     - The tool-trace example's page says to run the deterministic checks in code first; the Score example's
       confidence reads 0.55, as TypeSafe's formula gives; and `raw` is called the parsed response body.
+- Documentation:
+    - The Images page lists the API's pixel limits, including the 78,400-pixel minimum that makes a 256 × 256 image
+      too small, and its limits on all of a request's images and on the expanded request.
+    - The jev-1.13 limits table replaces a weakness TypeSafe no longer lists with Choice option order, and the Choice
+      page says how to check for it.
+    - The retry defaults are credited to the JS SDK rather than "the official SDKs"; Java's no-argument
+      `new RetryPolicy()` is no longer described as impossible; a missing API key is noted as reported on its own;
+      and the Installation page lists kotlinx-io-core among the `api` dependencies.
+    - The home page, the builder and answer tables, the KDocs map and the README include Box and `attach`, marked
+      experimental, and the README and Development page mention the hot dog example and all five real-CIO tests.
+    - KDocs say that a `JevQuery` whose file read fails stays unusable on the JVM, and what the JVM's
+      connection-error rule adds.
 - KDocs:
     - `JevQuery`'s builders (`noul`, `choice`, `score`, `box`, `attach`) are documented. They are protected, and only
       public members were.
