@@ -56,7 +56,7 @@ With the [inline DSL](../queries/inline.md), read answers by the ids you gave th
 | `requestedModel` | The name that was sent, possibly an alias such as `jev-latest`                  |
 | `usage`          | `inputTokens` / `outputTokens`; either may be `null`                            |
 | `requestId`      | The `x-typesafe-request-id` response header; quote it in support requests       |
-| `raw`            | The response body exactly as received                                           |
+| `raw`            | The parsed response body                                                        |
 | `questions`      | The `QuestionSet` that was asked                                                |
 
 Log `model` alongside results: an alias such as `jev-latest` can move to a newer model.

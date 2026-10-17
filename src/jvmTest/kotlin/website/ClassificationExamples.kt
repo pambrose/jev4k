@@ -1,6 +1,7 @@
 package website
 
 import com.pambrose.jev4k.JevApi
+import com.pambrose.jev4k.MAX_CHOICE_OPTIONS
 import com.pambrose.jev4k.jsonOf
 import com.pambrose.jev4k.query
 
@@ -35,6 +36,8 @@ private suspend fun pickChild(
     minConfidence: Double,
 ): String? {
     node.children.keys.singleOrNull()?.let { return it } // a single child needs no question
+    // One option per child, and a Choice takes at most 255: split a wider level into groups in the taxonomy itself.
+    require(node.children.size <= MAX_CHOICE_OPTIONS) { "A level has more than $MAX_CHOICE_OPTIONS children" }
     val level =
         jev
             .query(state = item) {
@@ -59,16 +62,25 @@ suspend fun suggestSkill(
     request: String,
     skills: List<Skill>,
 ): Skill? {
+    if (skills.isEmpty()) return null
+    // A Choice takes at most 255 options, so a larger roster is split into several Choices in the same request.
+    val parts = skills.chunked(MAX_CHOICE_OPTIONS)
     val wide =
         jev.query(state = request) {
-            choice("which", "Which of these skills, if any, is the right one for the user's request?") {
-                skills.forEach { it.name means it.summary }
+            parts.forEachIndexed { i, part ->
+                choice("which_$i", "Which of these skills, if any, is the right one for the user's request?") {
+                    part.forEach { it.name means it.summary }
+                }
             }
             noul("needs_action", "Is the assistant being asked to act on the user's files, accounts, or services?")
         }
     if (!wide.noul("needs_action").isTrue(0.3)) return null
 
-    val shortlist = wide.choice("which").ranked().take(3).map { (name, _) -> skills.first { it.name == name } }
+    // Each part's three likeliest skills go on to be judged against their full details.
+    val shortlist =
+        parts.indices
+            .flatMap { i -> wide.choice("which_$i").ranked().take(3) }
+            .map { (name, _) -> skills.first { it.name == name } }
     val detailed =
         jev.query(state = request) {
             choice("which", "Exactly one of these skills fits the request. Which one? Read what each actually does.") {
@@ -79,7 +91,8 @@ suspend fun suggestSkill(
             }
         }
     // The Choice picks which skill; the independent Nouls decide whether to suggest one at all.
-    if (detailed.nouls.values.none { it.isTrue(0.3) }) return null
-    return shortlist.first { it.name == detailed.choice("which").choice }
+    return shortlist
+        .first { it.name == detailed.choice("which").choice }
+        .takeIf { detailed.nouls.values.any { it.isTrue(0.3) } }
 }
 // --8<-- [end:shortlist-rerank]

@@ -65,6 +65,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   image calls more time.
 - The site's `cropToBox` example rounds each edge of the box outward, so it no longer drops a column or row that lies
   inside the box.
+- The site's examples follow their own pages' advice:
+    - The two image-comparison examples place each image once, the photo in the state and the catalog picture in the
+      question, instead of sending each twice.
+    - The due-date example reads a stated year (`"none"` and `"out_of_range"` included) instead of always assuming the
+      current one, and its relative mode no longer promises weekdays it can't read.
+    - The function-calling example routes with a `none_of_these` option, gives its ticker Choice an escape, and makes
+      the call only when the weakest part it uses is confident.
+    - The parameterized query gives each policy ids of its own and asks every policy in one request, dropping a
+      Score nobody read.
+    - The taxonomy walk and the two-stage skill search respect the 255-option limit, and the skill search and the
+      clause loop handle empty input.
+    - The tool-trace example's page says to run the deterministic checks in code first; the Score example's
+      confidence reads 0.55, as TypeSafe's formula gives; and `raw` is called the parsed response body.
 - KDocs:
     - `JevQuery`'s builders (`noul`, `choice`, `score`, `box`, `attach`) are documented. They are protected, and only
       public members were.

@@ -70,7 +70,7 @@ fun resultHelpers(result: JevResult) {
 
 fun resultRaw(result: JevResult) {
     // --8<-- [start:raw]
-    // The response body exactly as received, e.g. for logging or fields jev4k doesn't model yet.
+    // The parsed response body, e.g. for logging or fields jev4k doesn't model yet.
     val rawAnswers = result.raw["answers"]?.jsonObject
     // --8<-- [end:raw]
     println(rawAnswers)

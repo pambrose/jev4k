@@ -63,7 +63,8 @@ declaration order:
 
 ## Parameterized queries
 
-A query can be a `class`, so its questions can depend on runtime values. Here there's one query per policy:
+A query can be a `class`, so its questions can depend on runtime values. Here there's one query per policy, each with
+ids of its own, so `include` can put all of them in one request:
 
 ```kotlin
 --8<-- "TypedQueryExamples.kt:parameterized"

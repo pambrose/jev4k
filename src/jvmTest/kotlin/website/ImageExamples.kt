@@ -46,10 +46,11 @@ suspend fun sameProduct(
     upload: JevImage,
     catalog: JevImage,
 ): Boolean {
+    // Each image is placed once: the upload in the state, and the catalog photo in the one question that needs it.
     val result =
-        jev.query("A seller uploaded $upload for a listing whose catalog photo is $catalog.") {
+        jev.query("A seller uploaded this photo for a listing: $upload") {
             attach(upload, catalog)
-            noul("same", "Does $upload show the same product as $catalog?")
+            noul("same", "Is the uploaded product the one shown in this catalog photo: $catalog?")
         }
     return result.noul("same").isTrue()
 }
@@ -115,9 +116,9 @@ suspend fun matchesCatalog(
     catalog: ByteArray,
 ): Double {
     val result =
-        jev.query("A customer returned <delivered>. The catalog photo is <catalog>.") {
+        jev.query("A customer returned the product in this photo: <delivered>") {
             attach(JevImage.of(delivered, reference = "<delivered>"), JevImage.of(catalog, reference = "<catalog>"))
-            noul("matches", "Is <delivered> the product shown in <catalog>?")
+            noul("matches", "Is the returned product the one shown in this catalog photo: <catalog>?")
         }
     return result.noul("matches").noul
 }

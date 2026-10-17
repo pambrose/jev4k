@@ -65,22 +65,27 @@ object ForumPostChecks : BaseChecks() {
 // --8<-- [end:inheritance]
 
 // --8<-- [start:parameterized]
-// A query can be a class, so its questions can depend on runtime values.
+// A query can be a class, so its questions can depend on runtime values. Each instance gets ids of its own, so
+// several can share one request.
 class PolicyCheck(
+    slug: String,
     policy: String,
 ) : JevQuery() {
-    val violates by noul("Does the message violate this policy: $policy")
-    val severity by score("How serious is the violation of this policy: $policy") {
-        levels("No violation", "Minor, a reminder is enough", "Serious, needs moderator action")
-    }
+    val violates by noul("Does the message violate this policy: $policy", id = "violates_$slug")
 }
 
-val policyChecks = listOf("No personal data", "No medical advice").map(::PolicyCheck)
+val policyChecks =
+    listOf("personal_data" to "No personal data", "medical_advice" to "No medical advice")
+        .map { (slug, policy) -> PolicyCheck(slug, policy) }
 
+// Every policy in one request, so the message is sent and read once.
 suspend fun policyViolations(
     jev: JevApi,
     message: String,
-): List<Double> = policyChecks.map { check -> jev.ask(check, state = message)[check.violates].noul }
+): List<Double> {
+    val result = jev.query(state = message) { policyChecks.forEach { include(it) } }
+    return policyChecks.map { result[it.violates].noul }
+}
 // --8<-- [end:parameterized]
 
 suspend fun typedInclude(

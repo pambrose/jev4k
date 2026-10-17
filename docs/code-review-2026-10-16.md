@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 46 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 55 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -77,12 +77,12 @@ Build, CI and release
 Documentation and examples
 
 - [x] [#37](#issue-37) The Java Box example asks on the default model, which can't answer Box yet
-- [ ] [#38](#issue-38) Two image examples send each image twice, against the sentence above them
+- [x] [#38](#issue-38) Two image examples send each image twice, against the sentence above them
 - [ ] [#39](#issue-39) The Images page leaves out the total-pixel minimum, so 256 × 256 looks valid
-- [ ] [#40](#issue-40) The due-date example ignores a stated year
-- [ ] [#41](#issue-41) The function-calling example has no route Choice, no escape and no confidence gate
-- [ ] [#42](#issue-42) The parameterized-query example sends one request per policy, and can't be merged as written
-- [ ] [#43](#issue-43) Two classification examples don't guard the 255-option limit
+- [x] [#40](#issue-40) The due-date example ignores a stated year
+- [x] [#41](#issue-41) The function-calling example has no route Choice, no escape and no confidence gate
+- [x] [#42](#issue-42) The parameterized-query example sends one request per policy, and can't be merged as written
+- [x] [#43](#issue-43) Two classification examples don't guard the 255-option limit
 - [x] [#44](#issue-44) CHANGELOG and CLAUDE.md name the wrong exception for an over-deep `extraBody` field
 - [ ] [#45](#issue-45) The jev-1.13 limits table lists a weakness TypeSafe dropped, and misses Choice option order
 
@@ -90,7 +90,7 @@ Documentation and examples
 
 - [x] [#46](#issue-46) No test pins that jev4k's own engine gets the connect and socket timeouts
 - [x] [#47](#issue-47) An `ImageRequestTest` title promises call headers it doesn't test
-- [ ] [#48](#issue-48) The tool-trace example asks Jev checks the page says belong in code
+- [x] [#48](#issue-48) The tool-trace example asks Jev checks the page says belong in code
 - [ ] [#49](#issue-49) Maintainer notes and `zensical.toml` still describe the state before 0.3.0
 - [ ] [#50](#issue-50) Three places still say the retry defaults match "the official SDKs"
 - [x] [#51](#issue-51) Two unresolved KDoc links: `QuestionSet.toJson`'s `[images]` and kotlinx-io's `Path`
@@ -104,9 +104,9 @@ Documentation and examples
 - [x] [#59](#issue-59) `cropToBox` truncates the edge but rounds the size, dropping a column inside the box
 - [ ] [#60](#issue-60) Three places say Java can't call `RetryPolicy`'s constructor, then call `new RetryPolicy()`
 - [ ] [#61](#issue-61) README and a KDoc say every config problem is reported at once; a missing key is reported alone
-- [ ] [#62](#issue-62) `raw` is called "the response body exactly as received"; it's a parsed `JsonObject`
-- [ ] [#63](#issue-63) The Score example shows confidence 0.54; TypeSafe's formula gives 0.55
-- [ ] [#64](#issue-64) One run of trailing comments is misaligned
+- [x] [#62](#issue-62) `raw` is called "the response body exactly as received"; it's a parsed `JsonObject`
+- [x] [#63](#issue-63) The Score example shows confidence 0.54; TypeSafe's formula gives 0.55
+- [x] [#64](#issue-64) One run of trailing comments is misaligned
 - [ ] [#65](#issue-65) Three places describe one real-CIO test; `ClientJvmTest` has five
 - [ ] [#66](#issue-66) The README and the development page leave out the hot dog example
 - [ ] [#67](#issue-67) Box and `attach` are missing from several summaries and tables
@@ -210,16 +210,16 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
   - [x] [#35](#issue-35) Refuse a page path in `llms.txt` that could leave `jev-docs/pages`
   - [x] [#34](#issue-34) Test iosX64 on an Intel runner, or say it's compiled but never tested
   - [x] [#68](#issue-68) Say Linux compiles the Apple klibs, and recheck the reasons given for the macOS guards
-- [ ] **8. Examples.** Code under `src/jvmTest/kotlin/website` and the pages that include it.
-  - [ ] [#38](#issue-38) Place each image once in the two image examples
-  - [ ] [#40](#issue-40) Use a stated year in the due-date example
-  - [ ] [#41](#issue-41) Add a route Choice with a `none_of_these` function, and a confidence gate
-  - [ ] [#42](#issue-42) Ask every policy check in one request, with distinct ids
-  - [ ] [#43](#issue-43) Guard the 255-option limit in the two classification examples
-  - [ ] [#48](#issue-48) Say the schema and exact-match checks run in code first
-  - [ ] [#62](#issue-62) Call `raw` the parsed response body
-  - [ ] [#63](#issue-63) Correct the Score example's confidence to 0.55
-  - [ ] [#64](#issue-64) Align the trailing comments in `CompositeScoringExamples.kt`
+- [x] **8. Examples.** Code under `src/jvmTest/kotlin/website` and the pages that include it.
+  - [x] [#38](#issue-38) Place each image once in the two image examples
+  - [x] [#40](#issue-40) Use a stated year in the due-date example
+  - [x] [#41](#issue-41) Add a route Choice with a `none_of_these` function, and a confidence gate
+  - [x] [#42](#issue-42) Ask every policy check in one request, with distinct ids
+  - [x] [#43](#issue-43) Guard the 255-option limit in the two classification examples
+  - [x] [#48](#issue-48) Say the schema and exact-match checks run in code first
+  - [x] [#62](#issue-62) Call `raw` the parsed response body
+  - [x] [#63](#issue-63) Correct the Score example's confidence to 0.55
+  - [x] [#64](#issue-64) Align the trailing comments in `CompositeScoringExamples.kt`
 - [ ] **9. Documentation text.** Text-only changes to the README, the site, KDoc, CLAUDE.md and the maintainer
   notes.
   - [ ] [#39](#issue-39) Add the total-pixel limits to the Images page
