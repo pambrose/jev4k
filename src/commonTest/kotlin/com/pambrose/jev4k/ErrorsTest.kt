@@ -33,6 +33,13 @@ class ErrorsTest : StringSpec() {
             rateLimited().retryAfter shouldBe null
         }
 
+        "jevApiException reads the request id from the headers, as the client does, unless one is given" {
+            val headers = mapOf("X-TypeSafe-Request-Id" to listOf("r1"))
+            jevApiException(500, body = "oops", headers = headers).requestId shouldBe "r1"
+            jevApiException(500, requestId = "r2", headers = headers).requestId shouldBe "r2"
+            jevApiException(500).requestId shouldBe null
+        }
+
         "retryAfterMillis is the hint in whole milliseconds, for Java" {
             rateLimited(retryAfter = 1500.milliseconds).retryAfterMillis shouldBe 1500
             rateLimited().retryAfterMillis shouldBe null

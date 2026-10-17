@@ -69,4 +69,4 @@ Enums don't have to implement `JevOption`; without it, options are sent undescri
 The enum must have a constant for every option the question declared. Reading with one that doesn't, the wrong
 enum, say, is a mistake in the calling code, so it throws `IllegalArgumentException` naming the missing options. If
 the server returns an option the question never declared, reading the answer throws a
-`JevResponseValidationException`.
+`JevResponseValidationException`, even when the enum has a constant for it.

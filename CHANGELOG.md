@@ -23,6 +23,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
     - `JevImage.fromBase64` ignores whitespace, so text from the `base64` tool, with its line breaks, decodes.
     - An image over the API's 16 MiB limit carries that problem, and `JevImage.read` reads no further than the limit,
       so a large file, a device or a pipe can't fill memory.
+    - A Box answer whose edges or confidence are out of range, or whose edges are out of order, fails when the Box is
+      read (`box(id)`, a handle or `boxes`), not when the response is parsed, so the Noul paired with it can still be
+      read.
+- `enumChoice<E>(id)` rejects an option the question never declared even when `E`, a broader enum, has a constant for
+  it, as its KDoc says.
+- A number, boolean or null criteria value (a Noul definition, a Choice option or a Score level) fails validation
+  instead of being sent, since the API takes text, an object or an array there. A Choice option may still be null.
+- A Score level key must be written as its number: `"01"` or `"+1"` fails as a malformed response, where two keys
+  naming one level used to drop one probability silently. A Score nobody asked for counts its levels up to its
+  highest key, so `normalized` stays in 0..1.
+- `jevApiException` reads the request id from an `x-typesafe-request-id` entry in `headers` when none is given, and
+  `jevResult(String)` drops a leading byte-order mark, both as the client does.
+- The `JevQuery.questions` KDoc says that a read before any question has registered, such as from the `init` block
+  of a base class with no questions of its own, fails.
 
 ## [0.3.0] - 2026-10-16
 

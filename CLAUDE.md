@@ -52,10 +52,11 @@ without them keep compiling.
 - **Answers** (`JevResult.kt`, `Answers.kt`). `result[handle]` decodes through the handle's `decode` function, and also
   checks that the handle belongs to the request. By-id accessors (`noul`/`choice`/`score`/`enumChoice`) check that the
   question type matches. Raw answers are stored string-keyed. Enum choices are mapped when read, and an unknown option
-  becomes `JevResponseValidationException`; `enumChoice<E>(id)` first requires E to cover every declared option,
-  since a mismatch is the caller's mistake (`IllegalArgumentException`). A string-keyed read returns an undeclared
-  option as sent, as both official SDKs do. `QueryBuilder.question(id, q)` copies the question's map or list and
-  picks the type-checking decoder for its subtype.
+  becomes `JevResponseValidationException`; `enumChoice<E>(id)` first requires E to cover every declared option, since a
+  mismatch is the caller's mistake (`IllegalArgumentException`), then decodes against the declared options only, so a
+  broader enum's extra constant can't stand for an option the question never offered. A string-keyed read returns an
+  undeclared option as sent, as both official SDKs do. `QueryBuilder.question(id, q)` copies the question's map or list
+  and picks the type-checking decoder for its subtype.
 - **Images and Box** (`JevImage.kt`, `internal/ImageRequest.kt`), all behind `@ExperimentalJevImages`, which the build
   opts the module into (`compilerOptions.optIn`), so every public declaration that names an image or Box type must
   carry the annotation by hand.
@@ -74,8 +75,10 @@ without them keep compiling.
       built-in header (for a hand-built `extraBody["assets"]` too), and sends a request with images as
       `MultiPartFormDataContent`: a `request` part with the JSON and a generated `assets` map, then `image-0`, … with a
       filename (Ktor quotes each part name). Without images the request is the same `TextContent` as before.
-    - `BoxQuestion`/`BoxAnswer` are the fourth question and answer types; the mapper requires edges in 0..1 with
-      `left < right` and `top < bottom`.
+    - `BoxQuestion`/`BoxAnswer` are the fourth question and answer types. The mapper requires four finite edges;
+      `decodeBox` checks them in 0..1 with `left < right` and `top < bottom` (and the confidence in 0..1) when the Box
+      is read, through `box(id)`, a handle or `boxes`, so one bad Box doesn't take the paired Noul down with it.
+      `AnswerDecodingException.field` gives the field path below `answers.<id>`.
 - **Wire** (`internal/Wire.kt`).
     - Requests are `@Serializable` DTOs, and a sealed `WireQuestion` writes the `"type"` discriminator.
     - `JevJson` sets `encodeDefaults = false`, so unset optional fields (Noul criteria) are omitted. Explicit JSON
@@ -87,8 +90,9 @@ without them keep compiling.
     - An answer with no `type` is read as the type of question that was asked; an unknown type becomes `UnknownAnswer`.
     - Choice probabilities are reordered to the order the options were declared. Score keys `"0".."n"` become `Int`.
     - Absent answers fail when they are read, not when the response is parsed, and a `null` answer counts as absent.
-    - Numbers must be finite (an unquoted `NaN` and `1e999` both parse), and a Score level key must lie within the
-      question's levels, or be non-negative for an answer nobody asked for.
+    - Numbers must be finite (an unquoted `NaN` and `1e999` both parse), and a Score level key must be written as its
+      number (`1`, not `01` or `+1`) and lie within the question's levels, or be non-negative for an answer nobody
+      asked for, whose `levelCount` is its highest key plus one.
     - Every `JevResponseValidationException` from a 2xx body is thrown by `ResponseInfo.fail`, which carries the
       body's text as received, the status and the headers. `send` builds the `ResponseInfo`, and `JevResult` keeps
       it for failures at read time.
@@ -194,9 +198,9 @@ without them keep compiling.
       `kotlin.jvm.JvmSynthetic` imports (only the JVM imports `kotlin.jvm.*` by default).
 - **Validation** (`Questions.kt`). Every problem is collected into one `JevValidationException` before anything is sent:
   at least one question, unique non-blank ids, instructions that are non-blank text or a non-empty object or array,
-  1..255 Choice options, 2..10 Score levels, and no entry nested too deeply or holding NaN or an infinity (which
-  kotlinx.serialization refuses to encode). `evaluate` also rejects a null, number or boolean state; the API takes a
-  string, an object or an array.
+  criteria values that are text, an object or an array (or null for a Choice option), 1..255 Choice options, 2..10 Score
+  levels, and no entry nested too deeply or holding NaN or an infinity (which kotlinx.serialization refuses to encode).
+  `evaluate` also rejects a null, number or boolean state; the API takes a string, an object or an array.
 
 ## Documentation site
 

@@ -160,6 +160,21 @@ private fun JsonElement.isEmptyEntry(): Boolean =
         is JsonArray -> isEmpty()
     }
 
+/**
+ * Why this criteria value isn't one the API takes: it types each one as text, an object or an array, and a Choice
+ * option may also be null.
+ */
+private fun JsonElement.criteriaTypeProblem(
+    name: String,
+    question: Question,
+): String? =
+    when {
+        this !is JsonPrimitive || isString -> null
+        question !is ChoiceQuestion -> "$name must be text, a JSON object or a JSON array"
+        this is JsonNull -> null
+        else -> "$name must be text, a JSON object, a JSON array or null"
+    }
+
 private const val INSTRUCTIONS_REQUIRED =
     "instructions must be non-blank text or a non-empty JSON object or array; question ids are never sent to the " +
         "model, so the instructions must state the full question"
@@ -188,7 +203,11 @@ private fun validate(
 ): List<String> =
     buildList {
         if (question.instructions.isEmptyEntry()) add("question '$id': $INSTRUCTIONS_REQUIRED")
-        for ((name, entry) in question.sentEntries()) entry.sendProblem(name)?.let { add("question '$id': $it") }
+        // Every entry after the first, the instructions checked above, is a criteria value.
+        question.sentEntries().forEachIndexed { index, (name, entry) ->
+            val problem = entry.sendProblem(name) ?: entry.takeIf { index > 0 }?.criteriaTypeProblem(name, question)
+            problem?.let { add("question '$id': $it") }
+        }
         when (question) {
             is NoulQuestion -> {
                 // Noul criteria are optional; nothing else to check.

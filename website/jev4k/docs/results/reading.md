@@ -70,7 +70,8 @@ Log `model` alongside results: an alias such as `jev-latest` can move to a newer
 ## When an answer is missing
 
 A malformed answer to a known question fails while the response is being read. A missing answer fails
-lazily, when you read it. Either way you get a `JevResponseValidationException` whose `fieldPath` points at
+lazily, when you read it, and so does a Box whose edges are out of range or out of order, so the Noul you paired with
+it can still be read. Either way you get a `JevResponseValidationException` whose `fieldPath` points at
 the problem, such as `answers.team.choice`:
 
 ```kotlin

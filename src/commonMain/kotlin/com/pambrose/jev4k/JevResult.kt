@@ -19,7 +19,10 @@ class JevResult internal constructor(
     val requestedModel: String,
     val usage: Usage,
     val questions: QuestionSet,
-    /** Every answer by question id, choices keyed by option string. */
+    /**
+     * Every answer by question id, choices keyed by option string, as the response mapped them. A Box's edges are
+     * checked when it is read, through [box], a handle or [boxes], so one here may break the Box's contract.
+     */
     val answers: Map<String, Answer>,
     /** The response body as received. */
     val raw: JsonObject,
@@ -87,7 +90,8 @@ class JevResult internal constructor(
             "Question '$id' declares options $declared, but $enumName has no constant for " +
                 "${declared - byKey.keys} (its option keys: ${byKey.keys})"
         }
-        return decodeAnswer(id) { decodeEnumChoice(it, byKey) }
+        // Only the declared options: a constant of a broader enum that the question never offered is still unknown.
+        return decodeAnswer(id) { decodeEnumChoice(it, byKey.filterKeys { key -> key in declared }) }
     }
 
     val nouls: Map<String, NoulAnswer> get() = answersOf<NoulAnswer>()
@@ -98,8 +102,10 @@ class JevResult internal constructor(
 
     val scores: Map<String, ScoreAnswer> get() = answersOf<ScoreAnswer>()
 
+    /** Every Box answer, each checked as [box] checks one. */
     @ExperimentalJevImages
-    val boxes: Map<String, BoxAnswer> get() = answersOf<BoxAnswer>()
+    val boxes: Map<String, BoxAnswer>
+        get() = answersOf<BoxAnswer>().mapValues { (id, _) -> decodeAnswer(id, ::decodeBox) }
 
     private inline fun <reified T : Answer> answersOf(): Map<String, T> =
         answers.mapNotNull { (id, answer) -> (answer as? T)?.let { id to it } }.toMap()
@@ -127,7 +133,7 @@ class JevResult internal constructor(
         return try {
             decode(answer)
         } catch (e: AnswerDecodingException) {
-            response.fail(path, "question '$id': ${e.message}", e)
+            response.fail(e.field?.let { "$path.$it" } ?: path, "question '$id': ${e.message}", e)
         }
     }
 

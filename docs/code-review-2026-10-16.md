@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 12 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 18 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -28,17 +28,17 @@ Images and Box
   images"
 - [x] [#6](#issue-6) `JevImage.fromBase64` rejects any whitespace, even a trailing newline
 - [x] [#7](#issue-7) `JevImage.read` reads a file of any size into memory
-- [ ] [#8](#issue-8) One out-of-range Box answer fails the whole response, paired Noul included
+- [x] [#8](#issue-8) One out-of-range Box answer fails the whole response, paired Noul included
 - [ ] [#9](#issue-9) The docs say a cache key must cover each image's bytes, but `JevImage` exposes none
 - [ ] [#10](#issue-10) The per-attempt timeout covers an image upload, and the Images page doesn't say so
 
 DSL and results
 
-- [ ] [#11](#issue-11) `enumChoice<E>(id)` maps an undeclared option to an extra constant of `E` instead of rejecting
+- [x] [#11](#issue-11) `enumChoice<E>(id)` maps an undeclared option to an extra constant of `E` instead of rejecting
   it
 - [ ] [#12](#issue-12) `QuestionSet.toJson()`, offered for cache keys, compares equal across Choice option orders
-- [ ] [#13](#issue-13) Criteria values aren't type-checked: a number, boolean or null option or level is sent
-- [ ] [#14](#issue-14) Reading `JevQuery.questions` before any question has registered throws
+- [x] [#13](#issue-13) Criteria values aren't type-checked: a number, boolean or null option or level is sent
+- [x] [#14](#issue-14) Reading `JevQuery.questions` before any question has registered throws
 
 Client and configuration
 
@@ -98,8 +98,8 @@ Documentation and examples
 - [ ] [#53](#issue-53) The Installation page lists three `api` dependencies; kotlinx-io-core is a fourth
 - [ ] [#54](#issue-54) "A missing file fails the object's first use" understates a permanent failure on the JVM
 - [ ] [#55](#issue-55) `isPlatformConnectionError`'s common KDoc says the JVM needs no rule of its own
-- [ ] [#56](#issue-56) `jevApiException` ignores the request-id header; `jevResult(String)` rejects a BOM
-- [ ] [#57](#issue-57) Score level keys parse loosely, and an unasked Score's `levelCount` counts keys
+- [x] [#56](#issue-56) `jevApiException` ignores the request-id header; `jevResult(String)` rejects a BOM
+- [x] [#57](#issue-57) Score level keys parse loosely, and an unasked Score's `levelCount` counts keys
 - [ ] [#58](#issue-58) `QuestionSet` has no `toString`
 - [ ] [#59](#issue-59) `cropToBox` truncates the edge but rounds the size, dropping a column inside the box
 - [ ] [#60](#issue-60) Three places say Java can't call `RetryPolicy`'s constructor, then call `new RetryPolicy()`
@@ -159,15 +159,15 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
   - [x] [#6](#issue-6) Strip ASCII whitespace in `fromBase64`
   - [x] [#7](#issue-7) Read at most 16 MiB + 1 bytes in `JevImage.read`, and carry the size as the image's problem
   - [x] [#26](#issue-26) Assert the images header for a hand-built `extraBody["assets"]` without a Box
-- [ ] **3. Results and the DSL.** `ResponseMapper.kt` (#8, #57), `JevResult.kt` (#11), `Questions.kt` (#13), the
+- [x] **3. Results and the DSL.** `ResponseMapper.kt` (#8, #57), `JevResult.kt` (#11), `Questions.kt` (#13), the
   `JevQuery` KDoc (#14) and `Testing.kt` (#56). Each gets a common test. #11, #13 and #57 refuse what 0.3.0
   accepted, so name them in the 0.3.1 notes.
-  - [ ] [#8](#issue-8) Move the Box range and order checks into `decodeBox`, so they fail only when the Box is read
-  - [ ] [#11](#issue-11) Decode `enumChoice` against the declared options only
-  - [ ] [#13](#issue-13) Accept only text, an object or an array as a criteria value (or `null` for a Choice option)
-  - [ ] [#14](#issue-14) Say in the `JevQuery.questions` KDoc that a read before the first question throws
-  - [ ] [#56](#issue-56) Read the request id from the headers, and strip a leading BOM, in `Testing.kt`
-  - [ ] [#57](#issue-57) Accept only canonical Score level keys, and size an unasked Score by its highest key
+  - [x] [#8](#issue-8) Move the Box range and order checks into `decodeBox`, so they fail only when the Box is read
+  - [x] [#11](#issue-11) Decode `enumChoice` against the declared options only
+  - [x] [#13](#issue-13) Accept only text, an object or an array as a criteria value (or `null` for a Choice option)
+  - [x] [#14](#issue-14) Say in the `JevQuery.questions` KDoc that a read before the first question throws
+  - [x] [#56](#issue-56) Read the request id from the headers, and strip a leading BOM, in `Testing.kt`
+  - [x] [#57](#issue-57) Accept only canonical Score level keys, and size an unasked Score by its highest key
 - [ ] **4. Client and configuration hardening.** #17 and #18 are one pass through `headerProblem` and the key check
   in `JevConfig.kt`. #15 drops a field or the cause in `JevClient.oversized`. For #16, decide between a
   byte-counting bound and a docs change; #10 is a docs change on the Images page.

@@ -77,6 +77,7 @@ on the result:
 ## Validation
 
 jev4k checks the request before sending it and reports every problem at once in a `JevValidationException`: at least one
-question, unique non-blank ids, non-empty instructions, 1–255 Choice options, 2–10 Score levels, and no state or entry
-nested more than 64 levels deep. A Choice option key offered twice, including two enum constants with the same
-`optionKey`, is reported there too, alongside anything else that is wrong.
+question, unique non-blank ids, non-empty instructions, criteria values that are text, an object or an array (or null
+for an undescribed Choice option), 1–255 Choice options, 2–10 Score levels, and no state or entry nested more than 64
+levels deep. A Choice option key offered twice, including two enum constants with the same `optionKey`, is reported
+there too, alongside anything else that is wrong.

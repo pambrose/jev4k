@@ -183,6 +183,28 @@ class ValidationTest : StringSpec() {
             }
         }
 
+        "a criteria value that is a number or a boolean is rejected, and a null only where a Choice option allows it" {
+            val problems = problemsOf {
+                noul("n", "Is it?") { whenTrue(JsonPrimitive(true)) }
+                choice("c", "Which?") {
+                    "a" means JsonPrimitive(1)
+                    option("b")
+                }
+                score("s", "How many stars?") {
+                    level(JsonPrimitive(1))
+                    level(JsonNull)
+                    level("Five stars")
+                }
+            }
+            problems shouldBe
+                listOf(
+                    "question 'n': whenTrue must be text, a JSON object or a JSON array",
+                    "question 'c': option 'a' must be text, a JSON object, a JSON array or null",
+                    "question 's': level 0 must be text, a JSON object or a JSON array",
+                    "question 's': level 1 must be text, a JSON object or a JSON array",
+                )
+        }
+
         "a question entry holding NaN or an infinity is reported, naming the question and the entry" {
             val problems = problemsOf {
                 score("s", "How much?") {

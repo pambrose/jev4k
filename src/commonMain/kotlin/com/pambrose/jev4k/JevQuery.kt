@@ -41,8 +41,10 @@ interface JevOption {
  * [JevOption.entry]. An argument is evaluated before the builder runs, though, so a failing `entry()` or
  * `jsonEntry()` passed as the instructions still throws from the initializer.
  *
- * [questions] can be read at any time. A read before every property is initialized, from an `init` block or a base
- * class, sees only the questions declared so far; the next read includes the rest.
+ * [questions] can be read once the first question has registered. A read before every property is initialized, from
+ * an `init` block or a base class, sees only the questions declared so far; the next read includes the rest. A read
+ * before any question has registered, such as from the `init` block of a base class with no questions of its own,
+ * fails with a [JevValidationException], since a set needs at least one question.
  *
  * The builders take the instructions first and an optional `id` second, the reverse of the inline [QueryBuilder]'s
  * `(id, instructions)`. Both are strings, so pass `id` by name (`noul("Is this urgent?", id = "urgent")`): a

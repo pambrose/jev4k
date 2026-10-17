@@ -49,17 +49,14 @@ class BoxTest : StringSpec() {
             r.boxes.keys shouldBe setOf("mug", "extra")
         }
 
-        "a malformed Box answer fails with the field's path" {
+        "a Box answer missing a field, or with one that isn't a number, fails when the response is parsed" {
             fun box(edges: String) = """{"type":"box","box":{$edges}}"""
             val cases =
                 mapOf(
                     """{"type":"box"}""" to "answers.mug.box",
                     box(""""top":0.1,"bottom":0.9,"left":0.2""") to "answers.mug.box.right",
-                    box(""""top":0.1,"bottom":0.9,"left":0.2,"right":1.5""") to "answers.mug.box.right",
                     box(""""top":0.1,"bottom":0.9,"left":0.2,"right":"0.8"""") to "answers.mug.box.right",
-                    box(""""top":0.1,"bottom":0.9,"left":0.8,"right":0.2""") to "answers.mug.box.left",
-                    box(""""top":0.9,"bottom":0.1,"left":0.2,"right":0.8""") to "answers.mug.box.top",
-                    """{"type":"box","box":{"top":0.1,"bottom":0.9,"left":0.2,"right":0.8},"confidence":2}""" to
+                    """{"type":"box","box":{"top":0.1,"bottom":0.9,"left":0.2,"right":0.8},"confidence":"high"}""" to
                         "answers.mug.confidence",
                 )
             for ((answer, path) in cases) {
@@ -67,6 +64,39 @@ class BoxTest : StringSpec() {
                     shouldThrow<JevResponseValidationException> {
                         jevResult("""{"answers":{"mug":$answer}}""", finder)
                     }.fieldPath shouldBe path
+                }
+            }
+        }
+
+        "a Box out of range or out of order fails only when it is read, so the paired Noul stays readable" {
+            val paired =
+                questions {
+                    noul("mug_visible", "Is there a coffee mug in `photo`?")
+                    box("mug", "the coffee mug in `photo`")
+                }
+
+            fun box(
+                edges: String,
+                confidence: String = "0.5",
+            ) = """{"type":"box","box":{$edges},"confidence":$confidence}"""
+            val cases =
+                mapOf(
+                    box(""""top":0.1,"bottom":0.9,"left":0.2,"right":1.5""") to "box.right",
+                    box(""""top":0.1,"bottom":0.9,"left":0.2,"right":1.0000000000000002""") to "box.right",
+                    box(""""top":0.1,"bottom":0.9,"left":0.8,"right":0.2""") to "box.left",
+                    box(""""top":0.1,"bottom":0.9,"left":0.5,"right":0.5""") to "box.left",
+                    box(""""top":0.9,"bottom":0.1,"left":0.2,"right":0.8""") to "box.top",
+                    box(""""top":0.1,"bottom":0.9,"left":0.2,"right":0.8""", confidence = "2") to "confidence",
+                )
+            for ((answer, field) in cases) {
+                withClue(answer) {
+                    val r = jevResult("""{"answers":{"mug_visible":{"noul":0.03},"mug":$answer}}""", paired)
+                    r.noul("mug_visible").noul shouldBe 0.03
+                    shouldThrow<JevResponseValidationException> { r.box("mug") }.fieldPath shouldBe "answers.mug.$field"
+                    shouldThrow<JevResponseValidationException> { r.boxes }.fieldPath shouldBe "answers.mug.$field"
+                    shouldThrow<JevResponseValidationException> {
+                        jevResult("""{"answers":{"mug":$answer}}""", Finder.questions)[Finder.mug]
+                    }.fieldPath shouldBe "answers.mug.$field"
                 }
             }
         }
