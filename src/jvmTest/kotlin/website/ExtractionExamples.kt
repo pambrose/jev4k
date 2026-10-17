@@ -2,6 +2,7 @@ package website
 
 import com.pambrose.jev4k.JevApi
 import com.pambrose.jev4k.JevOption
+import com.pambrose.jev4k.MAX_CHOICE_OPTIONS
 import com.pambrose.jev4k.JevQuery
 import com.pambrose.jev4k.ask
 import com.pambrose.jev4k.query
@@ -19,6 +20,8 @@ suspend fun receiptAddress(
 ): String? {
     val candidates = EMAIL.findAll(email).map { it.value }.distinct().toList()
     if (candidates.isEmpty()) return null
+    // One option per candidate, plus "none", and a Choice takes at most 255: narrow a longer list first.
+    require(candidates.size < MAX_CHOICE_OPTIONS) { "At most ${MAX_CHOICE_OPTIONS - 1} candidates at a time" }
 
     val pick =
         jev
@@ -30,7 +33,7 @@ suspend fun receiptAddress(
             }.choice("address")
 
     if (pick.choice == "none" || pick.confidence < 0.6) return null
-    return pick.choice.lowercase()
+    return pick.choice
 }
 // --8<-- [end:candidate-spans]
 

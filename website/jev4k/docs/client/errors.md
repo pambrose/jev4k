@@ -58,6 +58,10 @@ refused unread: a 2xx as a `JevResponseValidationException`, anything else as it
 the message saying why. A body without a declared length, which on Linux, Apple platforms and Node.js includes a
 compressed one, isn't checked; see [Configuration](configuration.md).
 
+Some problems with a 2xx surface only when an answer is read, so the other answers stay readable: a missing answer, a
+Box whose edges or confidence are out of range or whose edges are out of order, and an option the question never
+declared, read through `enumChoice` with a broader enum. Each raises `JevResponseValidationException`.
+
 On Linux and Windows, any bare `IllegalStateException` raised during a call is also a `JevConnectionException`,
 because that is how the Curl and WinHttp engines report a failed connection; the original is kept as its cause.
 

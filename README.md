@@ -171,7 +171,8 @@ The question definitions themselves are `NoulQuestion`, `ChoiceQuestion`, `Score
 `BoxQuestion`, subtypes of `Question`, named after TypeSafe's JS SDK. The DSL builds them for you.
 
 TypeSafe's experimental Box question type finds where something is in an image. jev4k supports it, and images in the
-state, instructions and criteria, behind the `@ExperimentalJevImages` opt-in; see [Images](#images).
+state, instructions and criteria, behind the `@ExperimentalJevImages` opt-in; see [Images](#images). Box needs Jev 1.14
+(`jev-preview` or `jev-1.14.0`).
 
 ## Defining questions
 
@@ -297,6 +298,7 @@ These are checked locally before anything is sent, and every problem is reported
 - non-empty instructions
 - a Choice has 1 to 255 options (`MAX_CHOICE_OPTIONS`)
 - a Score has 2 to 10 levels (`MIN_SCORE_LEVELS`..`MAX_SCORE_LEVELS`)
+- each option, level or Noul definition is text, a JSON object or a JSON array (an undescribed Choice option is null)
 - the state, and each instructions or criteria value, nests at most 64 objects or arrays deep, as the API requires
 
 ## State
@@ -342,8 +344,10 @@ suspend fun findMug(jev: JevApi, bytes: ByteArray) {
 }
 ```
 
-Images also go in instructions (`"Is $upload the same product as $catalog?"`) and criteria (`"thumbs_up" means
-thumb`). A `JevQuery` can attach its own example pictures. See [Images & Box](https://jev4k.com/queries/images/).
+Images also go in instructions (`"Is the uploaded product the one shown in $catalog?"`) and criteria (`"thumbs_up" means
+thumb`); each place a reference appears sends the image again, so place each image once. A `JevQuery` can attach its own
+example pictures. `timeout` covers each attempt's upload, and a timed-out attempt uploads again, so give image calls
+more time with `JevCallOptions`. See [Images & Box](https://jev4k.com/queries/images/).
 
 ## Reading results
 
@@ -359,7 +363,7 @@ thumb`). A `JevQuery` can attach its own example pictures. See [Images & Box](ht
 | `model` / `requestedModel`              | The model that answered, as reported, and the name you sent (e.g. `jev-latest`) |
 | `usage`                                 | `inputTokens` / `outputTokens`                                                  |
 | `requestId`                             | The `x-typesafe-request-id` header, for support tickets and logs                |
-| `raw`                                   | The response body as received                                                   |
+| `raw`                                   | The parsed response body                                                       |
 
 The answer types have helpers for common decisions:
 
@@ -381,7 +385,8 @@ frustration.legendText(2)   // "Very angry, strong language"
 
 Asking for an id or handle that wasn't in the request, or reading a Noul as a Choice, throws `IllegalArgumentException`.
 A missing or malformed answer from the server throws `JevResponseValidationException`, with a field path such as
-`answers.urgent.noul`.
+`answers.urgent.noul`. A missing answer, and a Box whose edges are out of range or out of order, fail only when they're
+read, so the other answers, such as the Noul paired with a Box, can still be read.
 
 **Gate on confidence where it matters.** Choose thresholds per action, tuned on your own data. A read-only action can go
 ahead at lower confidence than a destructive one:
@@ -453,8 +458,10 @@ val jev = JevClient {
 
 Each setting resolves as: the explicit value, then the environment variable, then the default. String settings are
 trimmed (a leading byte-order mark too), and a blank one counts as unset. `baseUrl` must be `https://` (plain `http://`
-is for `localhost`, or anywhere with `allowInsecureHttp = true`) and carry no credentials or query. A missing key fails
-on its own; otherwise the builder reports every problem at once in a `JevConfigException`, and neither its messages nor
+is for `localhost`, or anywhere with `allowInsecureHttp = true`) and carry no credentials or query. The key must be
+printable ASCII with no spaces, and `headers` must have HTTP token names and ASCII values; `Content-Length`,
+`Content-Type`, `Transfer-Encoding` and `Upgrade` can't be set, here or in `JevCallOptions`. A missing key fails on its
+own; otherwise the builder reports every problem at once in a `JevConfigException`, and neither its messages nor
 `JevConfig.toString()` print the key.
 
 ### Running with Ollaya
@@ -591,6 +598,10 @@ Everything else is callable: `evaluate`, `models`, the inline `noul`, `choice` a
 result accessors, and enums implementing `JevOption`. Only the getters that return a `Duration`, such as
 `JevConfig.timeout` and `RetryPolicy.initialBackoff`, stay Kotlin-only.
 
+The collections a built object hands out are read-only from Java too, as Kotlin's types promise: a config's or a call's
+headers, the retry statuses, a `QuestionSet`'s ids, a Choice's options, a Score's levels and a result's answers. Their
+mutators throw `UnsupportedOperationException`.
+
 ### Module name
 
 The jar declares `Automatic-Module-Name: com.pambrose.jev4k` for JPMS builds.
@@ -691,8 +702,10 @@ These points are condensed from TypeSafe's documentation. A compressed copy of t
 ## Development
 
 Building jev4k needs JDK 25; Gradle's toolchain support downloads it if it's missing. The JVM jar itself targets
-Java 17, so applications on 17 or newer can embed it. Only a Mac, with Xcode, links and tests every target; Linux
-compiles the Apple targets too, but can't link or run them, which is why releases are published from a Mac.
+Java 17, so applications on 17 or newer can embed it. Only a Mac, with Xcode, links every target, and it runs every test
+but mingwX64's (CI runs those on Windows) and iosX64's, which need an Intel Mac: iosX64 is compiled and published, but
+its tests run nowhere. Linux compiles the Apple targets too, but can't link or run them, which is why releases are
+published from a Mac.
 
 Copy [`.env.example`](.env.example) to `.env` (gitignored) and set `TYPESAFE_API_KEY` in it. Gradle loads that
 file into the environment of the test and example tasks, so `make example` and `make live-tests` work without

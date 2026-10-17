@@ -23,10 +23,11 @@ client's or the call's headers replaces it.
 
 ## Placing and attaching
 
-A `JevImage` comes from bytes (`JevImage.of`), base64 text (`JevImage.fromBase64`), or a file (`JevImage.read`, with a
-kotlinx-io `Path` anywhere, or a `java.nio.file.Path` or `File` on the JVM). Each one has a reference, a string that
-stands for the image wherever it is placed. Its `toString()` is that reference, so string templates, `jsonOf`, `entry`
-and `@Serializable` fields all place it. The API replaces every occurrence of a reference with the image.
+A `JevImage` comes from bytes (`JevImage.of`), base64 text (`JevImage.fromBase64`, standard alphabet; whitespace such as
+line breaks is ignored), or a file (`JevImage.read`, with a kotlinx-io `Path` anywhere, or a `java.nio.file.Path` or
+`File` on the JVM). Each one has a reference, a string that stands for the image wherever it is placed. Its `toString()`
+is that reference, so string templates, `jsonOf`, `entry` and `@Serializable` fields all place it. The API replaces
+every occurrence of a reference with the image.
 
 Placing an image doesn't send it. `attach` it in the query block, or in a `JevQuery`, so its bytes go with the
 questions. jev4k refuses to send a request that attaches an image nothing references, or that places a generated

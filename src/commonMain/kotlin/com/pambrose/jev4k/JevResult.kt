@@ -24,7 +24,7 @@ class JevResult internal constructor(
      * checked when it is read, through [box], a handle or [boxes], so one here may break the Box's contract.
      */
     val answers: Map<String, Answer>,
-    /** The response body as received. */
+    /** The parsed response body. A [JevResponseValidationException] carries the body's text as received. */
     val raw: JsonObject,
     private val response: ResponseInfo,
 ) {

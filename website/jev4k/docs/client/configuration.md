@@ -35,8 +35,8 @@ blank after trimming counts as unset.
 | `headers`           |                          | none; extra headers sent with every request                                    |
 | `allowInsecureHttp` |                          | `false`; allows a plain `http://` `baseUrl` on a host other than this machine  |
 
-A missing API key throws a `JevConfigException` that names `TYPESAFE_API_KEY`. `JevConfig.toString()` redacts
-the key, so it's safe to log.
+A missing API key throws a `JevConfigException` that names `TYPESAFE_API_KEY`, on its own; the other settings are
+checked, and reported together, once there is a key. `JevConfig.toString()` redacts the key, so it's safe to log.
 
 ## Running with Ollaya
 
@@ -74,8 +74,8 @@ The client doesn't close an engine you pass in, so one engine can be shared by s
 yourself when you're done with it. `timeout` still bounds each whole attempt, but the connect and socket
 timeouts are left to an engine you supply, so settings like `endpoint.connectTimeout` above take effect.
 
-The builder checks the settings that would otherwise fail every request, or that engines would send differently, and
-throws a `JevConfigException` listing every problem it found at once:
+The builder checks the settings that would otherwise fail every request, or that engines would send differently. With
+a key present, it throws a `JevConfigException` listing every problem it found at once:
 
 - `baseUrl` must be an absolute `https://` URL with a host and, optionally, a path. Plain `http://` is accepted
   for this machine, or anywhere with `allowInsecureHttp = true`. Credentials, a query or a fragment are refused;

@@ -34,9 +34,9 @@ To run a single test class:
 - **JDK coverage.** The JVM tests run on the build toolchain by default. CI also runs them on JDK 17, 21 and 25,
   since jev4k ships Java 17 bytecode and compiling against the 17 API doesn't prove it behaves there.
   `make test-jdk JDK=17` reproduces one of those rows, and `make all-tests` runs every test target there is.
-- **Coverage.** `make coverage-open` builds the Kover report and opens it; `make coverage-verify` checks the
-  line and branch floors. CI uploads the same report to
-  [Codecov](https://codecov.io/gh/pambrose/jev4k).
+- **Coverage.** `make coverage-open` builds the Kover report and opens it; `make coverage-verify` checks the line and
+  branch floors. CI's build job checks the same floors, which are the coverage gate, and uploads the report to
+  [Codecov](https://codecov.io/gh/pambrose/jev4k), whose statuses only report.
 - **Workflow audits.** `make zizmor` runs [zizmor](https://docs.zizmor.sh) over the GitHub Actions workflows and
   `dependabot.yml` (`brew install zizmor` first). Its online audits, which catch a known-vulnerable action or a
   pinned SHA that isn't a commit of its action, use `GH_TOKEN` or the gh CLI's login, and are skipped without
@@ -87,7 +87,9 @@ The site is published to GitHub Pages at <https://jev4k.com/> by `.github/workfl
 and push to `master` it builds the site from the locked `website/uv.lock` in strict mode, builds the KDocs with Dokka
 and copies them under `/kdocs`: the same steps as `make site-build`. It deploys the result only when a release is
 published, or when run by hand from the Actions tab, so the site never shows a version that isn't on Maven Central
-yet. The workflow restores nothing from a cache, so an entry written by another run can't change what gets published.
+yet. The workflow restores nothing from a cache and installs a pinned uv, so neither an entry written by another run nor
+a new uv release can change what gets published. On a release tag, the KDocs' source links open that tag instead of
+`master`, as the published javadoc jars' do.
 
 The repository needs one setting before the first deploy: under **Settings → Pages → Build and deployment**, set
 **Source** to **GitHub Actions**. After a failed deploy, re-run just the failed deploy job; the build job's artifact

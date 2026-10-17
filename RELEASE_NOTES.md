@@ -9,17 +9,19 @@ Narrative notes for each jev4k release, newest first. The itemized list of chang
 > **Some things 0.3.0 accepted are now refused.** The binary API only grows, and Kotlin code that compiled against
 > 0.3.0 compiles unchanged, but each of these now fails:
 >
-> - **From Java,** changing a collection a built object hands out: a config's or a call's headers, the retry
->   statuses, a `QuestionSet`'s ids or images, a Choice's options, a Score's levels, a result's answers. It throws
->   `UnsupportedOperationException`. 0.3.0 allowed it once a collection had two entries, which could change a live
->   client's retry rule or slip an unchecked header past the builder.
+> - **From Java,** changing a collection a built object hands out: a config's or a call's headers, a call's extra body
+>   fields, the retry statuses, a `QuestionSet`'s ids or images, a Choice's options, a Score's levels, a result's
+>   answers. It throws `UnsupportedOperationException`. 0.3.0 allowed it once a collection had two entries, which could
+>   change a live client's retry rule or slip an unchecked header past the builder.
 > - **When the questions are validated:** a number, boolean or null criteria value (a Choice option may still be
->   null), and an image reference inside another (`img1` inside `img10`), which the API can't tell apart.
+>   null), an image reference inside another (`img1` inside `img10`), which the API can't tell apart, and an image
+>   over the API's 16 MiB limit.
 > - **When the client or call options are built:** `Content-Length`, `Content-Type`, `Transfer-Encoding` or
 >   `Upgrade` in `headers`, an API key with a space or a character beyond ASCII, and a header name that isn't an HTTP
 >   token or a value beyond ASCII. Most of these already failed every call, or were sent differently by each engine.
-> - **When an answer is read:** an option the question never declared, through `enumChoice<E>` with a broader enum,
->   and a Score level key written as `01` or `+1`.
+> - **When a response is parsed:** a Score level key written as `01` or `+1`, which fails the call with a
+>   `JevResponseValidationException`.
+> - **When an answer is read:** an option the question never declared, through `enumChoice<E>` with a broader enum.
 
 0.4.0 comes from a review of 0.3.0, which found 72 issues across the library, the documentation site and its
 examples, the tests, the build and CI; all of them are fixed. Most change nothing you call; the ones below change what

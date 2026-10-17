@@ -57,7 +57,8 @@ kotlin {
 
 # --8<-- [start:run-example]
 export TYPESAFE_API_KEY=ts-...
-make example      # runs src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt
+make example         # runs src/jvmTest/kotlin/com/pambrose/jev4k/examples/TriageExample.kt
+make hotdog-example  # runs HotDogExample.kt, next to it, which sends two photos (experimental images)
 # --8<-- [end:run-example]
 
 // --8<-- [start:exclude-cio]

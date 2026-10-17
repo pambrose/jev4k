@@ -117,9 +117,10 @@ public final class JavaInterop {
     }
     // --8<-- [end:images]
 
-    // Java-visible members the site's examples don't show: one backoff limit at a time, and an image's bytes.
+    // Java-visible members the site's examples don't show: the other millisecond setters, and an image's bytes.
     static long javaOnlyMembers(JevImage image) {
-        RetryPolicy policy = new RetryPolicy().withInitialBackoffMillis(250).withMaxBackoffMillis(2_000);
+        RetryPolicy policy =
+            new RetryPolicy().withInitialBackoffMillis(250).withMaxBackoffMillis(2_000).withMaxRetryAfterMillis(30_000);
         return policy.getMaxRetries() + image.copyBytes().length;
     }
 

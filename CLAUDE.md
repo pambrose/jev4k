@@ -39,16 +39,16 @@ without them keep compiling.
   functions return `QuestionRef<A>` handles, and `include(query)` merges a `JevQuery` into the same request.
 - **Typed layer** (`JevQuery.kt`). `object X : JevQuery() { val urgent by noul("...") }`. A `PropertyDelegateProvider`
   takes the id from the property name (or `id =`) and registers questions in declaration order. `JevQuery.questions` is
-  built on first read, so an invalid definition fails on first use, and rebuilt if more questions have registered
-  since (a read from an `init` block or a base class would otherwise freeze a partial set). Definition errors are
-  carried on the `QuestionRef` rather than thrown, so they can't escape an `object`'s initializer: duplicate options,
-  and a `JevValidationException` thrown while a question is built (`entry()` or `jsonOf()` in a builder lambda, or
-  an enum option's `JevOption.entry`), which `QuestionProvider.provideDelegate` catches, registering a
-  `failedQuestionRef` stand-in whose question isn't checked. An inline `questions {}` builder throws at once, since it
-  runs in the caller's own code. An argument such as `noul(entry(...))` is evaluated before the builder runs, so that
-  one still throws from the initializer. `choice<E>()` builds options from an enum. The
-  option key is the constant's name unless `JevOption.optionKey` overrides it, and `JevOption.entry` becomes the
-  description.
+  built on first read, so an invalid definition fails on first use, and rebuilt if more questions have registered since
+  (a read from an `init` block or a base class would otherwise freeze a partial set). A read before any question has
+  registered, such as from the `init` of a base class with no questions of its own, fails with `JevValidationException`,
+  since a set needs one. Definition errors are carried on the `QuestionRef` rather than thrown, so they can't escape an
+  `object`'s initializer: duplicate options, and a `JevValidationException` thrown while a question is built (`entry()`
+  or `jsonOf()` in a builder lambda, or an enum option's `JevOption.entry`), which `QuestionProvider.provideDelegate`
+  catches, registering a `failedQuestionRef` stand-in whose question isn't checked. An inline `questions {}` builder
+  throws at once, since it runs in the caller's own code. An argument such as `noul(entry(...))` is evaluated before the
+  builder runs, so that one still throws from the initializer. `choice<E>()` builds options from an enum. The option key
+  is the constant's name unless `JevOption.optionKey` overrides it, and `JevOption.entry` becomes the description.
 - **Answers** (`JevResult.kt`, `Answers.kt`). `result[handle]` decodes through the handle's `decode` function, and also
   checks that the handle belongs to the request. By-id accessors (`noul`/`choice`/`score`/`enumChoice`) check that the
   question type matches. Raw answers are stored string-keyed. Enum choices are mapped when read, and an unknown option
@@ -64,10 +64,12 @@ without them keep compiling.
       image overloads); `JsonPrimitive` is sealed, so images can't be discovered in a JSON tree and must be attached:
       `QueryBuilder.attach`, `JevQuery.attach`, or `ask(query, state, images...)`. `QuestionSet.images` holds each
       image once (`distinctImages`): a second instance with the same reference and bytes is dropped.
-    - The factories never throw for bad content: the problem rides on the image and `imageDefinitionProblems` reports
-      it when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws,
-      and `read` stops at the API's 16 MiB (`MAX_IMAGE_BYTES`), so a device or a pipe can't fill memory. A reference
-      inside another attached one is refused there too, since the API's plain-text matching can't tell them apart.
+    - The factories never throw for bad content: the problem rides on the image and `imageDefinitionProblems` reports it
+      when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws.
+      Every factory flags an image over the API's 16 MiB (`MAX_IMAGE_BYTES`), and each `read` overload skips a regular
+      file over it (`tooLarge`) and reads anything else through `readCapped`, so a device or a pipe can't fill memory. A
+      reference inside another attached one is refused there too, since the API's plain-text matching can't tell them
+      apart.
     - A generated reference's first UUID group is a per-process tag (`PROCESS_TAG`), so `GENERATED_REFERENCE` matches
       only this process's references: text from elsewhere that looks like one is sent as text, not refused.
     - `evaluate` runs `imageRequestProblems` (references matched as the API does, as plain text in string values, never
@@ -134,10 +136,11 @@ without them keep compiling.
       through `DefaultRequest`, which only sets the URL. `DefaultRequest` merges its headers with a request's own
       (KTOR-6946), so a header named in both would be sent twice.
     - `JevCallOptions` (`JevCallOptions.kt`) overrides a call's timeout and retry policy through Ktor's per-request
-      `timeout {}` and `retry {}`, which `HttpClientFactory`'s `limitTo` and `follow` fill in exactly as the plugins
-      are configured; a per-request retry config replaces the plugin's except for its `delay`. `extraBody` is merged
-      into the encoded request inside the call, so an unencodable state still becomes `JevValidationException`, and
-      can't set `state`, `model` or `questions`. `JevApi.withOptions` wraps an API so `query`/`ask` use the options.
+      `timeout {}` and `retry {}`, which `HttpClientFactory`'s `limitTo` and `follow` fill in exactly as the plugins are
+      configured; a per-request retry config replaces the plugin's except for its `delay`. `extraBody` is merged into
+      the encoded request inside the call, so an unencodable state still becomes `JevValidationException`, and can't set
+      `state`, `model` or `questions`. `JevCallOptionsBuilder.build()` runs the same `headerProblem` checks as the
+      config's (tokens, ASCII, `FRAMING_HEADERS`). `JevApi.withOptions` wraps an API so `query`/`ask` use the options.
     - `JevClient.execute` classifies a failed call in one place. `SerializationException` becomes
       `JevValidationException`. A `CancellationException` is caught next (first among the rest, because on
       Kotlin/Native it is also an `IllegalStateException`): a cancelled caller gets its own cancellation through
@@ -158,20 +161,22 @@ without them keep compiling.
   `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal hooks (`env`, `retryDelay`, `random`, `now`) make tests
   deterministic; `env` defaults to `platformGetenv`.
     - `build()` checks what Ktor would otherwise reject on every request, with an exception that isn't a `JevException`
-      and whose message quotes the value. `baseUrl` is parsed once: http(s), a host, no userinfo, query or fragment, and
-      plain `http://` only for a loopback host unless `allowInsecureHttp`. The API key must be visible ASCII
-      (`'!'..'~'`). A header name must be an RFC 9110 token, its value ASCII without control characters but a tab, and
-      `FRAMING_HEADERS` (`Content-Length`, `Content-Type`, `Transfer-Encoding`, `Upgrade`) are refused in any case:
-      Ktor's `UnsafeHeadersList` holds only the last two, and a configured length or type contradicts the body's or is
-      dropped. `setting()` drops a leading U+FEFF before trimming. Every problem goes into one `JevConfigException`,
-      whose messages never quote the key, a header value, or a URL that could hold credentials.
+      and whose message quotes the value, and what engines would send differently. `baseUrl` is parsed once: http(s), a
+      host, no userinfo, query or fragment, and plain `http://` only for a loopback host unless `allowInsecureHttp`. The
+      API key must be visible ASCII (`'!'..'~'`). A header name must be an RFC 9110 token, its value ASCII without
+      control characters but a tab, and `FRAMING_HEADERS` (`Content-Length`, `Content-Type`, `Transfer-Encoding`,
+      `Upgrade`) are refused in any case: Ktor's `UnsafeHeadersList` holds only the last two, and a configured length or
+      type contradicts the body's or is dropped. `setting()` drops a leading U+FEFF before trimming. A missing API key
+      throws on its own, first; every other problem goes into one `JevConfigException`, whose messages never quote the
+      key, a header value, or a URL that could hold credentials.
     - The retry policy is stored with a copy of its status set, since the caller's set may be mutable and the client
-      re-reads it on every response. Every collection a built object holds (a config's and a call's headers, the status
-      sets, a `QuestionSet`'s ids, questions and images, a Choice's options, a Score's levels, a result's answers) is a
-      snapshot from `internal/ReadOnly.kt`, which copies through `buildMap`/`buildSet`/`buildList`. `toMap()` and
-      friends give Java a `LinkedHashMap` or `ArrayList` it can change once there are two entries; the built ones reject
-      every change, through their views and iterators too. `ReadOnlyJvmTest` casts each one as Java would. A blank
-      per-call model falls back to the default, as a blank `defaultModel` does.
+      re-reads it on every response. Every collection a built object holds (a config's and a call's headers, a call's
+      `extraBody`, the status sets, a `QuestionSet`'s ids, questions and images, a Choice's options, a Score's levels, a
+      result's answers) is a snapshot from `internal/ReadOnly.kt`, which copies through
+      `buildMap`/`buildSet`/`buildList`. `toMap()` and friends give Java a `LinkedHashMap` or `ArrayList` it can change
+      once there are two entries; the built ones reject every change, through their views and iterators too.
+      `ReadOnlyJvmTest` casts each one as Java would. A blank per-call model falls back to the default, as a blank
+      `defaultModel` does.
 - **Platforms** (`internal/Platform.kt` and its actuals). Everything that differs between platforms is an `internal`
   expect: `platformGetenv`, `defaultEngine` (the engine factory; `JevConfig.toString` reports its class name),
   `isPlatformConnectionError`, and `Enum<*>.enumTypeName()` (which keeps `enumChoiceRef`'s `@PublishedApi` signature
@@ -260,10 +265,11 @@ without them keep compiling.
       containing one, so the rest of that sentence disappears.
 - **The Java example** lives in `src/jvmTest/java/website/JavaInterop.java` and is compiled by `compileJvmTestJava`, so
   it doubles as a guard on part of the Java-visible surface: the overloads it calls (the two-argument `qb.noul(...)`,
-  `BlockingJev.query` without a model, `jevResult` and `jevApiException`), `BlockingJev`'s `@Throws` (it catches
-  `InterruptedException`) and the millisecond members. The ABI dump in `api/` guards the rest. It doesn't guard
-  `@JvmSynthetic`, because kotlinc marks reified inline functions synthetic on its own. `zensical.toml`'s snippet
-  `base_path` includes that folder.
+  `BlockingJev.query` with and without a model, `jevResult` and `jevApiException`), `BlockingJev`'s `@Throws` (it
+  catches `InterruptedException`), every millisecond member, the image calls (`JevImage.of`, the vararg `attach`, a Box
+  on `jev-preview`, `copyBytes`), and that `ask(query, state, null)` stays unambiguous next to `askWithImages`. The ABI
+  dump in `api/` guards the rest. It doesn't guard `@JvmSynthetic`, because kotlinc marks reified inline functions
+  synthetic on its own. `zensical.toml`'s snippet `base_path` includes that folder.
 - **Example files are compiled and linted like any test source, but they aren't tests.** Keep Kotest and MockK out of
   them.
     - Top-level names share one package, so they must be unique across files, and only one `main` is allowed.
@@ -313,6 +319,8 @@ without them keep compiling.
     - `publishToMavenCentral(automaticRelease = true)`.
     - Signing happens only when `signingInMemoryKey` is supplied. The Makefile's `GPG_ENV` supplies it from
       `GPG_SIGNING_KEY_ID`, and the passphrase from the macOS keychain (`gradle-signing-password` / `gpg-signing`).
+      Every process the build starts inherits `GPG_ENV`, so step 5 of the release checklist stops the Gradle and Kotlin
+      daemons after a publish.
     - Maven Central credentials come from `~/.gradle/gradle.properties`.
     - `make publish-snapshot` and `make publish-maven-central` upload to Maven Central, so never run them unasked.
       `make publish-local` and `make publish-local-snapshot` publish to `~/.m2`.
@@ -545,13 +553,14 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
       one as a generic "some other error".
 - HTTP is tested with Ktor's `MockEngine` through `testJev(...)` in `TestSupport.kt`. It injects the engine and records
   retry delays instead of sleeping, and `NoJitter` makes backoff predictable. A client on a real engine gets the same
-  settings from `testDefaults(delays)`; `triageJev()`, `PAYOUT_TICKET` and `liveOptIn()` are shared there too.
-  `parts()` splits a MockEngine request's multipart body, for `ImageRequestTest`; `PNG_BYTES`/`JPEG_BYTES` are
-  signature-only fixtures, and `Gestures` is a `JevQuery` that attaches example pictures.
-  `SilentServer` (JVM) is a local socket that never responds, for testing real-CIO timeouts. `RawServer` (JVM)
-  answers every request with fixed bytes, for responses no real server sends, optionally over TLS with a
-  self-signed certificate made by the JDK's `keytool`. `PlatformEngineTest` drives each platform's real default
-  engine against a dead loopback port.
+  settings from `testDefaults(delays)`; `triageJev()`, `PAYOUT_TICKET` and `liveOptIn()` are shared there too. `parts()`
+  splits a MockEngine request's multipart body, for `ImageRequestTest`; `PNG_BYTES`/`JPEG_BYTES` are signature-only
+  fixtures, and `Gestures` is a `JevQuery` that attaches example pictures. `foreignReference(generated)` rewrites a
+  generated reference with another process's tag, for the `PROCESS_TAG` tests, and `nestedArrays`, `nestedObjects` and
+  `nestedArrayText` build depth-limit fixtures. `SilentServer` (JVM) is a local socket that never responds, for testing
+  real-CIO timeouts. `RawServer` (JVM) answers every request with fixed bytes, for responses no real server sends,
+  optionally over TLS with a self-signed certificate made by the JDK's `keytool`. `PlatformEngineTest` drives each
+  platform's real default engine against a dead loopback port.
 - MockK is used where a dependency is mocked: `ConsumerTest` mocks `JevApi` to show how application code is tested
   without HTTP.
 - `LiveSmokeTest` (JVM) makes real API calls and runs only when `JEV4K_LIVE=1` (`make live-tests` sets it), so

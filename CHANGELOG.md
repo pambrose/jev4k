@@ -9,9 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [0.4.0] - 2026-10-16
 
 The fixes from a review of 0.3.0, plus three small additions. The binary API only grows, but some things 0.3.0 accepted
-are now refused: Java code changing a collection a built object hands out; a reference inside another image's reference;
-a number, boolean or null criteria value; a framing header, or a non-ASCII key or header, in the configuration; an
-undeclared option read through a broader enum; and a Score level key written as `01` or `+1`.
+are now refused: Java code changing a collection a built object hands out; a reference inside another image's reference,
+or an image over 16 MiB; a number, boolean or null criteria value; a framing header, a key with a space or beyond ASCII,
+or a header beyond ASCII, in the configuration; an undeclared option read through a broader enum; and a Score level key
+written as `01` or `+1`.
 
 ### Added
 
@@ -60,7 +61,7 @@ undeclared option read through a broader enum; and a Score level key written as 
       so a large file, a device or a pipe can't fill memory.
     - A Box answer whose edges or confidence are out of range, or whose edges are out of order, fails when the Box is
       read (`box(id)`, a handle or `boxes`), not when the response is parsed, so the Noul paired with it can still be
-      read.
+      read. `result.answers` holds such a Box unchecked, and reading `boxes` fails if any Box is bad.
 - `enumChoice<E>(id)` rejects an option the question never declared even when `E`, a broader enum, has a constant for
   it, as its KDoc says.
 - A number, boolean or null criteria value (a Noul definition, a Choice option or a Score level) fails validation
@@ -97,11 +98,18 @@ undeclared option read through a broader enum; and a Score level key written as 
       the call only when the weakest part it uses is confident.
     - The parameterized query gives each policy ids of its own and asks every policy in one request, dropping a
       Score nobody read.
-    - The taxonomy walk and the two-stage skill search respect the 255-option limit, and the skill search and the
-      clause loop handle empty input.
+    - The taxonomy walk, the two-stage skill search and the email-address example respect the 255-option limit, the
+      skill search and the clause loop handle empty input, and the email example returns the chosen span verbatim,
+      as its page says.
     - The tool-trace example's page says to run the deterministic checks in code first; the Score example's
       confidence reads 0.55, as TypeSafe's formula gives; and `raw` is called the parsed response body.
 - Documentation:
+    - The Confidence, Choice and Concepts pages, the README and the `ChoiceAnswer` KDoc said a Choice's `confidence`
+      tells a close runner-up from a scattered tail. TypeSafe's formula uses only the top probability, so they now say
+      so, and point to `ranked()` for a near-tie.
+    - The Java Box example asks on `jev-preview`, since Box needs Jev 1.14, and reads the box only when its Noul says
+      the target is there. The Box KDocs say Box needs Jev 1.14, and the `Answer` and `Question` KDocs tell Java to end
+      a pattern `switch` with a `default` branch.
     - The Images page lists the API's pixel limits, including the 78,400-pixel minimum that makes a 256 × 256 image
       too small, and its limits on all of a request's images and on the expanded request.
     - The jev-1.13 limits table replaces a weakness TypeSafe no longer lists with Choice option order, and the Choice
@@ -128,6 +136,8 @@ undeclared option read through a broader enum; and a Score level key written as 
 - The docs workflow, which builds the deployed site, installs a pinned uv instead of the newest release.
 - `make api-docs` refuses a page path in the downloaded index that could write outside its cache, such as one with a
   `..` component.
+- The release checklist stops the Gradle and Kotlin daemons after a publish, since each inherits the signing key and
+  its passphrase from the environment and keeps them until it stops.
 
 ## [0.3.0] - 2026-10-16
 

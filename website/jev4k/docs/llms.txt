@@ -26,7 +26,7 @@ written inline with string ids or declared once as a typed `JevQuery` object who
 
 - [Choosing a type](https://jev4k.com/questions/): which of Noul, Choice, or Score fits a given judgment
 - [Noul](https://jev4k.com/questions/noul/): yes/no probability, thresholds, bands, and counting in code
-- [Choice](https://jev4k.com/questions/choice/): one option from a set, with a distribution and confidence
+- [Choice](https://jev4k.com/questions/choice/): one option from a set, with a distribution and confidence, the 255-option limit, and checking for jev-1.13's lean toward the first option
 - [Score](https://jev4k.com/questions/score/): a position on ordered levels, normalized scores, and per-level probabilities
 - [Structured criteria](https://jev4k.com/questions/structured/): contrastive rubrics, examples, and JSON field specs
 
@@ -36,16 +36,16 @@ written inline with string ids or declared once as a typed `JevQuery` object who
 - [Typed queries](https://jev4k.com/queries/typed/): reusable `JevQuery` objects whose property names become question ids
 - [Enum choices](https://jev4k.com/queries/enums/): `choice<E>()` answering with an enum constant, via the `JevOption` interface
 - [State](https://jev4k.com/queries/state/): passing a String, a JsonElement, or any `@Serializable` value
-- [Images & Box](https://jev4k.com/queries/images/): experimental: PNG and JPEG images in the state, instructions and criteria, attached with `attach()` and sent as multipart, and Box questions that locate a target
+- [Images & Box](https://jev4k.com/queries/images/): experimental: PNG and JPEG images in the state, instructions and criteria, attached with `attach()` and sent as multipart, what jev4k checks before sending, upload timeouts, cache keys, and Box questions (Jev 1.14) that locate a target
 
 ## Reading results
 
-- [Reading results](https://jev4k.com/results/reading/): typed handles, by-id accessors, and listing answers by kind
+- [Reading results](https://jev4k.com/results/reading/): typed handles, by-id accessors, listing answers by kind, call details, and when a missing answer or an out-of-range Box fails
 - [Confidence and thresholds](https://jev4k.com/results/confidence/): what confidence means, and how to gate on it
 
 ## Client
 
-- [Configuration](https://jev4k.com/client/configuration/): API key, base URL, model, timeout, supplying a custom Ktor engine, and running against a local Ollaya server (which runs Laya, a different model)
+- [Configuration](https://jev4k.com/client/configuration/): API key, base URL, model, timeout, supplying a custom Ktor engine, the settings the builder refuses, security defaults, and running against a local Ollaya server (which runs Laya, a different model)
 - [Making calls](https://jev4k.com/client/calls/): the suspend API, the blocking mirror, per-call options (timeout, retry, headers, extra body fields), and concurrency
 - [Retries and errors](https://jev4k.com/client/errors/): the exception hierarchy, retry rules, and server retry hints
 
@@ -65,7 +65,7 @@ written inline with string ids or declared once as a typed `JevQuery` object who
 
 - [KDocs index](https://jev4k.com/api/): a guided map of the API reference, grouped into entry points, question building, and reading answers
 - [API reference (KDocs)](https://jev4k.com/kdocs/): the full Dokka-generated API, every public type and function
-- [Writing good questions](https://jev4k.com/guides/best-practices/): the habits that make Jev's answers accurate and useful
+- [Writing good questions](https://jev4k.com/guides/best-practices/): the habits that make Jev's answers accurate and useful, with jev-1.13's known limits
 - [Development](https://jev4k.com/guides/development/): building, testing, and how the documentation examples are compiled
 - [Source repository](https://github.com/pambrose/jev4k): Apache 2.0, with the README covering the same API in one page
 
