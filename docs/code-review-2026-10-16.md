@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 35 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 46 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -67,12 +67,12 @@ Tests
 Build, CI and release
 
 - [x] [#30](#issue-30) The publish targets put the GPG secret key and passphrase in the environment of forked processes
-- [ ] [#31](#issue-31) The tvOS and watchOS simulator tests can drop out of CI silently
-- [ ] [#32](#issue-32) Codecov's coverage gate gates nothing, yet the release checklist counts it under `ci-ok`
-- [ ] [#33](#issue-33) CI runs an unpinned `binfmt` image with `--privileged`
-- [ ] [#34](#issue-34) iosX64 is published, but its tests run nowhere
-- [ ] [#35](#issue-35) `refresh.sh` writes wherever the downloaded `llms.txt` says, `../` included
-- [ ] [#36](#issue-36) The docs deploy installs whatever uv release is newest
+- [x] [#31](#issue-31) The tvOS and watchOS simulator tests can drop out of CI silently
+- [x] [#32](#issue-32) Codecov's coverage gate gates nothing, yet the release checklist counts it under `ci-ok`
+- [x] [#33](#issue-33) CI runs an unpinned `binfmt` image with `--privileged`
+- [x] [#34](#issue-34) iosX64 is published, but its tests run nowhere
+- [x] [#35](#issue-35) `refresh.sh` writes wherever the downloaded `llms.txt` says, `../` included
+- [x] [#36](#issue-36) The docs deploy installs whatever uv release is newest
 
 Documentation and examples
 
@@ -110,11 +110,11 @@ Documentation and examples
 - [ ] [#65](#issue-65) Three places describe one real-CIO test; `ClientJvmTest` has five
 - [ ] [#66](#issue-66) The README and the development page leave out the hot dog example
 - [ ] [#67](#issue-67) Box and `attach` are missing from several summaries and tables
-- [ ] [#68](#issue-68) Several places say Linux skips the Apple targets; it compiles all of their klibs
-- [ ] [#69](#issue-69) The `docs.yml` jobs have no `timeout-minutes`
-- [ ] [#70](#issue-70) CI's failure artifacts leave out the Docker Linux test logs
-- [ ] [#71](#issue-71) The Codecov upload also sends `build/kover/coverage.txt`
-- [ ] [#72](#issue-72) The release checklist's "Current state" table always lags a release behind
+- [x] [#68](#issue-68) Several places say Linux skips the Apple targets; it compiles all of their klibs
+- [x] [#69](#issue-69) The `docs.yml` jobs have no `timeout-minutes`
+- [x] [#70](#issue-70) CI's failure artifacts leave out the Docker Linux test logs
+- [x] [#71](#issue-71) The Codecov upload also sends `build/kover/coverage.txt`
+- [x] [#72](#issue-72) The release checklist's "Current state" table always lags a release behind
 
 ## Plan: order and grouping of fixes
 
@@ -197,19 +197,19 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
   - [x] [#29](#issue-29) Make a call, not just `build()`, through the CIO-less class loader
   - [x] [#46](#issue-46) Share one `timeoutConfig` between the two call sites, and test it
   - [x] [#47](#issue-47) Rename the images-header test, or add the call-header case it names
-- [ ] **7. Build, CI and release hygiene.** `ci.yml` (#31, #33, #70, #71), `docs.yml` (#36, #69), Codecov and the
+- [x] **7. Build, CI and release hygiene.** `ci.yml` (#31, #33, #70, #71), `docs.yml` (#36, #69), Codecov and the
   checklist (#32, #72), `refresh.sh` (#35) and wording (#34, #68). Run `make zizmor` after the workflow edits.
-  - [ ] [#31](#issue-31) Fail CI's Apple row when a simulator platform has no device
-  - [ ] [#33](#issue-33) Pin the `binfmt` image and `LINUX_TEST_IMAGE` by digest
-  - [ ] [#70](#issue-70) Upload `build/docker-linux-tests/` with the failure artifacts
-  - [ ] [#71](#issue-71) Set `disable_search: true` on the Codecov upload
-  - [ ] [#36](#issue-36) Pin uv's version on the setup-uv steps
-  - [ ] [#69](#issue-69) Give the `docs` and `deploy` jobs a `timeout-minutes`
-  - [ ] [#32](#issue-32) Require `codecov/project`, or mark it informational and say the Kover floors are the gate
-  - [ ] [#72](#issue-72) Add a checklist step that records the release just made in "Current state"
-  - [ ] [#35](#issue-35) Refuse a page path in `llms.txt` that could leave `jev-docs/pages`
-  - [ ] [#34](#issue-34) Test iosX64 on an Intel runner, or say it's compiled but never tested
-  - [ ] [#68](#issue-68) Say Linux compiles the Apple klibs, and recheck the reasons given for the macOS guards
+  - [x] [#31](#issue-31) Fail CI's Apple row when a simulator platform has no device
+  - [x] [#33](#issue-33) Pin the `binfmt` image and `LINUX_TEST_IMAGE` by digest
+  - [x] [#70](#issue-70) Upload `build/docker-linux-tests/` with the failure artifacts
+  - [x] [#71](#issue-71) Set `disable_search: true` on the Codecov upload
+  - [x] [#36](#issue-36) Pin uv's version on the setup-uv steps
+  - [x] [#69](#issue-69) Give the `docs` and `deploy` jobs a `timeout-minutes`
+  - [x] [#32](#issue-32) Require `codecov/project`, or mark it informational and say the Kover floors are the gate
+  - [x] [#72](#issue-72) Add a checklist step that records the release just made in "Current state"
+  - [x] [#35](#issue-35) Refuse a page path in `llms.txt` that could leave `jev-docs/pages`
+  - [x] [#34](#issue-34) Test iosX64 on an Intel runner, or say it's compiled but never tested
+  - [x] [#68](#issue-68) Say Linux compiles the Apple klibs, and recheck the reasons given for the macOS guards
 - [ ] **8. Examples.** Code under `src/jvmTest/kotlin/website` and the pages that include it.
   - [ ] [#38](#issue-38) Place each image once in the two image examples
   - [ ] [#40](#issue-40) Use a stated year in the due-date example

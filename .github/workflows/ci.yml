@@ -59,10 +59,13 @@ jobs:
 
             # linuxArm64 is published but has no Gradle test task, and this runner can't execute its binary. QEMU lets
             # Docker run it, so the same make target that tests it locally tests it here; linuxX64's tests already ran
-            # in the step above.
+            # in the step above. The binfmt image runs privileged, so it is pinned by digest, like the actions; neither
+            # zizmor nor Dependabot tracks it, so bump it by hand (Docker Hub's tonistiigi/binfmt tags list digests).
             -   uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
                 with:
                     platforms: arm64
+                    # qemu-v10.2.3
+                    image: tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
             -   name: Run the linuxArm64 tests in Docker
                 run: make docker-linux-tests LINUX_TEST_TARGETS=linuxArm64:arm64
 
@@ -71,9 +74,12 @@ jobs:
                 uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
                 with:
                     name: test-reports
+                    # build/docker-linux-tests holds each container run's full log, the only place its TeamCity
+                    # messages appear.
                     path: |
                         build/reports/tests/
                         build/test-results/
+                        build/docker-linux-tests/
                     retention-days: 7
 
             -   name: Upload coverage to Codecov
@@ -82,6 +88,8 @@ jobs:
                 with:
                     token: ${{ secrets.CODECOV_TOKEN }}
                     files: build/reports/kover/report.xml
+                    # Without it the uploader also finds koverLog's build/kover/coverage.txt.
+                    disable_search: true
                     flags: unittests
                     name: jev4k
                     fail_ci_if_error: false
@@ -134,9 +142,10 @@ jobs:
                         build/test-results/
                     retention-days: 7
 
-    # The native tests Linux can't run: the macOS and the iOS, tvOS and watchOS simulator tests on macOS (Gradle skips
-    # iosX64Test on the arm64 runner, and a tvOS or watchOS test when the runner has no simulator device for it), and
-    # the mingwX64 tests on Windows.
+    # The native tests Linux can't run: the macOS and the iOS, tvOS and watchOS simulator tests on macOS, and the
+    # mingwX64 tests on Windows. iosX64Test needs an Intel Mac, so it runs nowhere. A simulator platform without a
+    # device would have its tests skipped, so the Apple row passes jev4k.requireSimulators, which fails the build
+    # instead.
     native:
         name: Native tests on ${{ matrix.name }}
         runs-on: ${{ matrix.os }}
@@ -148,10 +157,12 @@ jobs:
                 include:
                     -   name: apple
                         os: macos-latest
-                        tasks: macosArm64Test iosSimulatorArm64Test tvosSimulatorArm64Test watchosSimulatorArm64Test
+                        args: >-
+                            -Pjev4k.requireSimulators=true
+                            macosArm64Test iosSimulatorArm64Test tvosSimulatorArm64Test watchosSimulatorArm64Test
                     -   name: windows
                         os: windows-latest
-                        tasks: mingwX64Test
+                        args: mingwX64Test
         defaults:
             run:
                 shell: bash
@@ -180,7 +191,7 @@ jobs:
                     key: konan-${{ runner.os }}-${{ steps.kotlin.outputs.version }}
 
             -   name: Run the native tests
-                run: ./gradlew ${{ matrix.tasks }}
+                run: ./gradlew ${{ matrix.args }}
 
             -   name: Upload test reports on failure
                 if: failure()

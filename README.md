@@ -689,8 +689,8 @@ These points are condensed from TypeSafe's documentation. A compressed copy of t
 ## Development
 
 Building jev4k needs JDK 25; Gradle's toolchain support downloads it if it's missing. The JVM jar itself targets
-Java 17, so applications on 17 or newer can embed it. Only a Mac, with Xcode, builds every target; Linux and Windows
-build everything but the Apple ones, which is why releases are published from a Mac.
+Java 17, so applications on 17 or newer can embed it. Only a Mac, with Xcode, links and tests every target; Linux
+compiles the Apple targets too, but can't link or run them, which is why releases are published from a Mac.
 
 Copy [`.env.example`](.env.example) to `.env` (gitignored) and set `TYPESAFE_API_KEY` in it. Gradle loads that
 file into the environment of the test and example tasks, so `make example` and `make live-tests` work without

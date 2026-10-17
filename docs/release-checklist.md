@@ -8,7 +8,7 @@ Dokka includes only `docs/packages.md` (the `includes.from("docs/packages.md")` 
 
 ## Current state
 
-Verified 2026-09-20; the release rows on 2026-10-12.
+Verified 2026-09-20; the release rows on 2026-10-16.
 
 | Item                                  | State                                                       |
 |---------------------------------------|-------------------------------------------------------------|
@@ -21,12 +21,12 @@ Verified 2026-09-20; the release rows on 2026-10-12.
 | Published site                        | ✅ live at <https://jev4k.com/>, KDocs included             |
 | Site deploys                          | on a published GitHub release, or a manual `docs.yml` run   |
 | Required checks on `master`           | `ci-ok`, `docs` and GitGuardian                             |
-| Git tags                              | ✅ `0.1.0` through `0.2.2` (`c88646e`), all released        |
+| Git tags                              | ✅ `0.1.0` through `0.3.0` (`2f90671`), all released        |
 | `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                  |
-| `com.pambrose.jev4k:jev4k` on Central | ✅ 0.2.2 published, signed, and resolvable                  |
-| `gradle.properties` version           | `0.3.0`, the next release number                            |
+| `com.pambrose.jev4k:jev4k` on Central | ✅ 0.3.0 published, signed, and resolvable                  |
+| `gradle.properties` version           | `0.3.0`, released; moves to `0.3.1` with the release PR     |
 | `gradle.properties` group             | `com.pambrose.jev4k` from 0.2.0 (0.1.0 was `com.pambrose`)  |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.3.0 dated 2026-10-16                                      |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.3.0 dated 2026-10-16; `[Unreleased]` collects 0.3.1       |
 
 ## Before the first release, once
 
@@ -94,8 +94,9 @@ Verified 2026-09-20; the release rows on 2026-10-12.
 ### 4. Commit and open the release PR
 
 - [ ] Commit the version bump and the release documents together, on a branch.
-- [ ] Open a PR and wait for the required checks: `ci-ok` (build, tests, Kover, Codecov, the JDK matrix and the
-  native jobs), `docs` (Zensical and Dokka) and GitGuardian. The `zizmor` check isn't required, but should pass
+- [ ] Open a PR and wait for the required checks: `ci-ok` (build, tests, the Kover floors, the JDK matrix and the
+  native jobs), `docs` (Zensical and Dokka) and GitGuardian. Codecov's statuses only report; the Kover floors are the
+  coverage gate. The `zizmor` check isn't required, but should pass
   too. Don't publish from a tree that CI hasn't accepted.
 - [ ] Don't merge yet. Merging puts the new version's install lines in the README on GitHub, so the artifacts
   go to Central first (step 5).
@@ -175,3 +176,6 @@ Then:
 - [ ] A dependency on the new coordinates resolves from a scratch project.
 - [ ] Bump `gradle.properties` to the next planned version when development resumes, together with the
   `composite-dependency` snippet in `src/jvmTest/kotlin/website/GettingStarted.txt`, which names that version.
+- [ ] Record the release in "Current state" above: the tag row with the release's commit, the Central row, the
+  `gradle.properties` and release-document rows, and the date on its first line. Each release PR updated the rows
+  for the release before it, so the table always lagged one behind.

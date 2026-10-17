@@ -283,11 +283,12 @@ without them keep compiling.
     - Source sets follow the default hierarchy: `commonMain`, `jvmMain`, `nativeMain` (split into `appleMain`,
       `linuxMain` and `mingwMain` for the engines), and `webMain` for js + wasmJs. Tests are `commonTest` and
       `jvmTest`.
-    - Only a Mac compiles every target. Linux and Windows skip the Apple ones quietly
-      (`kotlin.native.ignoreDisabledTargets=true`), and a Mac cross-compiles and links Linux and Windows binaries but
-      can't run them itself; `make docker-linux-tests` runs the Linux ones in containers. Test binaries no host tool
-      can run here (iosX64's off an Intel Mac, mingwX64's off Windows) have their test KSP, compile and link tasks
-      disabled, so `check` doesn't build them; the Linux ones are kept for `docker-linux-tests`.
+    - Only a Mac links and runs every target. Linux compiles every Apple klib too (CI's build job does), but can't link
+      or run an Apple binary, and `kotlin.native.ignoreDisabledTargets=true` keeps a host quiet about what it can't
+      build (Windows wasn't checked). A Mac cross-compiles and links Linux and Windows binaries but can't run them
+      itself; `make docker-linux-tests` runs the Linux ones in containers. Test binaries no host tool can run here
+      (iosX64's off an Intel Mac, mingwX64's off Windows) have their test KSP, compile and link tasks disabled, so
+      `check` doesn't build them; the Linux ones are kept for `docker-linux-tests`.
     - The User-Agent version is compiled in: a configuration-cache-safe `generateBuildInfo` task writes
       `internal const val JEV4K_VERSION` into `build/generated/buildinfo`, a `commonMain` source directory.
     - The JS toolchains' lockfiles live in `kotlin-js-store/` and are committed (`.gitignore` negates the global
@@ -300,8 +301,8 @@ without them keep compiling.
       part of the klib's unique name, which `api/jev4k.klib.api` records.
     - `com.pambrose.jev4k:jev4k` is the root module, which Gradle resolves per target; the JVM jar is `jev4k-jvm`,
       which is what Maven consumers name. Every other target gets its own artifact (`jev4k-js`, `jev4k-macosarm64`, …).
-    - The Apple artifacts can only be built on macOS, so releases are published from a Mac; the publishing Makefile
-      targets refuse to run elsewhere.
+    - Releases are published from a Mac, the only host that links and tests the Apple targets as well as compiling
+      them; the publishing Makefile targets refuse to run elsewhere.
     - The Dokka HTML is packaged as the javadoc jar, alongside a sources jar and POM metadata (Apache 2.0,
       github.com/pambrose/jev4k).
     - `publishToMavenCentral(automaticRelease = true)`.
@@ -413,28 +414,37 @@ without them keep compiling.
   six POM dependencies (in `jev4k-jvm`'s POM: five compile, CIO at runtime), no logging binding, and how to drop
   CIO when supplying another engine.
 - KGP's ABI validation (`abiValidation()`) guards the public API. `api/jev4k.api` is the JVM surface, Java callers
-  included, and `api/jev4k.klib.api` covers the other targets. `checkKotlinAbi` runs under `check`;
-  `make abi-update` (`updateKotlinAbi`) rewrites the dumps after an intended change and must run on a Mac, since a
-  host that can't compile a target keeps that target's old declarations. The JVM dump matched 0.1.0's through the
-  multiplatform move; 0.2.0's API changes since (`ModelList`, `JevCallOptions`, the millisecond members and the rest,
-  listed in the changelog) were recorded with `make abi-update`, as were 0.3.0's image and Box additions, which only
-  add to the dumps.
+  included, and `api/jev4k.klib.api` covers the other targets. `checkKotlinAbi` runs under `check`; `make abi-update`
+  (`updateKotlinAbi`) rewrites the dumps after an intended change and must run on a Mac: a host that can't compile a
+  target keeps that target's old declarations, and while Linux compiles the Apple klibs, only a Mac has been checked to
+  write a complete klib dump. The JVM dump matched 0.1.0's through the multiplatform move; 0.2.0's API changes since
+  (`ModelList`, `JevCallOptions`, the millisecond members and the rest, listed in the changelog) were recorded with
+  `make abi-update`, as were 0.3.0's image and Box additions, which only add to the dumps.
 - Coverage uses Kover (`org.jetbrains.kotlinx.kover`).
-    - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs
-      `build koverVerify koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js,
-      wasmJs and linuxX64 tests), then `make docker-linux-tests` with QEMU (`docker/setup-qemu-action`), which is
-      the only place CI runs linuxArm64's tests, then uploads `build/reports/kover/report.xml` to Codecov with the
-      `unittests` flag. A JVM test failure leaves no report to upload, since Kover's reports depend on `jvmTest`. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
-      a drop of more than 1% and reports patch coverage without gating on it.
+    - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs `build koverVerify
+      koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js, wasmJs and linuxX64 tests),
+      then `make docker-linux-tests` with QEMU (`docker/setup-qemu-action`), which is the only place CI runs
+      linuxArm64's tests, then uploads `build/reports/kover/report.xml` to Codecov with the `unittests` flag. A JVM test
+      failure leaves no report to upload, since Kover's reports depend on `jvmTest`. The upload needs a `CODECOV_TOKEN`
+      repository secret, and sets `disable_search` so koverLog's `build/kover/coverage.txt` isn't sent too. Codecov only
+      reports: both its statuses are `informational` (the project one flags a drop of more than 1%), branch protection
+      doesn't require them, and the upload can't fail CI, so the Kover floors are the coverage gate. A failed build
+      uploads `build/docker-linux-tests/` with the test reports, since a container run's TeamCity messages are only
+      there. The `binfmt` image QEMU installs runs privileged, so it is pinned by digest, as `LINUX_TEST_IMAGE` is in
+      the Makefile; neither zizmor nor Dependabot tracks image digests, so both are bumped by hand.
     - A `native` matrix job runs the tests Linux can't: the macOS and iOS, tvOS and watchOS simulator tests on
-      macos-latest (a tvOS or watchOS task is skipped when the runner has no device for it) and `mingwX64Test` on
-      windows-latest. A final `ci-ok` job passes only when every other job succeeded; branch protection on `master`
-      requires it, the `docs` check and GitGuardian, so the JDK matrix and the native jobs gate a merge.
-    - Every job that compiles native code caches `~/.konan`, keyed on the Kotlin version alone (read from the
-      catalog) with no `restore-keys`, so an old toolchain is never carried forward. `docs.yml` uses no cache at
-      all, neither that one nor setup-gradle's or setup-uv's: it publishes the site, and zizmor's `cache-poisoning`
-      audit accepts caching only when it is off for every run of a publishing workflow. Dokka downloads the
-      Kotlin/Native toolchain itself, and the job still finishes before CI does.
+      macos-latest and `mingwX64Test` on windows-latest. The Apple row passes `-Pjev4k.requireSimulators=true`, which
+      fails the build when a simulator platform has no device, instead of letting its disabled tests report SKIPPED.
+      iosX64 is compiled and published but its tests run nowhere: they need an Intel Mac. A final `ci-ok` job passes
+      only when every other job succeeded; branch protection on `master` requires it, the `docs` check and GitGuardian,
+      so the JDK matrix and the native jobs gate a merge.
+    - Every job that compiles native code caches `~/.konan`, keyed on the Kotlin version alone (read from the catalog)
+      with no `restore-keys`, so an old toolchain is never carried forward. `docs.yml` uses no cache at all, neither
+      that one nor setup-gradle's or setup-uv's: it publishes the site, and zizmor's `cache-poisoning` audit accepts
+      caching only when it is off for every run of a publishing workflow. Dokka downloads the Kotlin/Native toolchain
+      itself, and the job still finishes before CI does. For the same reason setup-uv installs a pinned uv (`version`),
+      bumped by hand after the 7-day wait Dependabot gives actions, when `make upgrade-site` moves the lockfile; the
+      JDK's patch floats, for its security fixes. Both jobs set `timeout-minutes`.
     - `.github/workflows/zizmor.yml` audits the workflows and `dependabot.yml` with zizmor, as `make zizmor` does
       locally (with the brew-installed binary, and the gh CLI's token for the online audits). On a pull request
       its `zizmor` job fails on any finding and annotates the diff; pushes to `master`, a weekly run and manual runs

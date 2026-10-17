@@ -93,8 +93,10 @@ endif
 # its own architecture; Docker Desktop on Apple Silicon runs linux/amd64 under emulation. A Kotest binary exits 0
 # even when a test fails, because Gradle reads the verdict from its TeamCity messages, so this does the same: no
 # Kotest summary (a crash, or a binary with no specs) or any failed test fails the target. The image is Ubuntu plus
-# ca-certificates, which the Curl engine needs for TLS; `JEV4K_LIVE=1 make docker-linux-tests` runs the probes.
-LINUX_TEST_IMAGE := buildpack-deps:noble-curl
+# ca-certificates, which the Curl engine needs for TLS; `JEV4K_LIVE=1 make docker-linux-tests` runs the probes. It is
+# pinned by its multi-arch digest, so every run tests against the same image; Dependabot doesn't track it, so bump it
+# by hand (Docker Hub's library/buildpack-deps tags list the digest).
+LINUX_TEST_IMAGE := buildpack-deps:noble-curl@sha256:48a80dfb7e2f2d1e93dbfff934fd2f187f306eef36cb5359ef8bba0ffe9205b3
 LINUX_TEST_LOGS := build/docker-linux-tests
 
 # The targets to run, as target:architecture pairs. CI's build job has already run linuxX64's tests, so it passes
@@ -210,7 +212,7 @@ zizmor: _require-zizmor  ## Audit the GitHub Actions workflows and dependabot.ym
 abi-check:  ## Check the public API against the dumps in api/ (also part of `make tests`)
 	$(GRADLE) checkKotlinAbi
 
-# Only a Mac compiles every target, so only a Mac writes a complete klib dump.
+# Linux compiles the Apple klibs too, but only a Mac has been checked to write a complete klib dump.
 abi-update: _require-macos  ## Rewrite the API dumps in api/ after an intended API change
 	$(GRADLE) updateKotlinAbi
 
@@ -269,7 +271,7 @@ publish-local: _require-version  ## Publish artifacts to the local Maven reposit
 publish-local-snapshot: _require-version  ## Publish a -SNAPSHOT artifact to the local Maven repository
 	$(GRADLE) -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenLocal
 
-# A release carries every target, and the Apple ones can only be built on a Mac.
+# A release carries every target, and only a Mac links and tests the Apple ones, so releases are published from one.
 publish-snapshot: _require-version _require-macos _check-gpg-env  ## Publish a -SNAPSHOT artifact to Maven Central
 	$(GPG_ENV) $(GRADLE) -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenCentral
 
@@ -299,7 +301,7 @@ _check-gpg-env:
 	fi
 
 _require-macos:
-	@[ "$(HOST_OS)" = Darwin ] || { echo "ERROR: this target needs macOS, the only host that builds every target" >&2; exit 1; }
+	@[ "$(HOST_OS)" = Darwin ] || { echo "ERROR: this target needs macOS, the only host that links and tests every target" >&2; exit 1; }
 
 _require-docker:
 	@$(DOCKER_UP) || { echo "ERROR: this target needs a running Docker daemon" >&2; exit 1; }

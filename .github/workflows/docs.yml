@@ -38,6 +38,8 @@ jobs:
     # workflow, not just the deploying ones, so the build-only runs go without too. They are still shorter than CI.
     docs:
         runs-on: ubuntu-latest
+        # A release build takes about 3.5 minutes; a hung Dokka run would otherwise hold the required check for hours.
+        timeout-minutes: 30
         permissions:
             contents: read
             pages: read
@@ -57,12 +59,17 @@ jobs:
             # warnings, such as a link to a missing anchor, into failures.
             -   uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
                 with:
+                    # Pinned, so a new uv release can't reach the job that builds the deployed site the day it ships;
+                    # unpinned, setup-uv installs the newest. Bump it by hand, after the same 7-day wait Dependabot
+                    # gives the actions, when `make upgrade-site` moves the lockfile.
+                    version: "0.12.24"
                     # Its "auto" default skips the cache on a release but not on a manual run, which deploys too.
                     enable-cache: false
             -   run: uv run --locked zensical build --clean --strict
                 working-directory: website/jev4k
 
-            # Build KDoc API documentation (the toolchain in the catalog is JDK 25).
+            # Build KDoc API documentation (the toolchain in the catalog is JDK 25). The major version is pinned and the
+            # patch isn't, so the job gets the JDK's security fixes; Temurin publishes those builds.
             -   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
                 with:
                     distribution: temurin
@@ -92,6 +99,7 @@ jobs:
         if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         needs: docs
         runs-on: ubuntu-latest
+        timeout-minutes: 10
         permissions:
             pages: write
             id-token: write

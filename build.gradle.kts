@@ -104,7 +104,7 @@ tasks.named { it == "prepareKotlinIdeaImport" }.configureEach {
 // The simulator platforms (ios, tvos, watchos) with at least one available device, from the same simctl listing KGP
 // reads to pick a device. It is a ValueSource so the configuration cache keeps only this set: the raw listing's sizes
 // and timestamps change whenever a simulator runs, which would discard the cache after every simulator test. Only a
-// Mac with Xcode has simctl; anywhere else, or if the listing fails, the set is empty.
+// Mac with Xcode has simctl; anywhere else, or if the listing fails (which is logged), the set is empty.
 abstract class SimulatorPlatformsWithDevices : ValueSource<Set<String>, ValueSourceParameters.None> {
     @get:Inject
     abstract val execOperations: ExecOperations
@@ -124,19 +124,34 @@ abstract class SimulatorPlatformsWithDevices : ValueSource<Set<String>, ValueSou
             devices.filterValues { it.isNotEmpty() }.keys
                 .map { it.substringAfterLast('.').substringBefore('-').lowercase() }
                 .toSortedSet()
+        }.onFailure {
+            Logging.getLogger(SimulatorPlatformsWithDevices::class.java)
+                .warn("Couldn't list the simulator devices, so the tvOS and watchOS simulator tests are skipped: $it")
         }.getOrDefault(emptySet())
     }
 }
 
 val simulatorPlatformsWithDevices: Set<String> = providers.of(SimulatorPlatformsWithDevices::class) {}.get()
 
+// A platform without a device has its simulator tests disabled, and a disabled task named on the command line only
+// reports SKIPPED. CI's Apple row passes -Pjev4k.requireSimulators=true, so a runner image that loses a simulator
+// runtime fails the build instead of shipping that platform untested.
+if (providers.gradleProperty("jev4k.requireSimulators").orNull.toBoolean()) {
+    val missing = listOf("ios", "tvos", "watchos") - simulatorPlatformsWithDevices
+    if (missing.isNotEmpty()) {
+        throw GradleException(
+            "jev4k.requireSimulators is set, but no simulator device is available for ${missing.joinToString()}",
+        )
+    }
+}
+
 kotlin {
     jvmToolchain(jvmToolchainVersion)
 
     // KGP's ABI validation: `check` runs checkKotlinAbi against the dumps committed under api/, and
     // `make abi-update` (updateKotlinAbi) rewrites them after an intended API change. jev4k.api is the JVM surface,
-    // Java callers included; jev4k.klib.api covers the other targets. Regenerate the dumps on macOS, the only host
-    // that compiles every target.
+    // Java callers included; jev4k.klib.api covers the other targets. Regenerate the dumps on macOS: Linux compiles
+    // the Apple klibs too, but only a Mac has been checked to write a complete klib dump.
     abiValidation()
 
     jvm {

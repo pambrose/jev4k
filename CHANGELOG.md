@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- CI's Apple row passes `-Pjev4k.requireSimulators=true`, so a runner without a simulator device for iOS, tvOS or
+  watchOS fails the build instead of skipping that platform's tests. A failure to list the devices is logged.
+- Codecov's project status is informational, as its patch status already was: branch protection never required
+  either, so the Kover floors are the coverage gate, and the release checklist says so.
+- The docs workflow's jobs have `timeout-minutes`; a failed CI build uploads the Docker Linux test logs; and the
+  Codecov upload no longer also sends `build/kover/coverage.txt`.
+- The development page and CLAUDE.md say that iosX64 is compiled and published but its tests run nowhere, and that
+  Linux compiles the Apple klibs, though only a Mac links and runs them. The release checklist's state table records
+  0.3.0, and step 7 now keeps it current.
+
 ### Fixed
 
 - Images (experimental):
@@ -60,6 +72,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
     - kotlinx-io's `Path` links to its API docs, and `QuestionSet.toJson`'s link to `images` resolves.
     - A release's source links open its tag instead of `master`, so a published javadoc jar keeps pointing at the
       lines it documents.
+
+### Security
+
+- The `binfmt` image CI runs privileged for QEMU, and the image `make docker-linux-tests` runs the Linux tests in,
+  are pinned by digest, as the actions are.
+- The docs workflow, which builds the deployed site, installs a pinned uv instead of the newest release.
+- `make api-docs` refuses a page path in the downloaded index that could write outside its cache, such as one with a
+  `..` component.
 
 ## [0.3.0] - 2026-10-16
 

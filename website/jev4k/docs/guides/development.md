@@ -20,14 +20,17 @@ To run a single test class:
 
 - **Checks.** `make tests` runs kotlinter (ktlint), detekt, the ABI check, and the Kotest suite on every platform
   the host can run: the JVM, Node.js (js and wasmJs), and the native targets (macOS and the iOS simulator on a
-  Mac, linuxX64 on Linux). CI runs the rest, on a macOS and a Windows runner. The tvOS and watchOS simulator tests
-  run on a Mac that has a simulator device for them (Xcode installs neither by default) and are skipped otherwise.
+  Mac, linuxX64 on Linux). CI runs the rest, on a macOS and a Windows runner, except iosX64's tests, which need an
+  Intel Mac and run nowhere: iosX64 is compiled and published, but never tested. The tvOS and watchOS simulator tests
+  run on a Mac that has a simulator device for them (Xcode installs neither by default) and are skipped otherwise; CI
+  fails instead of skipping them.
 - **Linux tests anywhere.** `make docker-linux-tests` links the linuxX64 and linuxArm64 test binaries and runs each
   in a Docker container of its own architecture, so a Mac can run the Linux tests too. It is the only place
   linuxArm64's tests run. `JEV4K_LIVE=1 make docker-linux-tests` adds the live probes.
 - **API dumps.** `api/jev4k.api` (the JVM surface, Java callers included) and `api/jev4k.klib.api` (every other
   target) record the public API, and `make tests` fails if it changes. After an intended change, run
-  `make abi-update` on a Mac, the only host that compiles every target, and commit the new dumps.
+  `make abi-update` on a Mac, where every target's klib is known to compile into a complete dump, and commit the new
+  dumps.
 - **JDK coverage.** The JVM tests run on the build toolchain by default. CI also runs them on JDK 17, 21 and 25,
   since jev4k ships Java 17 bytecode and compiling against the 17 API doesn't prove it behaves there.
   `make test-jdk JDK=17` reproduces one of those rows, and `make all-tests` runs every test target there is.
