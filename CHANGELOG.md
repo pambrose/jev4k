@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
+## [Unreleased]
+
+### Fixed
+
+- Images (experimental):
+    - Text that only looks like a generated image reference, such as a state stored by an earlier run, no longer fails
+      a request. A generated reference's first UUID group is now a tag shared by every image one process generates,
+      and only references with this process's tag must be attached.
+    - A generated reference whose bytes are in a hand-built `extraBody["assets"]` can be sent.
+    - A reference that occurs inside another attached one (`img1` inside `img10`) is refused before sending. The API
+      matches references as plain text, so it couldn't tell them apart, and the request would fail or show the wrong
+      image.
+    - Two instances with the same reference and the same bytes, such as a picture read again by a helper, are sent
+      once instead of being refused as two different images.
+    - `JevImage.fromBase64` ignores whitespace, so text from the `base64` tool, with its line breaks, decodes.
+    - An image over the API's 16 MiB limit carries that problem, and `JevImage.read` reads no further than the limit,
+      so a large file, a device or a pipe can't fill memory.
+
 ## [0.3.0] - 2026-10-16
 
 Experimental support for TypeSafe's images and Box questions, behind an opt-in, and the request nesting rule from
@@ -379,6 +397,7 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
+[Unreleased]: https://github.com/pambrose/jev4k/compare/0.3.0...HEAD
 [0.3.0]: https://github.com/pambrose/jev4k/compare/0.2.2...0.3.0
 [0.2.2]: https://github.com/pambrose/jev4k/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/pambrose/jev4k/compare/0.2.0...0.2.1

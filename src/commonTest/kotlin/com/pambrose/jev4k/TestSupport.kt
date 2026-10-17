@@ -195,6 +195,13 @@ internal val PNG_BYTES =
 internal val JPEG_BYTES =
     byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0x00, 0x10, 0x4A, 0x46)
 
+/**
+ * A reference this process generated, rewritten as another process would have generated it: every character of the
+ * tag after `jev4k-image-` is changed.
+ */
+internal fun foreignReference(generated: String): String =
+    generated.replaceRange(12, 20, generated.substring(12, 20).map { if (it == '0') '1' else '0' }.joinToString(""))
+
 /** A Choice defined by example pictures, TypeSafe's "define options by example" pattern. */
 object Gestures : JevQuery() {
     val thumb = attach(JevImage.of(PNG_BYTES, "<thumb>"))

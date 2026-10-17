@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 5 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 12 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -21,13 +21,13 @@ below in the same change.
 
 Images and Box
 
-- [ ] [#2](#issue-2) Text shaped like a generated image reference fails a request locally, even one with no images
-- [ ] [#3](#issue-3) The "attached but unreferenced" check is a substring test, so a reference inside another passes
-- [ ] [#4](#issue-4) A generated reference whose bytes go in a hand-built `extraBody["assets"]` can't be sent at all
-- [ ] [#5](#issue-5) Two images with the same chosen reference and identical bytes are rejected as "two different
+- [x] [#2](#issue-2) Text shaped like a generated image reference fails a request locally, even one with no images
+- [x] [#3](#issue-3) The "attached but unreferenced" check is a substring test, so a reference inside another passes
+- [x] [#4](#issue-4) A generated reference whose bytes go in a hand-built `extraBody["assets"]` can't be sent at all
+- [x] [#5](#issue-5) Two images with the same chosen reference and identical bytes are rejected as "two different
   images"
-- [ ] [#6](#issue-6) `JevImage.fromBase64` rejects any whitespace, even a trailing newline
-- [ ] [#7](#issue-7) `JevImage.read` reads a file of any size into memory
+- [x] [#6](#issue-6) `JevImage.fromBase64` rejects any whitespace, even a trailing newline
+- [x] [#7](#issue-7) `JevImage.read` reads a file of any size into memory
 - [ ] [#8](#issue-8) One out-of-range Box answer fails the whole response, paired Noul included
 - [ ] [#9](#issue-9) The docs say a cache key must cover each image's bytes, but `JevImage` exposes none
 - [ ] [#10](#issue-10) The per-attempt timeout covers an image upload, and the Images page doesn't say so
@@ -59,7 +59,7 @@ Java interop and the KDocs
 Tests
 
 - [ ] [#25](#issue-25) The per-call retry tests vary only `maxRetries`
-- [ ] [#26](#issue-26) No test checks the images header for a hand-built `extraBody["assets"]` without a Box
+- [x] [#26](#issue-26) No test checks the images header for a hand-built `extraBody["assets"]` without a Box
 - [ ] [#27](#issue-27) The depth tests use only nested arrays and strings without brackets or escapes
 - [ ] [#28](#issue-28) `CropExampleTest` can't catch swapped axes or a wrong origin
 - [ ] [#29](#issue-29) `CioExclusionTest` pins only `JevConfigBuilder.build()`, not a client making a call
@@ -149,16 +149,16 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
 
 ### 0.3.1
 
-- [ ] **2. Image checks in `ImageRequest.kt` and `JevImage.kt`.** #2 and #4 change the same lines of
+- [x] **2. Image checks in `ImageRequest.kt` and `JevImage.kt`.** #2 and #4 change the same lines of
   `imageRequestProblems`, so do them together. #3 and #5 add to `imageDefinitionProblems`. #6 and #7 are the
   factories. Add #26's header assertion while the image tests are open.
-  - [ ] [#2](#issue-2) Recognize only references this process generated, and warn about chosen ones on the Images page
-  - [ ] [#4](#issue-4) Count a hand-built `extraBody["assets"]`'s keys as attached
-  - [ ] [#3](#issue-3) Reject an attached reference that occurs inside another
-  - [ ] [#5](#issue-5) Merge images that share a reference and have equal bytes
-  - [ ] [#6](#issue-6) Strip ASCII whitespace in `fromBase64`
-  - [ ] [#7](#issue-7) Read at most 16 MiB + 1 bytes in `JevImage.read`, and carry the size as the image's problem
-  - [ ] [#26](#issue-26) Assert the images header for a hand-built `extraBody["assets"]` without a Box
+  - [x] [#2](#issue-2) Recognize only references this process generated, and warn about chosen ones on the Images page
+  - [x] [#4](#issue-4) Count a hand-built `extraBody["assets"]`'s keys as attached
+  - [x] [#3](#issue-3) Reject an attached reference that occurs inside another
+  - [x] [#5](#issue-5) Merge images that share a reference and have equal bytes
+  - [x] [#6](#issue-6) Strip ASCII whitespace in `fromBase64`
+  - [x] [#7](#issue-7) Read at most 16 MiB + 1 bytes in `JevImage.read`, and carry the size as the image's problem
+  - [x] [#26](#issue-26) Assert the images header for a hand-built `extraBody["assets"]` without a Box
 - [ ] **3. Results and the DSL.** `ResponseMapper.kt` (#8, #57), `JevResult.kt` (#11), `Questions.kt` (#13), the
   `JevQuery` KDoc (#14) and `Testing.kt` (#56). Each gets a common test. #11, #13 and #57 refuse what 0.3.0
   accepted, so name them in the 0.3.1 notes.

@@ -105,11 +105,12 @@ class QuestionSet internal constructor(
     private val questions: List<QuestionRef<*>> = questions.toList()
 
     /**
-     * The images attached to these questions, each instance once, in the order they were attached. They are sent with
+     * The images attached to these questions, each once, in the order they were attached. An instance attached twice,
+     * or a second instance with the same reference and the same bytes, is kept only the first time. They are sent with
      * every request that asks this set.
      */
     @ExperimentalJevImages
-    val images: List<JevImage> = images.distinct()
+    val images: List<JevImage> = images.distinctImages()
 
     init {
         val problems = validate(this.questions, this.images)

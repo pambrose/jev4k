@@ -66,9 +66,14 @@ A `@Serializable` field of type `JevImage` is written as its reference:
 
 ## Your own references
 
-A generated reference is `jev4k-image-` followed by a UUID. You can choose your own, for prompts kept in
-configuration, but the API matches references as plain text anywhere inside a string: a reference `cat` also matches
-inside `category`. Use delimiters that can't occur in your text.
+A generated reference is `jev4k-image-` followed by a UUID, whose first group is the same for every image one process
+generates. jev4k refuses to send a request that places one of its own references without attaching the image, while text
+that only looks like one, such as a state stored by an earlier run, is sent as text.
+
+You can choose your own references, for prompts kept in configuration, but the API matches references as plain text
+anywhere inside a string: a reference `cat` also matches inside `category`. Use delimiters that can't occur in your
+text, and don't let one reference occur inside another (`img1` inside `img10`), which jev4k refuses. Next to untrusted
+text, use generated references: a user who types a chosen reference into their text gets the image put there.
 
 ```kotlin
 --8<-- "ImageExamples.kt:references"
@@ -95,16 +100,17 @@ To crop to the box, multiply each edge by the image's size in pixels:
 
 Before sending, jev4k reports every problem at once, as a `JevValidationException`:
 
-- an image that is empty, isn't valid base64, or is neither a PNG nor a JPEG
-- a reference that is blank or longer than 1,024 bytes, two images sharing a reference, or references over 64 KiB in
-  total
-- an attached image that no string references, or a generated reference placed without its image attached
+- an image that is empty, larger than 16 MiB, isn't valid base64, or is neither a PNG nor a JPEG
+- a reference that is blank or longer than 1,024 bytes, two images with different bytes sharing a reference, a
+  reference inside another, or references over 64 KiB in total
+- an attached image that no string references, or a generated reference placed without its image attached (or its
+  bytes in `extraBody["assets"]`)
 - a Box question with no image, attached or in `extraBody["assets"]`, or `extraBody["assets"]` on a request that
   attaches images
 
-The API enforces its own size and pixel limits (each side 256 to 1568 pixels, 16 MiB per file, 32 MiB per request),
-answering with a 400 or a 413. Resize and rotate images before sending them; the API strips EXIF data and doesn't apply
-its orientation.
+`JevImage.read` doesn't read a file past 16 MiB. The API enforces its own pixel and request limits (each side 256 to
+1568 pixels, 32 MiB per request), answering with a 400 or a 413. Resize and rotate images before sending them; the API
+strips EXIF data and doesn't apply its orientation.
 
 A request with images is sent as `multipart/form-data`, the JSON body first and then one part per image, as the
 official SDKs send it. Images count as input tokens at the text price.

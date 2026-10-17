@@ -62,12 +62,16 @@ without them keep compiling.
     - A `JevImage` stands in content as its `reference` (`toString()`, `jsonOf`, `JevImageSerializer`, the builders'
       image overloads); `JsonPrimitive` is sealed, so images can't be discovered in a JSON tree and must be attached:
       `QueryBuilder.attach`, `JevQuery.attach`, or `ask(query, state, images...)`. `QuestionSet.images` holds each
-      instance once.
+      image once (`distinctImages`): a second instance with the same reference and bytes is dropped.
     - The factories never throw for bad content: the problem rides on the image and `imageDefinitionProblems` reports
-      it when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws.
-    - `evaluate` runs `imageRequestProblems` (references matched as the API does, as plain text in string values,
-      never keys), adds `TypeSafe-Danger-Zone-Images: true` as a built-in header (for a hand-built
-      `extraBody["assets"]` too), and sends a request with images as
+      it when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws,
+      and `read` stops at the API's 16 MiB (`MAX_IMAGE_BYTES`), so a device or a pipe can't fill memory. A reference
+      inside another attached one is refused there too, since the API's plain-text matching can't tell them apart.
+    - A generated reference's first UUID group is a per-process tag (`PROCESS_TAG`), so `GENERATED_REFERENCE` matches
+      only this process's references: text from elsewhere that looks like one is sent as text, not refused.
+    - `evaluate` runs `imageRequestProblems` (references matched as the API does, as plain text in string values, never
+      keys; a hand-built `extraBody["assets"]`'s keys count as attached), adds `TypeSafe-Danger-Zone-Images: true` as a
+      built-in header (for a hand-built `extraBody["assets"]` too), and sends a request with images as
       `MultiPartFormDataContent`: a `request` part with the JSON and a generated `assets` map, then `image-0`, … with a
       filename (Ktor quotes each part name). Without images the request is the same `TextContent` as before.
     - `BoxQuestion`/`BoxAnswer` are the fourth question and answer types; the mapper requires edges in 0..1 with
