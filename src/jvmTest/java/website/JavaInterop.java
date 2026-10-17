@@ -105,13 +105,15 @@ public final class JavaInterop {
     // --8<-- [start:images]
     static BoundingBox findMug(BlockingJev blocking, byte[] photoBytes) throws InterruptedException {
         JevImage photo = JevImage.of(photoBytes);
-        JevResult r = blocking.query("The photo: " + photo.getReference(), qb -> {
+        // Box needs Jev 1.14, so name a model that has it.
+        JevResult r = blocking.query("The photo: " + photo.getReference(), "jev-preview", qb -> {
             qb.attach(photo);
             qb.noul("mug_visible", "Is there a coffee mug in the photo?");
             qb.box("mug", "the coffee mug in the photo");
             return Unit.INSTANCE;
         });
-        return r.box("mug").getBox();
+        // A Box always returns a box, so read it only when the Noul says the mug is there.
+        return r.noul("mug_visible").isTrue(0.5) ? r.box("mug").getBox() : null;
     }
     // --8<-- [end:images]
 

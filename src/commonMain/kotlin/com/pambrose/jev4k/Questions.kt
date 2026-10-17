@@ -29,8 +29,9 @@ const val MAX_SCORE_LEVELS = 10
  * (usually a string). Named after the TypeSafe JS SDK's `Question` / `NoulQuestion` / `ChoiceQuestion`
  * / `ScoreQuestion`. A [QuestionRef] pairs one with an id.
  *
- * As with [Answer], new subtypes may be added in a minor release when TypeSafe adds a kind of question, so a `when`
- * over [Question] that must keep compiling across upgrades should end in an `else` branch.
+ * As with [Answer], new subtypes may be added in a minor release when TypeSafe adds a kind of question, so a Kotlin
+ * `when` or a Java pattern `switch` over [Question] that must keep compiling across upgrades should end in an `else`
+ * (in Java, `default`) branch.
  */
 sealed interface Question {
     val instructions: JsonElement
@@ -61,6 +62,7 @@ data class ScoreQuestion(
 /**
  * Find one thing in an image: the answer is a [BoxAnswer], the box around it. Box takes no criteria, and needs an
  * image attached to the request. It always returns a box, even for a target that isn't there, so ask a Noul too.
+ * Box needs Jev 1.14 (`jev-preview` or `jev-1.14.0`).
  */
 @ExperimentalJevImages
 data class BoxQuestion(

@@ -183,7 +183,7 @@ class QueryBuilder internal constructor() {
         levels: ScoreBuilder.() -> Unit,
     ): QuestionRef<ScoreAnswer> = add(scoreRef(id, instructions, levels))
 
-    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. */
+    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. Needs Jev 1.14. */
     @ExperimentalJevImages
     fun box(
         id: String,

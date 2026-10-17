@@ -9,8 +9,8 @@ import kotlin.math.roundToInt
  * A typed answer to one question.
  *
  * New subtypes may be added in a minor release when TypeSafe adds a kind of question, and [UnknownAnswer] holds any
- * answer of a type this version doesn't know. A `when` over [Answer] that must keep compiling across upgrades should
- * therefore end in an `else` branch.
+ * answer of a type this version doesn't know. A Kotlin `when` or a Java pattern `switch` over [Answer] that must keep
+ * compiling across upgrades should therefore end in an `else` (in Java, `default`) branch.
  */
 sealed interface Answer
 
@@ -43,8 +43,10 @@ enum class NoulBand { NO, UNCERTAIN, YES }
 
 /**
  * The answer to a Choice: the highest-probability option, the probability of every option, and a
- * [confidence][ChoiceAnswer.confidence] from 0 to 1 derived from how concentrated
- * [probabilities][ChoiceAnswer.probabilities] is. Confidence is not the winner's probability.
+ * [confidence][ChoiceAnswer.confidence] from 0 to 1. Confidence is not the winner's probability, but it depends on
+ * nothing else: it rescales that probability so that an even split across the options is 0 and certainty is 1. A
+ * close runner-up therefore shows only in [probabilities][ChoiceAnswer.probabilities]; compare the top two entries of
+ * [ranked][ChoiceAnswer.ranked] to catch a near-tie.
  */
 data class ChoiceAnswer<K : Any>(
     val choice: K,

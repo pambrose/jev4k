@@ -127,7 +127,7 @@ abstract class JevQuery {
         levels: ScoreBuilder.() -> Unit,
     ): QuestionProvider<ScoreAnswer> = QuestionProvider(id) { scoreRef(it, instructions, levels) }
 
-    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. */
+    /** A Box: where, in an image attached to the request, the thing [instructions] describes is. Needs Jev 1.14. */
     @ExperimentalJevImages
     protected fun box(
         instructions: String,

@@ -162,8 +162,9 @@ answer type.
 
 - A Noul value near 0.5 means yes and no are about equally likely. It doesn't mean "medium"; use a Score to measure
   degree.
-- `confidence` (Choice and Score only) summarizes how concentrated the probabilities are. It isn't the winning option's
-  probability. Nouls have no confidence.
+- `confidence` runs from 0 to 1. A Choice's rescales the winning option's probability so that an even split is 0; a
+  close runner-up shows only in `probabilities`. A Score's also counts how far the probability sits from the most likely
+  level. A Box's says how sure the model is of the edges, and can be null. Nouls have no confidence.
 - Every answer is limited to the options or levels you defined.
 
 The question definitions themselves are `NoulQuestion`, `ChoiceQuestion` and `ScoreQuestion`, subtypes of `Question`,

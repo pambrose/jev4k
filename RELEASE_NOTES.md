@@ -7,9 +7,10 @@ Narrative notes for each jev4k release, newest first. The itemized list of chang
 
 > [!WARNING]
 > **One source break: `Question` and `Answer` have new subtypes.** `BoxQuestion` and `BoxAnswer` join them, so a
-> `when` over either that lists every subtype and has no `else` branch no longer compiles. Add an `else` branch, or a
-> branch for the new type, which needs the `@ExperimentalJevImages` opt-in. Nothing else breaks: other code compiles
-> unchanged, and the binary API only grows.
+> Kotlin `when` or a Java pattern `switch` over either that lists every subtype, with no `else` or `default` branch,
+> no longer compiles. In Kotlin, add an `else` branch, or a branch for the new type, which needs the
+> `@ExperimentalJevImages` opt-in. In Java, add a `default ->` branch, or a `case` for the new type, which Java can
+> name without any opt-in. Nothing else breaks: other code compiles unchanged, and the binary API only grows.
 
 jev4k now sends images. TypeSafe's image support and its Box question type are experimental: TypeSafe calls them
 "Dreamer-ready", meaning the request format, the answers and the limits can change between its releases. jev4k puts

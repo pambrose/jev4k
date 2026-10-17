@@ -89,8 +89,9 @@ without them keep compiling.
       body's text as received, the status and the headers. `send` builds the `ResponseInfo`, and `JevResult` keeps
       it for failures at read time.
     - A value jev4k sends (the state, each question entry, each `extraBody` field) may nest `MAX_SEND_DEPTH` (64,
-      `internal/JsonDepth.kt`) levels, or it fails with `JevValidationException`. That is the API's request rule: it
-      checks the state and each instructions or criteria value on its own, counting the outermost object or array as
+      `internal/JsonDepth.kt`) levels. A deeper state or entry fails with `JevValidationException`, and a deeper
+      `extraBody` field fails `JevCallOptionsBuilder.build()` with `JevConfigException`. That is the API's request rule:
+      it checks the state and each instructions or criteria value on its own, counting the outermost object or array as
       level 1 (a criteria map isn't a level), and answers a deeper one with a 400. A probe on 2026-10-15 pinned it.
     - JSON received may nest `MAX_JSON_DEPTH` (128) levels, refused before kotlinx.serialization recurses into it:
       a response body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's

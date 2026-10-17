@@ -9,8 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [0.3.0] - 2026-10-16
 
 Experimental support for TypeSafe's images and Box questions, behind an opt-in, and the request nesting rule from
-TypeSafe's October 2026 API. The new `Question` and `Answer` subtypes break an exhaustive `when` without an `else`
-branch; anything else that compiled against 0.2.2 compiles unchanged, and the binary API only grows.
+TypeSafe's October 2026 API. The new `Question` and `Answer` subtypes break an exhaustive Kotlin `when` without an
+`else` branch and an exhaustive Java pattern `switch` without a `default`; anything else that compiled against 0.2.2
+compiles unchanged, and the binary API only grows.
 
 ### Added
 
@@ -38,8 +39,9 @@ branch; anything else that compiled against 0.2.2 compiles unchanged, and the bi
 ### Changed
 
 - The default `User-Agent` is `jev4k/0.3.0`.
-- `Question` and `Answer` gain the subtypes `BoxQuestion` and `BoxAnswer`, so an exhaustive `when` over either without
-  an `else` branch no longer compiles. Naming either subtype needs the `@ExperimentalJevImages` opt-in.
+- `Question` and `Answer` gain the subtypes `BoxQuestion` and `BoxAnswer`, so an exhaustive Kotlin `when` over either
+  without an `else` branch, or Java pattern `switch` without a `default`, no longer compiles. Naming either subtype
+  needs the `@ExperimentalJevImages` opt-in in Kotlin; Java can name them without one.
 - `kotlinx-io-core` (0.9.1, already brought by Ktor) is now a declared `api` dependency, since `JevImage.read` takes a
   kotlinx-io `Path`. The JVM POM lists five compile dependencies.
 - The README and the site no longer say that Jev reads only text: they describe images and Box, and list the new
@@ -53,10 +55,10 @@ branch; anything else that compiled against 0.2.2 compiles unchanged, and the bi
 
 - The KDocs show the module overview and the package description from `docs/packages.md`. The file was wired into
   Dokka's HTML publication, which reads it only for a multi-module overview, so earlier releases' KDocs left both out.
-- A state, question entry or `extraBody` field nested more than 64 levels deep fails with `JevValidationException`
-  before anything is sent. The API now rejects deeper JSON in the state and in each instructions or criteria value
-  with a 400, so 65 to 128 levels passed jev4k's old limit of 128 and came back as `JevBadRequestException`.
-  Responses may still nest 128 levels.
+- A state or question entry nested more than 64 levels deep fails with `JevValidationException` before anything is sent,
+  and an `extraBody` field that deep fails when its `JevCallOptions` is built, with `JevConfigException`. The API now
+  rejects deeper JSON in the state and in each instructions or criteria value with a 400, so 65 to 128 levels passed
+  jev4k's old limit of 128 and came back as `JevBadRequestException`. Responses may still nest 128 levels.
 - `make api-docs` works again. It also fetched the TypeSafe migration guide, which the site has removed, and a page
   that fails leaves the cache untouched. The cached pages also drop the footer the site now adds to every page.
 

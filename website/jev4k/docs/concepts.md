@@ -67,9 +67,9 @@ outside it.
 
 - A **Noul** answer is one number, the probability of yes. Near 0.5 means yes and no are about equally
   likely. It does *not* mean "medium"; measure degree with a Score.
-- **Choice** and **Score** answers carry the full distribution plus `confidence`, a 0–1 summary of how
-  concentrated that distribution is. Confidence is *not* the winner's probability: 0.45 against a runner-up
-  of 0.44 is a very different situation from 0.45 with the rest scattered thinly.
+- **Choice** and **Score** answers carry the full distribution plus `confidence`, a 0–1 summary of it: 1 when
+  all of the probability is on one answer, 0 when it's spread evenly. Confidence is *not* the winner's
+  probability, but a Choice's depends on nothing else, so a close runner-up shows only in `probabilities`.
 
 [Confidence & Thresholds](results/confidence.md) shows how to act on these values.
 
