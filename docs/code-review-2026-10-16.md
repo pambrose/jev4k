@@ -8,7 +8,7 @@ closed all 85 of its issues, and none of them has regressed. The method is descr
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 67 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
+**Status: 72 of 72 fixed.** No high, 1 medium, 44 low, 27 nit.
 
 ## Summary
 
@@ -29,14 +29,14 @@ Images and Box
 - [x] [#6](#issue-6) `JevImage.fromBase64` rejects any whitespace, even a trailing newline
 - [x] [#7](#issue-7) `JevImage.read` reads a file of any size into memory
 - [x] [#8](#issue-8) One out-of-range Box answer fails the whole response, paired Noul included
-- [ ] [#9](#issue-9) The docs say a cache key must cover each image's bytes, but `JevImage` exposes none
+- [x] [#9](#issue-9) The docs say a cache key must cover each image's bytes, but `JevImage` exposes none
 - [x] [#10](#issue-10) The per-attempt timeout covers an image upload, and the Images page doesn't say so
 
 DSL and results
 
 - [x] [#11](#issue-11) `enumChoice<E>(id)` maps an undeclared option to an extra constant of `E` instead of rejecting
   it
-- [ ] [#12](#issue-12) `QuestionSet.toJson()`, offered for cache keys, compares equal across Choice option orders
+- [x] [#12](#issue-12) `QuestionSet.toJson()`, offered for cache keys, compares equal across Choice option orders
 - [x] [#13](#issue-13) Criteria values aren't type-checked: a number, boolean or null option or level is sent
 - [x] [#14](#issue-14) Reading `JevQuery.questions` before any question has registered throws
 
@@ -46,8 +46,8 @@ Client and configuration
 - [x] [#16](#issue-16) The 16 MiB response cap doesn't apply to compressed responses on Curl, Darwin and Node
 - [x] [#17](#issue-17) `build()` accepts engine-owned headers; `Transfer-Encoding` or `Upgrade` breaks every call
 - [x] [#18](#issue-18) A non-ASCII character in the API key or a header passes `build()`
-- [ ] [#19](#issue-19) Built "immutable" objects hand Java mutable collections
-- [ ] [#20](#issue-20) Java's `RetryPolicy.with…` chain fails for some valid targets, depending on call order
+- [x] [#19](#issue-19) Built "immutable" objects hand Java mutable collections
+- [x] [#20](#issue-20) Java's `RetryPolicy.with…` chain fails for some valid targets, depending on call order
 
 Java interop and the KDocs
 
@@ -100,7 +100,7 @@ Documentation and examples
 - [x] [#55](#issue-55) `isPlatformConnectionError`'s common KDoc says the JVM needs no rule of its own
 - [x] [#56](#issue-56) `jevApiException` ignores the request-id header; `jevResult(String)` rejects a BOM
 - [x] [#57](#issue-57) Score level keys parse loosely, and an unasked Score's `levelCount` counts keys
-- [ ] [#58](#issue-58) `QuestionSet` has no `toString`
+- [x] [#58](#issue-58) `QuestionSet` has no `toString`
 - [x] [#59](#issue-59) `cropToBox` truncates the edge but rounds the size, dropping a column inside the box
 - [x] [#60](#issue-60) Three places say Java can't call `RetryPolicy`'s constructor, then call `new RetryPolicy()`
 - [x] [#61](#issue-61) README and a KDoc say every config problem is reported at once; a missing key is reported alone
@@ -238,15 +238,15 @@ group 10 is 0.4.0. Each group ends with `make tests`. Groups that touch the site
 
 ### 0.4.0
 
-- [ ] **10. Public API, one `make abi-update`.** Read-only wrappers for the built collections (#19), a bytes copy or
+- [x] **10. Public API, one `make abi-update`.** Read-only wrappers for the built collections (#19), a bytes copy or
   digest on `JevImage` with the reworded cache-key advice (#9 and #12 share the `toJson()` KDoc and one sentence on
   the Images page), `withBackoffMillis` (#20) and `QuestionSet.toString()` (#58). #19 makes mutators that Java can
   call today throw, so it waits for the minor release too. Update `JavaInterop.java` once for all of them.
-  - [ ] [#19](#issue-19) Store the built collections behind read-only wrappers
-  - [ ] [#9](#issue-9) Expose a bytes copy or digest on `JevImage`, or narrow the cache-key advice
-  - [ ] [#12](#issue-12) Say to key a cache on `toJson().toString()`, whose text keeps the option order
-  - [ ] [#20](#issue-20) Add `withBackoffMillis(initial, max)`
-  - [ ] [#58](#issue-58) Add `QuestionSet.toString()`
+  - [x] [#19](#issue-19) Store the built collections behind read-only wrappers
+  - [x] [#9](#issue-9) Expose a bytes copy or digest on `JevImage`, or narrow the cache-key advice
+  - [x] [#12](#issue-12) Say to key a cache on `toJson().toString()`, whose text keeps the option order
+  - [x] [#20](#issue-20) Add `withBackoffMillis(initial, max)`
+  - [x] [#58](#issue-58) Add `QuestionSet.toString()`
 
 ## Issues
 

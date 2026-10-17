@@ -8,7 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `JevImage.copyBytes()` hands out a copy of an image's bytes (experimental), so a cache key can cover them, as
+  `QuestionSet.toJson`'s KDoc and the Images page advise. They now also say to key on `toJson().toString()`, whose
+  text keeps a Choice's option order, which the `JsonObject` itself ignores in `equals`.
+- `RetryPolicy.withBackoffMillis(initialMillis, maxMillis)` changes both backoff limits at once, for Java, where
+  changing them one at a time failed when a new value passed the other's old one.
+- `QuestionSet.toString()` names the set's ids and its number of images, so a mock's "no answer found" message tells
+  one set from another.
+
 ### Changed
+
+- The collections a built object holds are read-only to Java too: a config's and a call's headers and extra body
+  fields, the retry statuses (including `RetryPolicy.NONE`'s), a `QuestionSet`'s ids, iteration and images, a
+  Choice's options, a Score's levels, and a result's answers. Java used to get a mutable `LinkedHashMap`,
+  `LinkedHashSet` or `ArrayList` once there were two entries, so it could add a header the builder never checked or
+  change a live client's retry rule. Every mutator now throws `UnsupportedOperationException`, at any size; Kotlin
+  callers see no change.
 
 - CI's Apple row passes `-Pjev4k.requireSimulators=true`, so a runner without a simulator device for iOS, tvOS or
   watchOS fails the build instead of skipping that platform's tests. A failure to list the devices is logged.

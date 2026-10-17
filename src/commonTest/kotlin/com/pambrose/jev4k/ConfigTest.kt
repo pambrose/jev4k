@@ -315,6 +315,15 @@ class ConfigTest : StringSpec() {
             policy.maxRetryAfter shouldBe 60.seconds
         }
 
+        "withBackoffMillis moves both limits at once, where one at a time fails on the way" {
+            shouldThrow<JevConfigException> { RetryPolicy().withMaxBackoffMillis(250) }
+            val lower = RetryPolicy().withBackoffMillis(100, 250)
+            lower.initialBackoff shouldBe 100.milliseconds
+            lower.maxBackoff shouldBe 250.milliseconds
+            RetryPolicy().withBackoffMillis(10_000, 60_000).maxBackoff shouldBe 60.seconds
+            shouldThrow<JevConfigException> { RetryPolicy().withBackoffMillis(300, 200) }
+        }
+
         "backoff doubles from the initial delay and is capped at the maximum" {
             val policy = RetryPolicy()
             (1..6).map { policy.backoff(it, random = 0.0) } shouldBe

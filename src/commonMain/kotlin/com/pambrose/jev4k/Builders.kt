@@ -1,5 +1,7 @@
 package com.pambrose.jev4k
 
+import com.pambrose.jev4k.internal.readOnlyList
+import com.pambrose.jev4k.internal.readOnlyMap
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
@@ -208,8 +210,8 @@ class QueryBuilder internal constructor() {
         val (copy, decode) =
             when (question) {
                 is NoulQuestion -> question to ::decodeNoul
-                is ChoiceQuestion -> question.copy(options = question.options.toMap()) to ::decodeChoice
-                is ScoreQuestion -> question.copy(levels = question.levels.toList()) to ::decodeScore
+                is ChoiceQuestion -> question.copy(options = question.options.readOnlyMap()) to ::decodeChoice
+                is ScoreQuestion -> question.copy(levels = question.levels.readOnlyList()) to ::decodeScore
                 is BoxQuestion -> question to ::decodeBox
             }
         return add(QuestionRef(id, copy, decode))

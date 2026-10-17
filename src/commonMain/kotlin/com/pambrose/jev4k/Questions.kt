@@ -5,6 +5,8 @@ import com.pambrose.jev4k.internal.sendProblem
 import com.pambrose.jev4k.internal.WireQuestion
 import com.pambrose.jev4k.internal.enumTypeName
 import com.pambrose.jev4k.internal.toWire
+import com.pambrose.jev4k.internal.readOnlyList
+import com.pambrose.jev4k.internal.readOnlyMap
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonArray
@@ -102,7 +104,7 @@ class QuestionSet internal constructor(
     questions: List<QuestionRef<*>>,
     images: List<JevImage> = emptyList(),
 ) : Iterable<QuestionRef<*>> {
-    private val questions: List<QuestionRef<*>> = questions.toList()
+    private val questions: List<QuestionRef<*>> = questions.readOnlyList()
 
     /**
      * The images attached to these questions, each once, in the order they were attached. An instance attached twice,
@@ -110,7 +112,7 @@ class QuestionSet internal constructor(
      * every request that asks this set.
      */
     @ExperimentalJevImages
-    val images: List<JevImage> = images.distinctImages()
+    val images: List<JevImage> = images.distinctImages().readOnlyList()
 
     init {
         val problems = validate(this.questions, this.images)
@@ -122,7 +124,7 @@ class QuestionSet internal constructor(
     private val byId: Map<String, QuestionRef<*>> = this.questions.associateBy { it.id }
 
     // this.questions, the copy: a bare `questions` here would read the constructor parameter, the caller's list.
-    val ids: List<String> = this.questions.map { it.id }
+    val ids: List<String> = this.questions.map { it.id }.readOnlyList()
 
     val size: Int get() = questions.size
 
@@ -133,10 +135,15 @@ class QuestionSet internal constructor(
 
     override fun iterator(): Iterator<QuestionRef<*>> = questions.iterator()
 
+    /** The ids and the number of images, so one set can be told from another in a log or a mock's failure message. */
+    override fun toString(): String = "QuestionSet(ids=$ids, images=${images.size})"
+
     /**
-     * The `questions` object exactly as it is sent, e.g. for logging or cache keys. It holds the references of attached
-     * [images][QuestionSet.images], not their bytes, so a cache key for a set with images must cover each image's
-     * bytes too.
+     * The `questions` object exactly as it is sent, e.g. for logging or cache keys. Key a cache on its text,
+     * `toJson().toString()`: the object compares as a map, which ignores order, while a Choice's option order is part
+     * of the question. It holds the references of attached [images][QuestionSet.images], not their bytes, so a key for
+     * a set with images must cover each image's bytes too ([JevImage.copyBytes]). A generated reference is new for
+     * every instance, so it makes the key unique even for identical bytes.
      */
     fun toJson(): JsonObject =
         JevJson.encodeToJsonElement(MapSerializer(String.serializer(), WireQuestion.serializer()), toWire()).jsonObject
@@ -273,7 +280,7 @@ internal fun choiceRef(
     val builder = ChoiceBuilder().apply(options)
     return QuestionRef(
         id = id,
-        question = ChoiceQuestion(instructions, builder.options.toMap()),
+        question = ChoiceQuestion(instructions, builder.options.readOnlyMap()),
         decode = ::decodeChoice,
         problems = builder.duplicates.map { "duplicate Choice option '$it'" },
     )
@@ -284,7 +291,7 @@ internal fun scoreRef(
     instructions: JsonElement,
     levels: ScoreBuilder.() -> Unit,
 ): QuestionRef<ScoreAnswer> =
-    QuestionRef(id, ScoreQuestion(instructions, ScoreBuilder().apply(levels).levels.toList()), ::decodeScore)
+    QuestionRef(id, ScoreQuestion(instructions, ScoreBuilder().apply(levels).levels.readOnlyList()), ::decodeScore)
 
 internal fun boxRef(
     id: String,

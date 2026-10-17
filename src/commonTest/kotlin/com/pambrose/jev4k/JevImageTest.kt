@@ -105,6 +105,14 @@ class JevImageTest : StringSpec() {
             shouldThrow<SerializationException> { Json.decodeFromString<JevImage>("\"<photo>\"") }
         }
 
+        "copyBytes hands out a copy of the bytes, for a cache key" {
+            val image = JevImage.of(PNG_BYTES)
+            val copy = image.copyBytes()
+            copy shouldBe PNG_BYTES
+            copy[0] = 0
+            image.copyBytes() shouldBe PNG_BYTES
+        }
+
         "of copies the bytes it is given" {
             val bytes = PNG_BYTES.copyOf()
             val image = JevImage.of(bytes)

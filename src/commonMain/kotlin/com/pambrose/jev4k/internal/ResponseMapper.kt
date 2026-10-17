@@ -40,7 +40,8 @@ internal fun mapSystemOne(
     val answersJson = reader.optionalObject(body, "answers", "answers").orEmpty().filterValues { it != JsonNull }
     // Declared questions first, in request order, then anything extra the server sent.
     val ids = questions.ids.filter { it in answersJson } + answersJson.keys.filter { questions[it] == null }
-    val answers = ids.associateWith { reader.answer(it, answersJson.getValue(it), questions[it]?.question) }
+    val answers =
+        ids.associateWith { reader.answer(it, answersJson.getValue(it), questions[it]?.question) }.readOnlyMap()
 
     // Metadata degrades where an answer would fail: a quirk in the token counters or the model name must not
     // throw away answers that parsed cleanly. Both are documented as optional.

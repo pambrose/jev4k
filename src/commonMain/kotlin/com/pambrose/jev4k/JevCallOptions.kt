@@ -1,6 +1,7 @@
 package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.sendProblem
+import com.pambrose.jev4k.internal.readOnlyMap
 import kotlinx.serialization.json.JsonElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -95,7 +96,7 @@ class JevCallOptionsBuilder {
             }
         }
         if (problems.isNotEmpty()) throw JevConfigException("Invalid call options: ${problems.joinToString("; ")}")
-        return JevCallOptions(timeout, retry?.snapshot(), headers.toMap(), extraBody.toMap())
+        return JevCallOptions(timeout, retry?.snapshot(), headers.readOnlyMap(), extraBody.readOnlyMap())
     }
 
     private companion object {

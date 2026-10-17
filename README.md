@@ -565,7 +565,7 @@ constructor Java can't call; `new RetryPolicy()` works), `JevCallOptionsBuilder.
 ```java
 return new JevClient(builder -> {
     builder.setTimeoutMillis(2 * JevDefaults.TIMEOUT_MILLIS);
-    builder.setRetry(new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250));
+    builder.setRetry(new RetryPolicy().withMaxRetries(4).withBackoffMillis(250, 2_000));
     return Unit.INSTANCE;
 });
 ```

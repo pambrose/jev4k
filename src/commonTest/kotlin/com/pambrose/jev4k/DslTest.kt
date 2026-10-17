@@ -64,6 +64,15 @@ private class NoQuestionsYet : JevQuery() {
 
 class DslTest : StringSpec() {
     init {
+        "a QuestionSet names its ids and how many images it carries" {
+            val set = questions {
+                attach(JevImage.of(PNG_BYTES, "<p>"))
+                noul("a", "Is <p> a cat?")
+                noul("b", "Is it a dog?")
+            }
+            set.toString() shouldBe "QuestionSet(ids=[a, b], images=1)"
+        }
+
         "the inline builder records questions in declaration order" {
             val set = questions {
                 noul("urgent", "Does this convey urgency?")

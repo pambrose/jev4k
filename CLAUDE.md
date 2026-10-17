@@ -165,9 +165,13 @@ without them keep compiling.
       Ktor's `UnsafeHeadersList` holds only the last two, and a configured length or type contradicts the body's or is
       dropped. `setting()` drops a leading U+FEFF before trimming. Every problem goes into one `JevConfigException`,
       whose messages never quote the key, a header value, or a URL that could hold credentials.
-    - The retry policy is stored with a copy of its status set, since the caller's set may be mutable and the
-      client re-reads it on every response. A blank per-call model falls back to the default, as a blank
-      `defaultModel` does.
+    - The retry policy is stored with a copy of its status set, since the caller's set may be mutable and the client
+      re-reads it on every response. Every collection a built object holds (a config's and a call's headers, the status
+      sets, a `QuestionSet`'s ids, questions and images, a Choice's options, a Score's levels, a result's answers) is a
+      snapshot from `internal/ReadOnly.kt`, which copies through `buildMap`/`buildSet`/`buildList`. `toMap()` and
+      friends give Java a `LinkedHashMap` or `ArrayList` it can change once there are two entries; the built ones reject
+      every change, through their views and iterators too. `ReadOnlyJvmTest` casts each one as Java would. A blank
+      per-call model falls back to the default, as a blank `defaultModel` does.
 - **Platforms** (`internal/Platform.kt` and its actuals). Everything that differs between platforms is an `internal`
   expect: `platformGetenv`, `defaultEngine` (the engine factory; `JevConfig.toString` reports its class name),
   `isPlatformConnectionError`, and `Enum<*>.enumTypeName()` (which keeps `enumChoiceRef`'s `@PublishedApi` signature
@@ -403,9 +407,10 @@ without them keep compiling.
   public, callable methods but aren't supported API, so a Java caller gets an enum-backed Choice by building a
   `ChoiceQuestion` and passing it to `QueryBuilder.question(id, question)`; the README and the Installation page say
   so.
-  Kotlin's inline `Duration` mangles every member that takes or returns one, and makes `RetryPolicy`'s constructor
-  and `copy` synthetic, so each `Duration` setting has a millisecond twin for Java: `JevConfigBuilder.timeoutMillis`,
-  `JevCallOptionsBuilder.timeoutMillis`, `JevDefaults.TIMEOUT_MILLIS`, `RetryPolicy.with…` (one per setting) and
+  Kotlin's inline `Duration` mangles every member that takes or returns one, and makes `RetryPolicy`'s constructor and
+  `copy` synthetic, so each `Duration` setting has a millisecond twin for Java: `JevConfigBuilder.timeoutMillis`,
+  `JevCallOptionsBuilder.timeoutMillis`, `JevDefaults.TIMEOUT_MILLIS`, `RetryPolicy.with…` (one per setting, plus
+  `withBackoffMillis` for both backoff limits, which changed one at a time can fail on the way) and
   `JevRateLimitException.retryAfterMillis`. Add one alongside any new `Duration` setting. The `Duration` getters stay
   Kotlin-only. `JavaInterop.java` calls each twin, catches `BlockingJev`'s `InterruptedException` (javac rejects that
   catch if `@Throws` is dropped), and uses `BlockingJevKt.blocking` and `JevCallOptionsKt.withOptions`.
@@ -420,7 +425,8 @@ without them keep compiling.
   target keeps that target's old declarations, and while Linux compiles the Apple klibs, only a Mac has been checked to
   write a complete klib dump. The JVM dump matched 0.1.0's through the multiplatform move; 0.2.0's API changes since
   (`ModelList`, `JevCallOptions`, the millisecond members and the rest, listed in the changelog) were recorded with
-  `make abi-update`, as were 0.3.0's image and Box additions, which only add to the dumps.
+  `make abi-update`, as were 0.3.0's image and Box additions, and 0.4.0's `JevImage.copyBytes`,
+  `RetryPolicy.withBackoffMillis` and `QuestionSet.toString`, which only add to the dumps.
 - Coverage uses Kover (`org.jetbrains.kotlinx.kover`).
     - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs `build koverVerify
       koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js, wasmJs and linuxX64 tests),
@@ -511,9 +517,9 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
       supports. `src/jvmTest` keeps what needs the JVM: MockK specs, `BlockingJevTest`, `LiveSmokeTest`, `ClientJvmTest`
       (the blocking wrapper, and five cases on a real CIO engine: a timeout, an untrusted certificate, a body cut short,
       an oversized declared body and an unparseable response), `CioExclusionTest` with its `CioFreeCalls` helper,
-      `ErrorsJvmTest`, `JevImageJvmTest`, `HotDogPhotosTest`, `CropExampleTest`, `SilentServer` and `RawServer`, the two
-      runnable examples (`TriageExample`, `HotDogExample`), and the website examples. A class name can't be in both, so
-      a JVM-only remainder is named `…JvmTest`.
+      `ErrorsJvmTest`, `ReadOnlyJvmTest`, `JevImageJvmTest`, `HotDogPhotosTest`, `CropExampleTest`, `SilentServer` and
+      `RawServer`, the two runnable examples (`TriageExample`, `HotDogExample`), and the website examples. A class name
+      can't be in both, so a JVM-only remainder is named `…JvmTest`.
     - Kotest runs the non-JVM targets through the `io.kotest` plugin and KSP, which generate each target's entry
       point. The plugin only does that for test tasks the host can run, so `build.gradle.kts` adds the processor to
       `kspLinuxX64Test` and `kspLinuxArm64Test` itself; without that, a Linux test binary linked on a Mac holds no

@@ -58,7 +58,7 @@ public final class JavaInterop {
         // --8<-- [start:settings]
         return new JevClient(builder -> {
             builder.setTimeoutMillis(2 * JevDefaults.TIMEOUT_MILLIS);
-            builder.setRetry(new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250));
+            builder.setRetry(new RetryPolicy().withMaxRetries(4).withBackoffMillis(250, 2_000));
             return Unit.INSTANCE;
         });
         // --8<-- [end:settings]
@@ -116,6 +116,12 @@ public final class JavaInterop {
         return r.noul("mug_visible").isTrue(0.5) ? r.box("mug").getBox() : null;
     }
     // --8<-- [end:images]
+
+    // Java-visible members the site's examples don't show: one backoff limit at a time, and an image's bytes.
+    static long javaOnlyMembers(JevImage image) {
+        RetryPolicy policy = new RetryPolicy().withInitialBackoffMillis(250).withMaxBackoffMillis(2_000);
+        return policy.getMaxRetries() + image.copyBytes().length;
+    }
 
     // A literal null model must keep resolving to ask(query, state, model): Java sees the image overloads under
     // another name, askWithImages, so they can't make this call ambiguous.

@@ -70,6 +70,9 @@ class JevImage private constructor(
 ) {
     override fun toString(): String = reference
 
+    /** A copy of the image's bytes, for a cache key or a digest; changing it changes nothing here. */
+    fun copyBytes(): ByteArray = bytes.copyOf()
+
     companion object {
         // Padding optional and whitespace dropped: the bytes are decoded here and sent as they are, so neither a
         // missing '=' nor a line break matters.

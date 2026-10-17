@@ -129,8 +129,10 @@ not retrying after a timeout. A `retry` in the call's options replaces the clien
 --8<-- "ImageExamples.kt:timeout"
 ```
 
-If you cache results on the model, the state and the questions, include each attached image's bytes in the key too:
-`QuestionSet.toJson()` holds only the references.
+If you cache results on the model, the state and the questions, key on `QuestionSet.toJson().toString()`, whose text
+keeps each Choice's option order, and include each attached image's bytes (`JevImage.copyBytes()`), since `toJson()`
+holds only the references. A generated reference is new for every instance, so it makes each key unique even when the
+bytes are the same; choose references for a cache that should hit.
 
 ## Example: hot dog or not
 

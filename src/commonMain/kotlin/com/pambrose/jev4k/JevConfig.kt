@@ -2,6 +2,8 @@ package com.pambrose.jev4k
 
 import com.pambrose.jev4k.internal.defaultEngine
 import com.pambrose.jev4k.internal.platformGetenv
+import com.pambrose.jev4k.internal.readOnlyMap
+import com.pambrose.jev4k.internal.readOnlySet
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
@@ -29,6 +31,9 @@ object JevDefaults {
     val TIMEOUT: Duration = TIMEOUT_MILLIS.milliseconds
 }
 
+/** The statuses retried by default, 408, 429 and every 5xx, in a set Java can't change, shared by every policy. */
+private val DEFAULT_RETRY_STATUSES: Set<Int> = (listOf(408, 429) + (500..599)).readOnlySet()
+
 /**
  * When and how failed requests are retried. The defaults match the official JS SDK: two retries, 0.5 s backoff
  * doubling to a 5 s cap with up to 25% subtracted as jitter, and server `retry-after-ms` / `Retry-After` hints
@@ -37,14 +42,15 @@ object JevDefaults {
  *
  * Java can't call the full constructor or `copy`, whose `Duration` parameters Kotlin hides from it. It starts from the
  * no-argument `new RetryPolicy()` and changes one setting at a time with the `with…` methods, which take milliseconds:
- * `new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250)`.
+ * `new RetryPolicy().withMaxRetries(4).withInitialBackoffMillis(250)`. To move both backoff limits, use
+ * `withBackoffMillis`, which checks them together.
  */
 data class RetryPolicy(
     val maxRetries: Int = 2,
     val initialBackoff: Duration = 500.milliseconds,
     val maxBackoff: Duration = 5.seconds,
     val jitter: Double = 0.25,
-    val retryStatuses: Set<Int> = setOf(408, 429) + (500..599),
+    val retryStatuses: Set<Int> = DEFAULT_RETRY_STATUSES,
     val respectRetryAfter: Boolean = true,
     val maxRetryAfter: Duration = 60.seconds,
     val retryOnConnectionError: Boolean = true,
@@ -83,6 +89,15 @@ data class RetryPolicy(
     /** A copy with [maxBackoff][RetryPolicy.maxBackoff] changed, in milliseconds. */
     fun withMaxBackoffMillis(millis: Long): RetryPolicy = copy(maxBackoff = millis.milliseconds)
 
+    /**
+     * A copy with both [initialBackoff][RetryPolicy.initialBackoff] and [maxBackoff][RetryPolicy.maxBackoff] changed,
+     * in milliseconds. Changed one at a time, they can fail on the way, when a new value passes the other's old one.
+     */
+    fun withBackoffMillis(
+        initialMillis: Long,
+        maxMillis: Long,
+    ): RetryPolicy = copy(initialBackoff = initialMillis.milliseconds, maxBackoff = maxMillis.milliseconds)
+
     /** A copy with [jitter][RetryPolicy.jitter] changed. */
     fun withJitter(jitter: Double): RetryPolicy = copy(jitter = jitter)
 
@@ -106,7 +121,7 @@ data class RetryPolicy(
      * A copy whose status set is a snapshot. The set may be the caller's mutable one, and the client re-reads it on
      * every response, so a later change to it would otherwise change a built client.
      */
-    internal fun snapshot(): RetryPolicy = copy(retryStatuses = retryStatuses.toSet())
+    internal fun snapshot(): RetryPolicy = copy(retryStatuses = retryStatuses.readOnlySet())
 
     companion object {
         /** Never retry. */
@@ -206,7 +221,7 @@ class JevConfigBuilder {
             timeout = timeout,
             retry = retry.snapshot(),
             engine = engine,
-            headers = headers.toMap(),
+            headers = headers.readOnlyMap(),
             retryDelay = retryDelay,
             random = random,
             now = now,
