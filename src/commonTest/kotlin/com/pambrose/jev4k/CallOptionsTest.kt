@@ -60,6 +60,32 @@ class CallOptionsTest : StringSpec() {
             single.delays shouldBe listOf(500L, 1000L)
         }
 
+        // RetryPolicy.NONE differs from the default only in maxRetries, so the case above can't tell a call policy that
+        // replaces the client's from one that only lends it a retry count.
+        "a call's retry policy replaces the client's statuses, backoff and hint handling too" {
+            val only429 = JevCallOptions {
+                retry = RetryPolicy(initialBackoff = 100.milliseconds, retryStatuses = setOf(429))
+            }
+            val unavailable = testJev(retry = RetryPolicy()) { respondJson("{}", HttpStatusCode.ServiceUnavailable) }
+            shouldThrow<JevInternalServerException> {
+                unavailable.client.evaluate(ticket, Triage.questions, null, only429)
+            }
+            unavailable.requests shouldHaveSize 1
+
+            val limited = testJev(retry = RetryPolicy()) { respondJson("{}", HttpStatusCode.TooManyRequests) }
+            shouldThrow<JevRateLimitException> { limited.client.evaluate(ticket, Triage.questions, null, only429) }
+            limited.requests shouldHaveSize 3
+            limited.delays shouldBe listOf(100L, 200L)
+
+            val hint = mapOf("retry-after-ms" to "2000")
+            val hinted = testJev(retry = RetryPolicy()) { respondJson("{}", HttpStatusCode.TooManyRequests, hint) }
+            shouldThrow<JevRateLimitException> { hinted.client.ask(Triage, state = PAYOUT_TICKET) }
+            hinted.delays shouldBe listOf(2000L, 2000L)
+            val noHints = JevCallOptions { retry = RetryPolicy(respectRetryAfter = false) }
+            shouldThrow<JevRateLimitException> { hinted.client.evaluate(ticket, Triage.questions, null, noHints) }
+            hinted.delays.drop(2) shouldBe listOf(500L, 1000L)
+        }
+
         // DefaultRequest merges its headers with a request's own, so a header named in both would go out twice.
         "a call's headers replace the client's and the built-in ones, and each is sent once" {
             val jev = testJev(configure = { headers["X-Team"] = "support" }) { respondJson(TRIAGE_RESPONSE) }
@@ -119,6 +145,11 @@ class CallOptionsTest : StringSpec() {
             e.message shouldContain "extraBody can't set 'questions'"
             e.message shouldContain "extraBody 'deep' is nested more than $MAX_SEND_DEPTH levels deep"
             e.message shouldNotContain "abc"
+        }
+
+        "a call can't set the framing headers jev4k or the engine sets either" {
+            shouldThrow<JevConfigException> { JevCallOptions { headers["transfer-encoding"] = "chunked" } }
+                .message shouldContain "header 'transfer-encoding' is set by jev4k or the HTTP engine"
         }
 
         "withOptions merges the options of a call, and of a nested withOptions, over its own" {

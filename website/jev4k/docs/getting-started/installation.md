@@ -12,9 +12,10 @@ icon: lucide/download
   missing.
 - **A TypeSafe API key.**
 
-jev4k is built on the Ktor client, kotlinx.serialization, and kotlinx.coroutines. Ktor core,
-kotlinx.serialization-json and kotlinx.coroutines are exposed as `api` dependencies, because their types (`JsonElement`,
-`HttpClientEngine`, suspend functions) appear in jev4k's public API.
+jev4k is built on the Ktor client, kotlinx.serialization, kotlinx.coroutines and kotlinx-io. Ktor core,
+kotlinx.serialization-json, kotlinx.coroutines and kotlinx-io-core are exposed as `api` dependencies, because their
+types (`JsonElement`, `HttpClientEngine`, suspend functions, and the `Path` that `JevImage.read` takes) appear in
+jev4k's public API.
 
 ## Platforms
 
@@ -50,6 +51,13 @@ A few things differ by platform:
 
 ## Adding the jev4k dependency
 
+!!! warning "Upgrading from 0.3.0? A few things are now refused"
+
+    0.4.0 refuses some things 0.3.0 accepted: changing, from Java, a collection a built object hands out; a framing
+    header, or a non-ASCII key or header, in the configuration; a number, boolean or null criteria value; an image
+    reference inside another, or an image over 16 MiB; and an undeclared option read through a broader enum. The
+    [release notes](https://github.com/pambrose/jev4k/blob/master/RELEASE_NOTES.md) list each one, and when it fails.
+
 !!! warning "Upgrading from 0.1.0? The Maven coordinates have changed"
 
     From 0.2.0 the group is `com.pambrose.jev4k` (0.1.0 was `com.pambrose:jev4k`), so update the dependency as
@@ -79,7 +87,7 @@ Maven doesn't read Gradle's module metadata, so a Maven build names the JVM arti
     --8<-- "GettingStarted.txt:dependency-maven"
     ```
 
-That single dependency brings the Ktor client, kotlinx.serialization and kotlinx.coroutines with it; see
+That single dependency brings the Ktor client, kotlinx.serialization, kotlinx.coroutines and kotlinx-io with it; see
 [what it puts on your classpath](#what-it-puts-on-your-classpath) for the full set, and
 [using a different Ktor engine](#using-a-different-ktor-engine) if you'd rather not ship CIO on the JVM.
 
@@ -98,7 +106,8 @@ requires an `apiKey`, so give it a placeholder.
 
 ## Checking your setup
 
-The repository includes a runnable example that uses both DSL styles against the live API:
+The repository includes two runnable examples against the live API: one uses both DSL styles, and the other sends
+two bundled photos:
 
 ```bash
 --8<-- "GettingStarted.txt:run-example"
@@ -108,7 +117,7 @@ The repository includes a runnable example that uses both DSL styles against the
 
 jev4k is a library meant to be embedded in an application, so it keeps out of the host's way.
 
-### What it puts on your classpath.
+### What it puts on your classpath
 
 On the JVM, five `compile` dependencies (`ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core`,
 `kotlinx-io-core`, `kotlin-stdlib`) and one `runtime` one, the CIO engine (`ktor-client-cio`). Nothing else: no test
@@ -140,12 +149,17 @@ jev4k is a Kotlin library, but the inline builder DSL works from Java through `j
 ```
 
 Kotlin's `Duration` doesn't cross to Java either, so each setting of that type has a counterpart in milliseconds:
-`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, and `with…` methods on `RetryPolicy`, whose
-constructor Java can't call:
+`setTimeoutMillis` on the builder, `JevDefaults.TIMEOUT_MILLIS`, and `with…` methods on `RetryPolicy`, whose full
+constructor Java can't call (`new RetryPolicy()`, with every default, works). `withBackoffMillis` moves both backoff
+limits at once, which two separate calls can't always do:
 
 ```java title="Settings in milliseconds"
 --8<-- "JavaInterop.java:settings"
 ```
+
+The collections a built object hands out are read-only from Java too: a config's or a call's headers, the retry
+statuses, a `QuestionSet`'s ids and images, a Choice's options, a Score's levels and a result's answers. Their mutators
+throw `UnsupportedOperationException`, so set headers on the builder, before it builds.
 
 [Per-call options](../client/calls.md#per-call-options) work the same way, and `BlockingJevKt.blocking(api)` gives
 any `JevApi` the blocking calls. Every blocking call declares `InterruptedException`, and a rate-limit error's hint
@@ -169,9 +183,9 @@ four things are out of reach from Java:
 - **`JevResult.enumChoice<E>(id)`** is reified too. Read that answer with `result.choice(id)`, which is keyed by
   option string.
 
-Everything else is callable: `evaluate`, `models`, the inline `noul`, `choice` and `score` builders, the other
-result accessors, and enums implementing `JevOption`. Only the getters that return a `Duration`, such as
-`JevConfig.timeout` and `RetryPolicy.initialBackoff`, stay Kotlin-only.
+Everything else is callable: `evaluate`, `models`, the inline `noul`, `choice` and `score` builders, the experimental
+`box` builder and `attach`, the other result accessors, and enums implementing `JevOption`. Only the getters that return
+a `Duration`, such as `JevConfig.timeout` and `RetryPolicy.initialBackoff`, stay Kotlin-only.
 
 ### Module name
 

@@ -84,7 +84,12 @@ suspend inline fun <reified T : Any> JevApi.ask(
     model: String? = null,
 ): JevResult = evaluate(jsonEntry(state), query.questions, model)
 
-/** Asks a [JevQuery]'s questions about a text [state], with [images] attached after the query's own. */
+/**
+ * Asks a [JevQuery]'s questions about a text [state], with [images] attached after the query's own.
+ *
+ * The client's `timeout` limits each attempt, upload included, so give a call with large images more time with
+ * [withOptions].
+ */
 @ExperimentalJevImages
 suspend fun JevApi.ask(
     query: JevQuery,
@@ -93,7 +98,12 @@ suspend fun JevApi.ask(
     model: String? = null,
 ): JevResult = evaluate(JsonPrimitive(state), questionsWith(query, images), model)
 
-/** Asks a [JevQuery]'s questions about a JSON [state], with [images] attached after the query's own. */
+/**
+ * Asks a [JevQuery]'s questions about a JSON [state], with [images] attached after the query's own.
+ *
+ * The client's `timeout` limits each attempt, upload included, so give a call with large images more time with
+ * [withOptions].
+ */
 @ExperimentalJevImages
 suspend fun JevApi.ask(
     query: JevQuery,
@@ -102,7 +112,12 @@ suspend fun JevApi.ask(
     model: String? = null,
 ): JevResult = evaluate(state, questionsWith(query, images), model)
 
-/** Asks a [JevQuery]'s questions about a `@Serializable` [state], with [images] attached after the query's own. */
+/**
+ * Asks a [JevQuery]'s questions about a `@Serializable` [state], with [images] attached after the query's own.
+ *
+ * The client's `timeout` limits each attempt, upload included, so give a call with large images more time with
+ * [withOptions].
+ */
 @ExperimentalJevImages
 @JvmSynthetic
 suspend inline fun <reified T : Any> JevApi.ask(

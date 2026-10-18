@@ -302,6 +302,7 @@ final class com.pambrose.jev4k/JevImage { // com.pambrose.jev4k/JevImage|null[0]
     final val reference // com.pambrose.jev4k/JevImage.reference|{}reference[0]
         final fun <get-reference>(): kotlin/String // com.pambrose.jev4k/JevImage.reference.<get-reference>|<get-reference>(){}[0]
 
+    final fun copyBytes(): kotlin/ByteArray // com.pambrose.jev4k/JevImage.copyBytes|copyBytes(){}[0]
     final fun toString(): kotlin/String // com.pambrose.jev4k/JevImage.toString|toString(){}[0]
 
     final object Companion { // com.pambrose.jev4k/JevImage.Companion|null[0]
@@ -496,6 +497,7 @@ final class com.pambrose.jev4k/QuestionSet : kotlin.collections/Iterable<com.pam
     final fun get(kotlin/String): com.pambrose.jev4k/QuestionRef<*>? // com.pambrose.jev4k/QuestionSet.get|get(kotlin.String){}[0]
     final fun iterator(): kotlin.collections/Iterator<com.pambrose.jev4k/QuestionRef<*>> // com.pambrose.jev4k/QuestionSet.iterator|iterator(){}[0]
     final fun toJson(): kotlinx.serialization.json/JsonObject // com.pambrose.jev4k/QuestionSet.toJson|toJson(){}[0]
+    final fun toString(): kotlin/String // com.pambrose.jev4k/QuestionSet.toString|toString(){}[0]
 }
 
 final class com.pambrose.jev4k/RetryPolicy { // com.pambrose.jev4k/RetryPolicy|null[0]
@@ -534,6 +536,7 @@ final class com.pambrose.jev4k/RetryPolicy { // com.pambrose.jev4k/RetryPolicy|n
     final fun equals(kotlin/Any?): kotlin/Boolean // com.pambrose.jev4k/RetryPolicy.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.pambrose.jev4k/RetryPolicy.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.pambrose.jev4k/RetryPolicy.toString|toString(){}[0]
+    final fun withBackoffMillis(kotlin/Long, kotlin/Long): com.pambrose.jev4k/RetryPolicy // com.pambrose.jev4k/RetryPolicy.withBackoffMillis|withBackoffMillis(kotlin.Long;kotlin.Long){}[0]
     final fun withInitialBackoffMillis(kotlin/Long): com.pambrose.jev4k/RetryPolicy // com.pambrose.jev4k/RetryPolicy.withInitialBackoffMillis|withInitialBackoffMillis(kotlin.Long){}[0]
     final fun withJitter(kotlin/Double): com.pambrose.jev4k/RetryPolicy // com.pambrose.jev4k/RetryPolicy.withJitter|withJitter(kotlin.Double){}[0]
     final fun withMaxBackoffMillis(kotlin/Long): com.pambrose.jev4k/RetryPolicy // com.pambrose.jev4k/RetryPolicy.withMaxBackoffMillis|withMaxBackoffMillis(kotlin.Long){}[0]

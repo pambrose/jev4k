@@ -16,6 +16,13 @@ grep -oE "\($BASE/[^)]+\.md\)" "$tmp/llms.txt" | tr -d '()' | sed "s#^$BASE/##" 
 
 fail=0
 while read -r page; do
+  # The page paths come from the downloaded index and become file names under $tmp/pages, so one that could leave it
+  # (an absolute path, or a .. component) is refused before anything is written, and fails the run.
+  if [[ ! "$page" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*\.md$ || "$page" == *..* ]]; then
+    echo "REFUSED: $page" >&2
+    fail=$((fail + 1))
+    continue
+  fi
   mkdir -p "$tmp/pages/$(dirname "$page")"
   if curl -fsSL "$BASE/$page" -o "$tmp/raw.md"; then
     awk '

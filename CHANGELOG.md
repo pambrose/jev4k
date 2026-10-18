@@ -6,11 +6,145 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
+## [0.4.0] - 2026-10-17
+
+The fixes from a review of 0.3.0, plus three small additions. The binary API only grows, but some things 0.3.0 accepted
+are now refused: Java code changing a collection a built object hands out; a reference inside another image's reference,
+or an image over 16 MiB; a number, boolean or null criteria value; a framing header, a key with a space or beyond ASCII,
+or a header beyond ASCII, in the configuration; an undeclared option read through a broader enum; and a Score level key
+written as `01` or `+1`.
+
+### Added
+
+- `JevImage.copyBytes()` hands out a copy of an image's bytes (experimental), so a cache key can cover them, as
+  `QuestionSet.toJson`'s KDoc and the Images page advise. They now also say to key on `toJson().toString()`, whose
+  text keeps a Choice's option order, which the `JsonObject` itself ignores in `equals`.
+- `RetryPolicy.withBackoffMillis(initialMillis, maxMillis)` changes both backoff limits at once, for Java, where
+  changing them one at a time failed when a new value passed the other's old one.
+- `QuestionSet.toString()` names the set's ids and its number of images, so a mock's "no answer found" message tells
+  one set from another.
+
+### Changed
+
+- The default `User-Agent` is `jev4k/0.4.0`.
+- The collections a built object holds are read-only to Java too: a config's and a call's headers and extra body
+  fields, the retry statuses (including `RetryPolicy.NONE`'s), a `QuestionSet`'s ids, iteration and images, a
+  Choice's options, a Score's levels, and a result's answers. Java used to get a mutable `LinkedHashMap`,
+  `LinkedHashSet` or `ArrayList` once there were two entries, so it could add a header the builder never checked or
+  change a live client's retry rule. Every mutator now throws `UnsupportedOperationException`, at any size; Kotlin
+  callers see no change.
+
+- CI's Apple row passes `-Pjev4k.requireSimulators=true`, so a runner without a simulator device for iOS, tvOS or
+  watchOS fails the build instead of skipping that platform's tests. A failure to list the devices is logged.
+- Codecov's project status is informational, as its patch status already was: branch protection never required
+  either, so the Kover floors are the coverage gate, and the release checklist says so.
+- The docs workflow's jobs have `timeout-minutes`; a failed CI build uploads the Docker Linux test logs; and the
+  Codecov upload no longer also sends `build/kover/coverage.txt`.
+- The development page and CLAUDE.md say that iosX64 is compiled and published but its tests run nowhere, and that
+  Linux compiles the Apple klibs, though only a Mac links and runs them. The release checklist's state table records
+  0.3.0, and step 7 now keeps it current.
+
+### Fixed
+
+- Images (experimental):
+    - Text that only looks like a generated image reference, such as a state stored by an earlier run, no longer fails
+      a request. A generated reference's first UUID group is now a tag shared by every image one process generates,
+      and only references with this process's tag must be attached.
+    - A generated reference whose bytes are in a hand-built `extraBody["assets"]` can be sent.
+    - A reference that occurs inside another attached one (`img1` inside `img10`) is refused before sending. The API
+      matches references as plain text, so it couldn't tell them apart, and the request would fail or show the wrong
+      image.
+    - Two instances with the same reference and the same bytes, such as a picture read again by a helper, are sent
+      once instead of being refused as two different images.
+    - `JevImage.fromBase64` ignores whitespace, so text from the `base64` tool, with its line breaks, decodes.
+    - An image over the API's 16 MiB limit carries that problem, and `JevImage.read` reads no further than the limit,
+      so a large file, a device or a pipe can't fill memory.
+    - A Box answer whose edges or confidence are out of range, or whose edges are out of order, fails when the Box is
+      read (`box(id)`, a handle or `boxes`), not when the response is parsed, so the Noul paired with it can still be
+      read. `result.answers` holds such a Box unchecked, and reading `boxes` fails if any Box is bad.
+- `enumChoice<E>(id)` rejects an option the question never declared even when `E`, a broader enum, has a constant for
+  it, as its KDoc says.
+- A number, boolean or null criteria value (a Noul definition, a Choice option or a Score level) fails validation
+  instead of being sent, since the API takes text, an object or an array there. A Choice option may still be null.
+- A Score level key must be written as its number: `"01"` or `"+1"` fails as a malformed response, where two keys
+  naming one level used to drop one probability silently. A Score nobody asked for counts its levels up to its
+  highest key, so `normalized` stays in 0..1.
+- `jevApiException` reads the request id from an `x-typesafe-request-id` entry in `headers` when none is given, and
+  `jevResult(String)` drops a leading byte-order mark, both as the client does.
+- The `JevQuery.questions` KDoc says that a read before any question has registered, such as from the `init` block
+  of a base class with no questions of its own, fails.
+- Configuration and call options:
+    - `build()` refuses `Content-Length`, `Content-Type`, `Transfer-Encoding` and `Upgrade` in `headers`, in any
+      case. jev4k or the engine sets them, and a configured one failed every call with Ktor's own exception, sent a
+      conflicting length, or was dropped.
+    - An API key must be printable ASCII without spaces, and a header name an HTTP token with an ASCII value, so a
+      zero-width space pasted with a key, or an accented header name, fails `build()` instead of every call, where
+      engines disagreed on it. A leading byte-order mark on any string setting is dropped.
+- A 2xx response refused for its declared size raises a `JevResponseValidationException` that can be
+  Java-serialized; it no longer carries an internal cause holding Ktor types.
+- The README, Configuration and Errors pages say that the 16 MiB response limit applies only to a declared length,
+  which a compressed response on Linux, Apple platforms and Node.js doesn't have, since those engines decompress it
+  themselves.
+- The Images page and the image `ask` KDocs say that `timeout` covers each attempt's upload, with an example giving
+  image calls more time.
+- The site's `cropToBox` example rounds each edge of the box outward, so it no longer drops a column or row that lies
+  inside the box.
+- The site's examples follow their own pages' advice:
+    - The two image-comparison examples place each image once, the photo in the state and the catalog picture in the
+      question, instead of sending each twice.
+    - The due-date example reads a stated year (`"none"` and `"out_of_range"` included) instead of always assuming the
+      current one, and its relative mode no longer promises weekdays it can't read.
+    - The function-calling example routes with a `none_of_these` option, gives its ticker Choice an escape, and makes
+      the call only when the weakest part it uses is confident.
+    - The parameterized query gives each policy ids of its own and asks every policy in one request, dropping a
+      Score nobody read.
+    - The taxonomy walk, the two-stage skill search and the email-address example respect the 255-option limit, the
+      skill search and the clause loop handle empty input, and the email example returns the chosen span verbatim,
+      as its page says.
+    - The tool-trace example's page says to run the deterministic checks in code first; the Score example's
+      confidence reads 0.55, as TypeSafe's formula gives; and `raw` is called the parsed response body.
+- Documentation:
+    - The Confidence, Choice and Concepts pages, the README and the `ChoiceAnswer` KDoc said a Choice's `confidence`
+      tells a close runner-up from a scattered tail. TypeSafe's formula uses only the top probability, so they now say
+      so, and point to `ranked()` for a near-tie.
+    - The Java Box example asks on `jev-preview`, since Box needs Jev 1.14, and reads the box only when its Noul says
+      the target is there. The Box KDocs say Box needs Jev 1.14, and the `Answer` and `Question` KDocs tell Java to end
+      a pattern `switch` with a `default` branch.
+    - The Images page lists the API's pixel limits, including the 78,400-pixel minimum that makes a 256 × 256 image
+      too small, and its limits on all of a request's images and on the expanded request.
+    - The jev-1.13 limits table replaces a weakness TypeSafe no longer lists with Choice option order, and the Choice
+      page says how to check for it.
+    - The retry defaults are credited to the JS SDK rather than "the official SDKs"; Java's no-argument
+      `new RetryPolicy()` is no longer described as impossible; a missing API key is noted as reported on its own;
+      and the Installation page lists kotlinx-io-core among the `api` dependencies.
+    - The home page, the builder and answer tables, the KDocs map and the README include Box and `attach`, marked
+      experimental, and the README and Development page mention the hot dog example and all five real-CIO tests.
+    - KDocs say that a `JevQuery` whose file read fails stays unusable on the JVM, and what the JVM's
+      connection-error rule adds.
+- KDocs:
+    - `JevQuery`'s builders (`noul`, `choice`, `score`, `box`, `attach`) are documented. They are protected, and only
+      public members were.
+    - JDK types link to Java 17's docs, the oldest JDK jev4k supports, instead of Java 25's.
+    - kotlinx-io's `Path` links to its API docs, and `QuestionSet.toJson`'s link to `images` resolves.
+    - A release's source links open its tag instead of `master`, so a published javadoc jar keeps pointing at the
+      lines it documents.
+
+### Security
+
+- The `binfmt` image CI runs privileged for QEMU, and the image `make docker-linux-tests` runs the Linux tests in,
+  are pinned by digest, as the actions are.
+- The docs workflow, which builds the deployed site, installs a pinned uv instead of the newest release.
+- `make api-docs` refuses a page path in the downloaded index that could write outside its cache, such as one with a
+  `..` component.
+- The release checklist stops the Gradle and Kotlin daemons after a publish, since each inherits the signing key and
+  its passphrase from the environment and keeps them until it stops.
+
 ## [0.3.0] - 2026-10-16
 
 Experimental support for TypeSafe's images and Box questions, behind an opt-in, and the request nesting rule from
-TypeSafe's October 2026 API. The new `Question` and `Answer` subtypes break an exhaustive `when` without an `else`
-branch; anything else that compiled against 0.2.2 compiles unchanged, and the binary API only grows.
+TypeSafe's October 2026 API. The new `Question` and `Answer` subtypes break an exhaustive Kotlin `when` without an
+`else` branch and an exhaustive Java pattern `switch` without a `default`; anything else that compiled against 0.2.2
+compiles unchanged, and the binary API only grows.
 
 ### Added
 
@@ -38,8 +172,9 @@ branch; anything else that compiled against 0.2.2 compiles unchanged, and the bi
 ### Changed
 
 - The default `User-Agent` is `jev4k/0.3.0`.
-- `Question` and `Answer` gain the subtypes `BoxQuestion` and `BoxAnswer`, so an exhaustive `when` over either without
-  an `else` branch no longer compiles. Naming either subtype needs the `@ExperimentalJevImages` opt-in.
+- `Question` and `Answer` gain the subtypes `BoxQuestion` and `BoxAnswer`, so an exhaustive Kotlin `when` over either
+  without an `else` branch, or Java pattern `switch` without a `default`, no longer compiles. Naming either subtype
+  needs the `@ExperimentalJevImages` opt-in in Kotlin; Java can name them without one.
 - `kotlinx-io-core` (0.9.1, already brought by Ktor) is now a declared `api` dependency, since `JevImage.read` takes a
   kotlinx-io `Path`. The JVM POM lists five compile dependencies.
 - The README and the site no longer say that Jev reads only text: they describe images and Box, and list the new
@@ -53,10 +188,10 @@ branch; anything else that compiled against 0.2.2 compiles unchanged, and the bi
 
 - The KDocs show the module overview and the package description from `docs/packages.md`. The file was wired into
   Dokka's HTML publication, which reads it only for a multi-module overview, so earlier releases' KDocs left both out.
-- A state, question entry or `extraBody` field nested more than 64 levels deep fails with `JevValidationException`
-  before anything is sent. The API now rejects deeper JSON in the state and in each instructions or criteria value
-  with a 400, so 65 to 128 levels passed jev4k's old limit of 128 and came back as `JevBadRequestException`.
-  Responses may still nest 128 levels.
+- A state or question entry nested more than 64 levels deep fails with `JevValidationException` before anything is sent,
+  and an `extraBody` field that deep fails when its `JevCallOptions` is built, with `JevConfigException`. The API now
+  rejects deeper JSON in the state and in each instructions or criteria value with a 400, so 65 to 128 levels passed
+  jev4k's old limit of 128 and came back as `JevBadRequestException`. Responses may still nest 128 levels.
 - `make api-docs` works again. It also fetched the TypeSafe migration guide, which the site has removed, and a page
   that fails leaves the cache untouched. The cached pages also drop the footer the site now adds to every page.
 
@@ -377,6 +512,7 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
+[0.4.0]: https://github.com/pambrose/jev4k/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/pambrose/jev4k/compare/0.2.2...0.3.0
 [0.2.2]: https://github.com/pambrose/jev4k/compare/0.2.1...0.2.2
 [0.2.1]: https://github.com/pambrose/jev4k/compare/0.2.0...0.2.1

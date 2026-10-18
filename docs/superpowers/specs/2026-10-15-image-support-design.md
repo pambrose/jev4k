@@ -1,6 +1,6 @@
 # Image and Box support: design
 
-Status: design approved in conversation on 2026-10-15; awaiting review of this written spec.
+Status: design approved in conversation on 2026-10-15, and implemented in 0.3.0 (released 2026-10-16).
 
 ## 1. Goal and constraints
 

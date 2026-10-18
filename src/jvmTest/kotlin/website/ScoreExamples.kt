@@ -26,7 +26,7 @@ suspend fun scoreBasic(jev: JevApi) {
 
     severity.score           // 1.3 = 0 x 0.0 + 1 x 0.7 + 2 x 0.3
     severity.probabilities   // {0=0.0, 1=0.7, 2=0.3}
-    severity.confidence      // 0.54: probability is split between two levels
+    severity.confidence      // 0.55: probability is split between two levels
     severity.levelCount      // 3
     severity.normalized      // 0.65 = score / (levelCount - 1), always 0..1
     severity.nearestLevel    // 1: the score rounded to a level

@@ -47,9 +47,10 @@ internal fun needsImagesHeader(
 
 /**
  * What stops this request being sent, as far as images go: an attached image no string references, a generated
- * reference placed but not attached, references over [MAX_REFERENCE_BYTES_TOTAL], a Box with no image, and an
- * `assets` field in [extraBody] on a request that attaches images. References are matched as the API matches them:
- * as plain text inside string values, never in object keys.
+ * reference placed but neither attached nor in a hand-built `extraBody["assets"]`, references over
+ * [MAX_REFERENCE_BYTES_TOTAL], a Box with no image, and an `assets` field in [extraBody] on a request that attaches
+ * images. References are matched as plain text inside string values, never in object keys, as the API matches them;
+ * validating the set has already refused a reference inside another, which that matching can't tell apart.
  */
 internal fun imageRequestProblems(
     state: JsonElement,
@@ -70,6 +71,7 @@ internal fun imageRequestProblems(
             }
         }
         val attached = images.mapTo(mutableSetOf()) { it.reference }
+        (extraBody[ASSETS] as? JsonObject)?.let { attached += it.keys }
         content.strings
             .flatMap { text -> GENERATED_REFERENCE.findAll(text).map { it.value } }
             .distinct()

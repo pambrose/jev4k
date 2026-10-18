@@ -3,17 +3,22 @@ package website
 import com.pambrose.jev4k.BoundingBox
 import com.pambrose.jev4k.ExperimentalJevImages
 import com.pambrose.jev4k.JevApi
+import com.pambrose.jev4k.JevCallOptions
 import com.pambrose.jev4k.JevImage
 import com.pambrose.jev4k.JevQuery
+import com.pambrose.jev4k.RetryPolicy
 import com.pambrose.jev4k.ask
 import com.pambrose.jev4k.entry
 import com.pambrose.jev4k.jsonOf
 import com.pambrose.jev4k.query
 import com.pambrose.jev4k.read
+import com.pambrose.jev4k.withOptions
 import kotlinx.serialization.Serializable
 import java.awt.image.BufferedImage
 import java.nio.file.Path
-import kotlin.math.roundToInt
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.time.Duration.Companion.seconds
 
 // --8<-- [start:state]
 @OptIn(ExperimentalJevImages::class)
@@ -41,10 +46,11 @@ suspend fun sameProduct(
     upload: JevImage,
     catalog: JevImage,
 ): Boolean {
+    // Each image is placed once: the upload in the state, and the catalog photo in the one question that needs it.
     val result =
-        jev.query("A seller uploaded $upload for a listing whose catalog photo is $catalog.") {
+        jev.query("A seller uploaded this photo for a listing: $upload") {
             attach(upload, catalog)
-            noul("same", "Does $upload show the same product as $catalog?")
+            noul("same", "Is the uploaded product the one shown in this catalog photo: $catalog?")
         }
     return result.noul("same").isTrue()
 }
@@ -110,9 +116,9 @@ suspend fun matchesCatalog(
     catalog: ByteArray,
 ): Double {
     val result =
-        jev.query("A customer returned <delivered>. The catalog photo is <catalog>.") {
+        jev.query("A customer returned the product in this photo: <delivered>") {
             attach(JevImage.of(delivered, reference = "<delivered>"), JevImage.of(catalog, reference = "<catalog>"))
-            noul("matches", "Is <delivered> the product shown in <catalog>?")
+            noul("matches", "Is the returned product the one shown in this catalog photo: <catalog>?")
         }
     return result.noul("matches").noul
 }
@@ -143,10 +149,32 @@ fun cropToBox(
     image: BufferedImage,
     box: BoundingBox,
 ): BufferedImage {
-    val x = (box.left * image.width).toInt().coerceIn(0, image.width - 1)
-    val y = (box.top * image.height).toInt().coerceIn(0, image.height - 1)
-    val width = ((box.right - box.left) * image.width).roundToInt().coerceIn(1, image.width - x)
-    val height = ((box.bottom - box.top) * image.height).roundToInt().coerceIn(1, image.height - y)
-    return image.getSubimage(x, y, width, height)
+    // Round each edge outward, so the crop never cuts into the box, and keep at least one pixel inside the image.
+    val left = floor(box.left * image.width).toInt().coerceIn(0, image.width - 1)
+    val top = floor(box.top * image.height).toInt().coerceIn(0, image.height - 1)
+    val right = ceil(box.right * image.width).toInt().coerceIn(left + 1, image.width)
+    val bottom = ceil(box.bottom * image.height).toInt().coerceIn(top + 1, image.height)
+    return image.getSubimage(left, top, right - left, bottom - top)
 }
 // --8<-- [end:crop]
+
+// --8<-- [start:timeout]
+@OptIn(ExperimentalJevImages::class)
+suspend fun inspectShelf(
+    jev: JevApi,
+    shelf: JevImage,
+) {
+    // Each attempt has 60 s to upload the image and get its answer, and a timed-out one isn't uploaded again.
+    val upload =
+        JevCallOptions {
+            timeout = 60.seconds
+            retry = RetryPolicy(retryOnTimeout = false)
+        }
+    val result =
+        jev.withOptions(upload).query("The shelf: $shelf") {
+            attach(shelf)
+            noul("gap", "Is any slot on the shelf empty?")
+        }
+    println(result.noul("gap"))
+}
+// --8<-- [end:timeout]

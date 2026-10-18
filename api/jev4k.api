@@ -282,6 +282,7 @@ public abstract class com/pambrose/jev4k/JevException : java/lang/RuntimeExcepti
 
 public final class com/pambrose/jev4k/JevImage {
 	public static final field Companion Lcom/pambrose/jev4k/JevImage$Companion;
+	public final fun copyBytes ()[B
 	public static final fun fromBase64 (Ljava/lang/String;)Lcom/pambrose/jev4k/JevImage;
 	public static final fun fromBase64 (Ljava/lang/String;Ljava/lang/String;)Lcom/pambrose/jev4k/JevImage;
 	public final fun getReference ()Ljava/lang/String;
@@ -555,6 +556,7 @@ public final class com/pambrose/jev4k/QuestionSet : java/lang/Iterable, kotlin/j
 	public final fun getSize ()I
 	public fun iterator ()Ljava/util/Iterator;
 	public final fun toJson ()Lkotlinx/serialization/json/JsonObject;
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/pambrose/jev4k/QuestionsKt {
@@ -593,6 +595,7 @@ public final class com/pambrose/jev4k/RetryPolicy {
 	public final fun getRetryStatuses ()Ljava/util/Set;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+	public final fun withBackoffMillis (JJ)Lcom/pambrose/jev4k/RetryPolicy;
 	public final fun withInitialBackoffMillis (J)Lcom/pambrose/jev4k/RetryPolicy;
 	public final fun withJitter (D)Lcom/pambrose/jev4k/RetryPolicy;
 	public final fun withMaxBackoffMillis (J)Lcom/pambrose/jev4k/RetryPolicy;

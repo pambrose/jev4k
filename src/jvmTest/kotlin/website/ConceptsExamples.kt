@@ -28,7 +28,7 @@ suspend fun conceptsOneRequest(jev: JevApi) {
     val area = result.choice("area") // ChoiceAnswer<String>
     println(area.choice)             // the most likely option, e.g. "settings"
     println(area.probabilities)      // every option -> its probability, summing to 1
-    println(area.confidence)         // how concentrated those probabilities are, 0..1
+    println(area.confidence)         // the winner's lead over an even split, 0..1
 
     val severity = result.score("severity") // ScoreAnswer
     println(severity.score)                 // probability-weighted level, e.g. 1.3 (between levels 1 and 2)

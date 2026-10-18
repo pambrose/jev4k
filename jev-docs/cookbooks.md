@@ -49,8 +49,8 @@ share links (lz-string), and it matches `jev-api.md`.
    "where/which" Choices with "exists/fits/stated" Nouls. Always offer escape options (`none`, `other`, `out_of_range`)
    and still validate the parts in code.
 5. **Always keep an "unsure" path.** Middle Score level, confidence gate (0.6–0.9 seen), Noul band, or parent-label
-   fallback → human or cheaper default. Gate on `confidence` (distribution concentration), not just the winner's
-   probability; the two differ (0.43 vs 0.53 observed).
+   fallback → human or cheaper default. Gate on `confidence` (for a Choice, the winner's probability rescaled; see §6 of
+   `jev-api.md`), not just the winner's probability; the two differ (0.43 vs 0.53 observed).
 6. **Deterministic checks first.** String matching, schema validation, regex candidate finding, and arithmetic run in
    code before Jev; Jev handles the semantic remainder.
 7. **Operational facts.** ~110 ms per request; not fully deterministic (borderline Nouls moved up to ~0.1 across
@@ -2026,6 +2026,10 @@ name for Shopify and CookSafe.)
 - **Gate on `confidence`, not on the winner's probability.** Confidence measures how concentrated the distribution is.
   "A winner at 0.45 with a runner-up at 0.44, and a winner at 0.45 with the rest of the weight scattered thinly, are
   different situations, and `confidence` is what separates them."
+  - **Caveat:** this quote predates TypeSafe's published formula, and is wrong for a Choice. A Choice's confidence is
+    `(p_max − 1/n) / (1 − 1/n)`, which uses only the top probability, so it doesn't separate those two cases; for a
+    fixed number of options, gating on it is gating on the winner's probability. A near-tie shows in the top two
+    probabilities (`jev-api.md` §6). Score confidence does count the spread.
 - Division ranges (major-group numbers):
   | range | division |
   |---|---|
@@ -2096,8 +2100,8 @@ name for Shopify and CookSafe.)
     - `Noul(instructions=str)` or `Noul(instructions=str, criteria=NoulCriteria(true=str, false=str))`. `NoulCriteria`
       is subscriptable (`['true']`).
 - **Answer fields**:
-    - Choice: `.choice` (the key string), `.confidence` (float, concentration of the distribution; the date code guards
-      against None), `.probabilities` (mapping key → prob, and `dict()` works on it).
+    - Choice: `.choice` (the key string), `.confidence` (float, the top probability rescaled against an even
+      split; the date code guards against None), `.probabilities` (mapping key → prob, and `dict()` works on it).
     - Score: `.probabilities` keyed by **int** level index in the Python SDK (strings like "0" on the wire; code uses
       `.get(i, 0.0)`, so missing keys are possible). `.score` is the probability-weighted level per the API reference;
       autoresearch labels it "picked" without explanation.

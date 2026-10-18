@@ -71,6 +71,14 @@ class ImageRequestTest : StringSpec() {
                 noul("cat", "Is there a cat in the photo?")
             }
             jev.requests.single().headers.getAll(IMAGES_HEADER) shouldBe listOf("false")
+
+            val plain = testJev { respondJson(NO_ANSWERS) }
+            val optOut = JevCallOptions { headers["typesafe-danger-zone-images"] = "false" }
+            plain.client.withOptions(optOut).query("A photo: $photo") {
+                attach(photo)
+                noul("cat", "Is there a cat in the photo?")
+            }
+            plain.requests.single().headers.getAll(IMAGES_HEADER) shouldBe listOf("false")
         }
 
         "a Box question is sent with its image and its answer comes back typed" {
@@ -251,7 +259,34 @@ class ImageRequestTest : StringSpec() {
             }.problems shouldBe listOf("extraBody can't set 'assets' when the request attaches images")
 
             raw.query(PAYOUT_TICKET) { noul("urgent", "Is this urgent?") }
-            jev.requests.single().bodyJson().jsonObject["assets"] shouldBe JsonObject(emptyMap())
+            val request = jev.requests.single()
+            request.bodyJson().jsonObject["assets"] shouldBe JsonObject(emptyMap())
+            request.headers[IMAGES_HEADER] shouldBe "true"
+        }
+
+        "text shaped like another process's generated reference is sent as text" {
+            val jev = testJev { respondJson(NO_ANSWERS) }
+            val stored = foreignReference(JevImage.of(PNG_BYTES).reference)
+            jev.client.query("Customer wrote: $stored") { noul("urgent", "Is this urgent?") }
+            val request = jev.requests.single()
+            request.body.shouldBeInstanceOf<TextContent>()
+            request.headers[IMAGES_HEADER] shouldBe null
+        }
+
+        "a generated reference whose bytes are in a hand-built extraBody assets is sent" {
+            val jev = testJev { respondJson(NO_ANSWERS) }
+            val photo = JevImage.of(PNG_BYTES)
+            val assets =
+                buildJsonObject {
+                    putJsonObject(photo.reference) {
+                        put("format", "png")
+                        put("data_base64", "iVBORw0KGgo=")
+                    }
+                }
+            jev.client.withOptions(JevCallOptions { extraBody["assets"] = assets }).query("Photo: $photo") {
+                noul("cat", "Is there a cat in the photo?")
+            }
+            jev.requests.single().bodyJson().jsonObject["assets"] shouldBe assets
         }
 
         "references over 64 KiB in total are refused" {

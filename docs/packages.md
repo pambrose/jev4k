@@ -55,7 +55,7 @@ result.noul("refund").noul
   [evaluate][com.pambrose.jev4k.JevApi.evaluate] is the call every question goes through, and
   [models][com.pambrose.jev4k.JevApi.models] is its only other network call.
 - [JevResult][com.pambrose.jev4k.JevResult] holds the answers, the reported model, token usage and the request id.
-- [RetryPolicy][com.pambrose.jev4k.RetryPolicy] sets retries; the defaults match the official SDKs.
+- [RetryPolicy][com.pambrose.jev4k.RetryPolicy] sets retries; the defaults match the official JS SDK's.
 - [JevException][com.pambrose.jev4k.JevException] is the base of every error: local validation, API status
   errors, malformed responses and connection failures.
 

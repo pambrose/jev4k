@@ -47,7 +47,8 @@ fun jevResult(
 
 /**
  * The same, from the response body as JSON text. Text that isn't JSON, or isn't a JSON object, raises
- * [JevResponseValidationException], as it does from the client, so a garbled response can be simulated too.
+ * [JevResponseValidationException], as it does from the client, so a garbled response can be simulated too. A leading
+ * byte-order mark is dropped, as the client drops one.
  */
 @JvmOverloads
 fun jevResult(
@@ -56,7 +57,7 @@ fun jevResult(
     model: String = JevDefaults.MODEL,
     requestId: String? = null,
 ): JevResult {
-    val response = testResponse(body, requestId)
+    val response = testResponse(body.removePrefix("\uFEFF"), requestId)
     return mapSystemOne(response.parseObject(), model, questions, response)
 }
 
@@ -74,7 +75,8 @@ private fun testResponse(
  * ```
  *
  * A rate-limit error's hint is [retryAfter] when given, and otherwise read from a `retry-after-ms` or `Retry-After`
- * entry in [headers], as the client reads it. Java, which can't pass a `Duration`, sets it through [headers].
+ * entry in [headers], as the client reads it. Java, which can't pass a `Duration`, sets it through [headers]. The
+ * request id is likewise [requestId] when given, and otherwise the `x-typesafe-request-id` entry in [headers].
  */
 @JvmOverloads
 fun jevApiException(
@@ -84,6 +86,7 @@ fun jevApiException(
     headers: Map<String, List<String>> = emptyMap(),
     retryAfter: Duration? = null,
 ): JevApiException {
-    val hint = retryAfter ?: retryHint(headersOf(*headers.toList().toTypedArray()))
-    return apiException(status, body, headers, requestId, TEST_ENDPOINT, hint)
+    val parsed = headersOf(*headers.toList().toTypedArray())
+    val hint = retryAfter ?: retryHint(parsed)
+    return apiException(status, body, headers, requestId ?: parsed[JevDefaults.REQUEST_ID_HEADER], TEST_ENDPOINT, hint)
 }

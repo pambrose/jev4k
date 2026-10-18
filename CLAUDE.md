@@ -39,39 +39,48 @@ without them keep compiling.
   functions return `QuestionRef<A>` handles, and `include(query)` merges a `JevQuery` into the same request.
 - **Typed layer** (`JevQuery.kt`). `object X : JevQuery() { val urgent by noul("...") }`. A `PropertyDelegateProvider`
   takes the id from the property name (or `id =`) and registers questions in declaration order. `JevQuery.questions` is
-  built on first read, so an invalid definition fails on first use, and rebuilt if more questions have registered
-  since (a read from an `init` block or a base class would otherwise freeze a partial set). Definition errors are
-  carried on the `QuestionRef` rather than thrown, so they can't escape an `object`'s initializer: duplicate options,
-  and a `JevValidationException` thrown while a question is built (`entry()` or `jsonOf()` in a builder lambda, or
-  an enum option's `JevOption.entry`), which `QuestionProvider.provideDelegate` catches, registering a
-  `failedQuestionRef` stand-in whose question isn't checked. An inline `questions {}` builder throws at once, since it
-  runs in the caller's own code. An argument such as `noul(entry(...))` is evaluated before the builder runs, so that
-  one still throws from the initializer. `choice<E>()` builds options from an enum. The
-  option key is the constant's name unless `JevOption.optionKey` overrides it, and `JevOption.entry` becomes the
-  description.
+  built on first read, so an invalid definition fails on first use, and rebuilt if more questions have registered since
+  (a read from an `init` block or a base class would otherwise freeze a partial set). A read before any question has
+  registered, such as from the `init` of a base class with no questions of its own, fails with `JevValidationException`,
+  since a set needs one. Definition errors are carried on the `QuestionRef` rather than thrown, so they can't escape an
+  `object`'s initializer: duplicate options, and a `JevValidationException` thrown while a question is built (`entry()`
+  or `jsonOf()` in a builder lambda, or an enum option's `JevOption.entry`), which `QuestionProvider.provideDelegate`
+  catches, registering a `failedQuestionRef` stand-in whose question isn't checked. An inline `questions {}` builder
+  throws at once, since it runs in the caller's own code. An argument such as `noul(entry(...))` is evaluated before the
+  builder runs, so that one still throws from the initializer. `choice<E>()` builds options from an enum. The option key
+  is the constant's name unless `JevOption.optionKey` overrides it, and `JevOption.entry` becomes the description.
 - **Answers** (`JevResult.kt`, `Answers.kt`). `result[handle]` decodes through the handle's `decode` function, and also
   checks that the handle belongs to the request. By-id accessors (`noul`/`choice`/`score`/`enumChoice`) check that the
   question type matches. Raw answers are stored string-keyed. Enum choices are mapped when read, and an unknown option
-  becomes `JevResponseValidationException`; `enumChoice<E>(id)` first requires E to cover every declared option,
-  since a mismatch is the caller's mistake (`IllegalArgumentException`). A string-keyed read returns an undeclared
-  option as sent, as both official SDKs do. `QueryBuilder.question(id, q)` copies the question's map or list and
-  picks the type-checking decoder for its subtype.
+  becomes `JevResponseValidationException`; `enumChoice<E>(id)` first requires E to cover every declared option, since a
+  mismatch is the caller's mistake (`IllegalArgumentException`), then decodes against the declared options only, so a
+  broader enum's extra constant can't stand for an option the question never offered. A string-keyed read returns an
+  undeclared option as sent, as both official SDKs do. `QueryBuilder.question(id, q)` copies the question's map or list
+  and picks the type-checking decoder for its subtype.
 - **Images and Box** (`JevImage.kt`, `internal/ImageRequest.kt`), all behind `@ExperimentalJevImages`, which the build
   opts the module into (`compilerOptions.optIn`), so every public declaration that names an image or Box type must
   carry the annotation by hand.
     - A `JevImage` stands in content as its `reference` (`toString()`, `jsonOf`, `JevImageSerializer`, the builders'
       image overloads); `JsonPrimitive` is sealed, so images can't be discovered in a JSON tree and must be attached:
       `QueryBuilder.attach`, `JevQuery.attach`, or `ask(query, state, images...)`. `QuestionSet.images` holds each
-      instance once.
-    - The factories never throw for bad content: the problem rides on the image and `imageDefinitionProblems` reports
-      it when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws.
-    - `evaluate` runs `imageRequestProblems` (references matched as the API does, as plain text in string values,
-      never keys), adds `TypeSafe-Danger-Zone-Images: true` as a built-in header (for a hand-built
-      `extraBody["assets"]` too), and sends a request with images as
+      image once (`distinctImages`): a second instance with the same reference and bytes is dropped.
+    - The factories never throw for bad content: the problem rides on the image and `imageDefinitionProblems` reports it
+      when the set is validated, keeping definition errors out of `JevQuery` initializers. Only a file read throws.
+      Every factory flags an image over the API's 16 MiB (`MAX_IMAGE_BYTES`), and each `read` overload skips a regular
+      file over it (`tooLarge`) and reads anything else through `readCapped`, so a device or a pipe can't fill memory. A
+      reference inside another attached one is refused there too, since the API's plain-text matching can't tell them
+      apart.
+    - A generated reference's first UUID group is a per-process tag (`PROCESS_TAG`), so `GENERATED_REFERENCE` matches
+      only this process's references: text from elsewhere that looks like one is sent as text, not refused.
+    - `evaluate` runs `imageRequestProblems` (references matched as the API does, as plain text in string values, never
+      keys; a hand-built `extraBody["assets"]`'s keys count as attached), adds `TypeSafe-Danger-Zone-Images: true` as a
+      built-in header (for a hand-built `extraBody["assets"]` too), and sends a request with images as
       `MultiPartFormDataContent`: a `request` part with the JSON and a generated `assets` map, then `image-0`, … with a
       filename (Ktor quotes each part name). Without images the request is the same `TextContent` as before.
-    - `BoxQuestion`/`BoxAnswer` are the fourth question and answer types; the mapper requires edges in 0..1 with
-      `left < right` and `top < bottom`.
+    - `BoxQuestion`/`BoxAnswer` are the fourth question and answer types. The mapper requires four finite edges;
+      `decodeBox` checks them in 0..1 with `left < right` and `top < bottom` (and the confidence in 0..1) when the Box
+      is read, through `box(id)`, a handle or `boxes`, so one bad Box doesn't take the paired Noul down with it.
+      `AnswerDecodingException.field` gives the field path below `answers.<id>`.
 - **Wire** (`internal/Wire.kt`).
     - Requests are `@Serializable` DTOs, and a sealed `WireQuestion` writes the `"type"` discriminator.
     - `JevJson` sets `encodeDefaults = false`, so unset optional fields (Noul criteria) are omitted. Explicit JSON
@@ -83,21 +92,23 @@ without them keep compiling.
     - An answer with no `type` is read as the type of question that was asked; an unknown type becomes `UnknownAnswer`.
     - Choice probabilities are reordered to the order the options were declared. Score keys `"0".."n"` become `Int`.
     - Absent answers fail when they are read, not when the response is parsed, and a `null` answer counts as absent.
-    - Numbers must be finite (an unquoted `NaN` and `1e999` both parse), and a Score level key must lie within the
-      question's levels, or be non-negative for an answer nobody asked for.
+    - Numbers must be finite (an unquoted `NaN` and `1e999` both parse), and a Score level key must be written as its
+      number (`1`, not `01` or `+1`) and lie within the question's levels, or be non-negative for an answer nobody
+      asked for, whose `levelCount` is its highest key plus one.
     - Every `JevResponseValidationException` from a 2xx body is thrown by `ResponseInfo.fail`, which carries the
       body's text as received, the status and the headers. `send` builds the `ResponseInfo`, and `JevResult` keeps
       it for failures at read time.
     - A value jev4k sends (the state, each question entry, each `extraBody` field) may nest `MAX_SEND_DEPTH` (64,
-      `internal/JsonDepth.kt`) levels, or it fails with `JevValidationException`. That is the API's request rule: it
-      checks the state and each instructions or criteria value on its own, counting the outermost object or array as
+      `internal/JsonDepth.kt`) levels. A deeper state or entry fails with `JevValidationException`, and a deeper
+      `extraBody` field fails `JevCallOptionsBuilder.build()` with `JevConfigException`. That is the API's request rule:
+      it checks the state and each instructions or criteria value on its own, counting the outermost object or array as
       level 1 (a criteria map isn't a level), and answers a deeper one with a 400. A probe on 2026-10-15 pinned it.
     - JSON received may nest `MAX_JSON_DEPTH` (128) levels, refused before kotlinx.serialization recurses into it:
       a response body (scanned as text before parsing) with `JevResponseValidationException`, and an error body's
       `bodyJson` is null. Both checks are iterative, so they can't overflow themselves. Windows sets this limit: its
       1 MB main-thread stack crashed the mingwX64 test binary encoding 512 levels, so the limit is 128.
 - **Client** (`JevClient.kt`, `internal/HttpClientFactory.kt`, `internal/Retry.kt`).
-    - `HttpRequestRetry` reproduces the official SDKs' retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
+    - `HttpRequestRetry` reproduces the JS SDK's retry rules. `RetryPolicy` sets them: 408/429/5xx, connection
       errors, timeouts, 0.5 s doubling to 5 s with 25% jitter, and `retry-after-ms`/`Retry-After` hints up to 60 s.
       A `Retry-After` HTTP-date, which the Python SDK also reads, counts from the config's internal `now` clock.
     - `followRedirects = false`: a 3xx becomes a `JevApiException`, since Ktor strips only `Authorization` on a
@@ -107,9 +118,13 @@ without them keep compiling.
       responses are read raw. So the only `Accept` is `setHeaders`' (or the caller's), and `jev4k-jvm` needs only
       CIO at runtime. `ClientTest` pins the request bytes the plugin used to produce.
     - `HttpClientFactory.limitBodySize` inserts a receive-pipeline phase ahead of `Before`, where Ktor's `SaveBody`
-      reads the whole body into memory, and refuses a declared `Content-Length` over `MAX_RESPONSE_BYTES` (16 MiB)
-      with an internal `OversizedResponseException`, which `execute` maps by status. A chunked body isn't capped;
-      the timeout bounds it. An `HttpSend` interceptor would be too late: the receive pipeline runs inside the send.
+      reads the whole body into memory, and refuses a declared `Content-Length` over `MAX_RESPONSE_BYTES` (16 MiB) with
+      an internal `OversizedResponseException`, which `execute` maps by status (a 2xx without the internal one as its
+      cause, which holds Ktor types that can't be serialized). A body without a declared length isn't capped and the
+      timeout bounds it; that includes a compressed one on Curl, Darwin and the Js engines, which decompress it and drop
+      `Content-Length` first. Counting bytes would need Ktor's `@InternalAPI` `rawContent`, so the gap is documented on
+      the README, Configuration and Errors pages instead. An `HttpSend` interceptor would be too late: the receive
+      pipeline runs inside the send.
     - `HttpRequestRetry` must be installed **before** `HttpTimeout`, otherwise one timeout cancels every retry.
     - `expectSuccess = false`: non-2xx responses map to `JevApiException` subclasses (`apiException` in `Errors.kt`)
       after retries run out, keeping the raw body and the `x-typesafe-request-id` header. `JevApiException` lowercases
@@ -121,10 +136,11 @@ without them keep compiling.
       through `DefaultRequest`, which only sets the URL. `DefaultRequest` merges its headers with a request's own
       (KTOR-6946), so a header named in both would be sent twice.
     - `JevCallOptions` (`JevCallOptions.kt`) overrides a call's timeout and retry policy through Ktor's per-request
-      `timeout {}` and `retry {}`, which `HttpClientFactory`'s `limitTo` and `follow` fill in exactly as the plugins
-      are configured; a per-request retry config replaces the plugin's except for its `delay`. `extraBody` is merged
-      into the encoded request inside the call, so an unencodable state still becomes `JevValidationException`, and
-      can't set `state`, `model` or `questions`. `JevApi.withOptions` wraps an API so `query`/`ask` use the options.
+      `timeout {}` and `retry {}`, which `HttpClientFactory`'s `limitTo` and `follow` fill in exactly as the plugins are
+      configured; a per-request retry config replaces the plugin's except for its `delay`. `extraBody` is merged into
+      the encoded request inside the call, so an unencodable state still becomes `JevValidationException`, and can't set
+      `state`, `model` or `questions`. `JevCallOptionsBuilder.build()` runs the same `headerProblem` checks as the
+      config's (tokens, ASCII, `FRAMING_HEADERS`). `JevApi.withOptions` wraps an API so `query`/`ask` use the options.
     - `JevClient.execute` classifies a failed call in one place. `SerializationException` becomes
       `JevValidationException`. A `CancellationException` is caught next (first among the rest, because on
       Kotlin/Native it is also an `IllegalStateException`): a cancelled caller gets its own cancellation through
@@ -144,14 +160,22 @@ without them keep compiling.
   are trimmed, and one that is blank after trimming counts as unset. The env vars are `TYPESAFE_API_KEY` (required),
   `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. Internal hooks (`env`, `retryDelay`, `random`, `now`) make tests
   deterministic; `env` defaults to `platformGetenv`.
-    - `build()` checks what Ktor would otherwise reject on every request, with an exception that isn't a
-      `JevException` and whose message quotes the value. `baseUrl` is parsed once: http(s), a host, no userinfo,
-      query or fragment, and plain `http://` only for a loopback host unless `allowInsecureHttp`. The API key may
-      not contain control characters. Header names and values follow Ktor's `checkHeaderName`/`checkHeaderValue`.
-      Every problem goes into one `JevConfigException`, whose messages never quote the key, a header value, or a
-      URL that could hold credentials.
-    - The retry policy is stored with a copy of its status set, since the caller's set may be mutable and the
-      client re-reads it on every response. A blank per-call model falls back to the default, as a blank
+    - `build()` checks what Ktor would otherwise reject on every request, with an exception that isn't a `JevException`
+      and whose message quotes the value, and what engines would send differently. `baseUrl` is parsed once: http(s), a
+      host, no userinfo, query or fragment, and plain `http://` only for a loopback host unless `allowInsecureHttp`. The
+      API key must be visible ASCII (`'!'..'~'`). A header name must be an RFC 9110 token, its value ASCII without
+      control characters but a tab, and `FRAMING_HEADERS` (`Content-Length`, `Content-Type`, `Transfer-Encoding`,
+      `Upgrade`) are refused in any case: Ktor's `UnsafeHeadersList` holds only the last two, and a configured length or
+      type contradicts the body's or is dropped. `setting()` drops a leading U+FEFF before trimming. A missing API key
+      throws on its own, first; every other problem goes into one `JevConfigException`, whose messages never quote the
+      key, a header value, or a URL that could hold credentials.
+    - The retry policy is stored with a copy of its status set, since the caller's set may be mutable and the client
+      re-reads it on every response. Every collection a built object holds (a config's and a call's headers, a call's
+      `extraBody`, the status sets, a `QuestionSet`'s ids, questions and images, a Choice's options, a Score's levels, a
+      result's answers) is a snapshot from `internal/ReadOnly.kt`, which copies through
+      `buildMap`/`buildSet`/`buildList`. `toMap()` and friends give Java a `LinkedHashMap` or `ArrayList` it can change
+      once there are two entries; the built ones reject every change, through their views and iterators too.
+      `ReadOnlyJvmTest` casts each one as Java would. A blank per-call model falls back to the default, as a blank
       `defaultModel` does.
 - **Platforms** (`internal/Platform.kt` and its actuals). Everything that differs between platforms is an `internal`
   expect: `platformGetenv`, `defaultEngine` (the engine factory; `JevConfig.toString` reports its class name),
@@ -159,10 +183,11 @@ without them keep compiling.
   unchanged). Actual files carry a platform suffix (`Platform.jvm.kt`, `Engine.linux.kt`) so JVM facade names never
   clash. No engine gets a timeout of its own: `HttpTimeout` sets one on every request, and CIO, for one, ignores its
   `requestTimeout` whenever a request carries that capability.
-    - On the JVM, `defaultEngine` is a getter in its own `Engine.jvm.kt`. As a stored value next to `platformGetenv`
-      it would load CIO in the class initializer that every environment lookup runs, and a consumer who supplies an
-      engine and excludes `ktor-client-cio` (as the README suggests) couldn't build a client. `CioExclusionTest`
-      runs jev4k in a class loader that hides CIO to pin this.
+    - On the JVM, `defaultEngine` is a getter in its own `Engine.jvm.kt`. As a stored value next to `platformGetenv` it
+      would load CIO in the class initializer that every environment lookup runs, and a consumer who supplies an engine
+      and excludes `ktor-client-cio` (as the README suggests) couldn't build a client. `CioExclusionTest` runs jev4k in
+      a class loader that hides CIO and ktor-network-tls to pin this: a config reads the environment, and `CioFreeCalls`
+      (a jvmTest helper, not a spec) builds a client on a `MockEngine`, makes a blocking call and maps a failed one.
     - Default engines: CIO on the JVM (`jvmMain`), Darwin (`appleMain`), Curl (`linuxMain`), WinHttp (`mingwMain`),
       and the Js engine bundled in `ktor-client-core` (`webMain`, shared by js and wasmJs). CIO can't be used
       natively: Ktor's native TLS fails with "TLS sessions are not supported on Native platform".
@@ -189,9 +214,9 @@ without them keep compiling.
       `kotlin.jvm.JvmSynthetic` imports (only the JVM imports `kotlin.jvm.*` by default).
 - **Validation** (`Questions.kt`). Every problem is collected into one `JevValidationException` before anything is sent:
   at least one question, unique non-blank ids, instructions that are non-blank text or a non-empty object or array,
-  1..255 Choice options, 2..10 Score levels, and no entry nested too deeply or holding NaN or an infinity (which
-  kotlinx.serialization refuses to encode). `evaluate` also rejects a null, number or boolean state; the API takes a
-  string, an object or an array.
+  criteria values that are text, an object or an array (or null for a Choice option), 1..255 Choice options, 2..10 Score
+  levels, and no entry nested too deeply or holding NaN or an infinity (which kotlinx.serialization refuses to encode).
+  `evaluate` also rejects a null, number or boolean state; the API takes a string, an object or an array.
 
 ## Documentation site
 
@@ -205,8 +230,9 @@ without them keep compiling.
   It deploys to GitHub Pages only when a release is published, or on manual dispatch, so jev4k.com never shows a
   version that isn't on Maven Central yet; a separate deploy job can be re-run on its own. A release runs on its
   tag, so the `github-pages` environment allows tags matching `[0-9]*.[0-9]*.[0-9]*` as well as `master`.
-  `zensical.toml` sets `site_url`, `repo_url` and `edit_uri`, and Dokka's `sourceLink`/`homepageLink` point at
-  `github.com/pambrose/jev4k` on `master`. The repository's Pages source must be set to "GitHub Actions".
+  `zensical.toml` sets `site_url`, `repo_url` and `edit_uri`, and Dokka's `homepageLink` points at
+  `github.com/pambrose/jev4k`; its source links open the ref in `jev4k.sourceRef` (see Build). The repository's Pages
+  source must be set to "GitHub Actions".
 - **Custom domain.** The site is served at <https://jev4k.com/>, not `pambrose.github.io/jev4k/`, so page URLs carry no
   path prefix. `docs/CNAME` holds the bare domain and Zensical copies it to `site/CNAME`; GitHub Pages reads the domain
   from that file, and without it an Actions-published site can lose the custom domain set under Settings → Pages on a
@@ -228,9 +254,10 @@ without them keep compiling.
 - **Commands.** `make site` serves the site with live reload. `make site-build` builds it into `website/jev4k/site` and
   copies the Dokka KDocs to `site/kdocs`; the `KDocs` nav entry, `api.md`, is an ordinary page that links there.
   `make check-site` and `make upgrade-site` manage the Python dependencies.
-- **Examples are never written inline in pages.** They live in `src/jvmTest/kotlin/website` (`package website`) and
-  are pulled in with `--8<-- "File.kt:section"` inside a fenced block. `pymdownx.snippets` resolves them from that
-  folder, with `check_paths` and `dedent_subsections` on.
+- **Examples are never written inline in pages.** They live in `src/jvmTest/kotlin/website` (`package website`) and are
+  pulled in with `--8<-- "File.kt:section"` inside a fenced block. `pymdownx.snippets` resolves them from that folder,
+  the Java example's and the repository root (for `HotDogExample.kt`, which the Images page shows), with `check_paths`
+  and `dedent_subsections` on.
     - A section is the region between `// --8<-- [start:section]` and `// --8<-- [end:section]` (`#` markers in `.txt`
       files).
     - To show a directive literally in a page, prefix it with `;`.
@@ -238,10 +265,11 @@ without them keep compiling.
       containing one, so the rest of that sentence disappears.
 - **The Java example** lives in `src/jvmTest/java/website/JavaInterop.java` and is compiled by `compileJvmTestJava`, so
   it doubles as a guard on part of the Java-visible surface: the overloads it calls (the two-argument `qb.noul(...)`,
-  `BlockingJev.query` without a model, `jevResult` and `jevApiException`), `BlockingJev`'s `@Throws` (it catches
-  `InterruptedException`) and the millisecond members. The ABI dump in `api/` guards the rest. It doesn't guard
-  `@JvmSynthetic`, because kotlinc marks reified inline functions synthetic on its own. `zensical.toml`'s snippet
-  `base_path` includes that folder.
+  `BlockingJev.query` with and without a model, `jevResult` and `jevApiException`), `BlockingJev`'s `@Throws` (it
+  catches `InterruptedException`), every millisecond member, the image calls (`JevImage.of`, the vararg `attach`, a Box
+  on `jev-preview`, `copyBytes`), and that `ask(query, state, null)` stays unambiguous next to `askWithImages`. The ABI
+  dump in `api/` guards the rest. It doesn't guard `@JvmSynthetic`, because kotlinc marks reified inline functions
+  synthetic on its own. `zensical.toml`'s snippet `base_path` includes that folder.
 - **Example files are compiled and linted like any test source, but they aren't tests.** Keep Kotest and MockK out of
   them.
     - Top-level names share one package, so they must be unique across files, and only one `main` is allowed.
@@ -266,11 +294,12 @@ without them keep compiling.
     - Source sets follow the default hierarchy: `commonMain`, `jvmMain`, `nativeMain` (split into `appleMain`,
       `linuxMain` and `mingwMain` for the engines), and `webMain` for js + wasmJs. Tests are `commonTest` and
       `jvmTest`.
-    - Only a Mac compiles every target. Linux and Windows skip the Apple ones quietly
-      (`kotlin.native.ignoreDisabledTargets=true`), and a Mac cross-compiles and links Linux and Windows binaries but
-      can't run them itself; `make docker-linux-tests` runs the Linux ones in containers. Test binaries no host tool
-      can run here (iosX64's off an Intel Mac, mingwX64's off Windows) have their test KSP, compile and link tasks
-      disabled, so `check` doesn't build them; the Linux ones are kept for `docker-linux-tests`.
+    - Only a Mac links and runs every target. Linux compiles every Apple klib too (CI's build job does), but can't link
+      or run an Apple binary, and `kotlin.native.ignoreDisabledTargets=true` keeps a host quiet about what it can't
+      build (Windows wasn't checked). A Mac cross-compiles and links Linux and Windows binaries but can't run them
+      itself; `make docker-linux-tests` runs the Linux ones in containers. Test binaries no host tool can run here
+      (iosX64's off an Intel Mac, mingwX64's off Windows) have their test KSP, compile and link tasks disabled, so
+      `check` doesn't build them; the Linux ones are kept for `docker-linux-tests`.
     - The User-Agent version is compiled in: a configuration-cache-safe `generateBuildInfo` task writes
       `internal const val JEV4K_VERSION` into `build/generated/buildinfo`, a `commonMain` source directory.
     - The JS toolchains' lockfiles live in `kotlin-js-store/` and are committed (`.gitignore` negates the global
@@ -283,13 +312,15 @@ without them keep compiling.
       part of the klib's unique name, which `api/jev4k.klib.api` records.
     - `com.pambrose.jev4k:jev4k` is the root module, which Gradle resolves per target; the JVM jar is `jev4k-jvm`,
       which is what Maven consumers name. Every other target gets its own artifact (`jev4k-js`, `jev4k-macosarm64`, …).
-    - The Apple artifacts can only be built on macOS, so releases are published from a Mac; the publishing Makefile
-      targets refuse to run elsewhere.
+    - Releases are published from a Mac, the only host that links and tests the Apple targets as well as compiling
+      them; the publishing Makefile targets refuse to run elsewhere.
     - The Dokka HTML is packaged as the javadoc jar, alongside a sources jar and POM metadata (Apache 2.0,
       github.com/pambrose/jev4k).
     - `publishToMavenCentral(automaticRelease = true)`.
     - Signing happens only when `signingInMemoryKey` is supplied. The Makefile's `GPG_ENV` supplies it from
       `GPG_SIGNING_KEY_ID`, and the passphrase from the macOS keychain (`gradle-signing-password` / `gpg-signing`).
+      Every process the build starts inherits `GPG_ENV`, so step 5 of the release checklist stops the Gradle and Kotlin
+      daemons after a publish.
     - Maven Central credentials come from `~/.gradle/gradle.properties`.
     - `make publish-snapshot` and `make publish-maven-central` upload to Maven Central, so never run them unasked.
       `make publish-local` and `make publish-local-snapshot` publish to `~/.m2`.
@@ -355,17 +386,22 @@ without them keep compiling.
       up-to-date `jvmTest` won't re-run on its own. `make tests` and `make live-tests` pass `--rerun` to each test task,
       so they always see the current values. (`--rerun-tasks` would also recompile all sixteen targets.)
 - Dokka (`org.jetbrains.dokka` 2.2.0) builds the KDoc site. `make kdocs` writes it to `build/dokka/html`.
-    - The site documents the public API of the main source sets, with a tab per platform (common, jvm, native, web).
-      Source sets whose names end in `Test` are suppressed, so no test class, fixture or example is included, and the
-      `com.pambrose.jev4k.internal` package is excluded. `docs/packages.md` supplies the module and package overview
-      pages, through `commonMain`'s source-set `includes`. A publication's `includes` is only read for a multi-module
-      overview, so the file set there, as it was until 0.3.0, never reached the site.
-    - kotlinx.serialization and Ktor types link to their online API docs through `externalDocumentationLinks`.
-    - `moduleVersion` is `project.version`, `jvmMain`'s `jdkVersion` comes from the catalog's `jvm-target` version, and
-      `suppressInheritedMembers` is on. Pages don't repeat inherited members: a subclass such as `JevRateLimitException`
-      links to `JevApiException` for `status`, `body` and `requestId`.
-    - `sourceLink` (rooted at `src/`, so it covers every source set) and `homepageLink` point at
-      `github.com/pambrose/jev4k` on `master`.
+    - The site documents the public and protected API of the main source sets (protected for `JevQuery`'s builders),
+      with a tab per platform (common, jvm, native, web). Source sets whose names end in `Test` are suppressed, so no
+      test class, fixture or example is included, and the `com.pambrose.jev4k.internal` package is excluded.
+      `docs/packages.md` supplies the module and package overview pages, through `commonMain`'s source-set `includes`. A
+      publication's `includes` is only read for a multi-module overview, so the file set there, as it was until 0.3.0,
+      never reached the site.
+    - kotlinx.serialization, Ktor and kotlinx-io types link to their online API docs through
+      `externalDocumentationLinks`.
+    - `moduleVersion` is `project.version`, every source set's `jdkVersion` comes from the catalog's `jvm-target`
+      version (Dokka resolves a JDK link through whichever source set's links sort first, so setting it on `jvmMain`
+      alone left every link at 25), and `suppressInheritedMembers` is on. Pages don't repeat inherited members: a
+      subclass such as `JevRateLimitException` links to `JevApiException` for `status`, `body` and `requestId`.
+    - `sourceLink` (rooted at `src/`, so it covers every source set) opens `tree/<jev4k.sourceRef>`, a Gradle
+      property that defaults to `master`. A released javadoc jar can't be replaced while `master` moves on, so
+      `docs.yml` passes the tag when it runs on one and `make publish-maven-central` passes the version, which step 6
+      of the release checklist then tags. `homepageLink` points at `github.com/pambrose/jev4k`.
     - In a class comment, refer to a constructor property as `[name][Class.name]`. A bare `[name]` points at the
       constructor parameter, which Dokka leaves unlinked.
 - Java interop is a deliberate, narrow contract: `@JvmOverloads` on `JevClient`'s builder constructor, `BlockingJev`'s
@@ -379,9 +415,10 @@ without them keep compiling.
   public, callable methods but aren't supported API, so a Java caller gets an enum-backed Choice by building a
   `ChoiceQuestion` and passing it to `QueryBuilder.question(id, question)`; the README and the Installation page say
   so.
-  Kotlin's inline `Duration` mangles every member that takes or returns one, and makes `RetryPolicy`'s constructor
-  and `copy` synthetic, so each `Duration` setting has a millisecond twin for Java: `JevConfigBuilder.timeoutMillis`,
-  `JevCallOptionsBuilder.timeoutMillis`, `JevDefaults.TIMEOUT_MILLIS`, `RetryPolicy.with…` (one per setting) and
+  Kotlin's inline `Duration` mangles every member that takes or returns one, and makes `RetryPolicy`'s constructor and
+  `copy` synthetic, so each `Duration` setting has a millisecond twin for Java: `JevConfigBuilder.timeoutMillis`,
+  `JevCallOptionsBuilder.timeoutMillis`, `JevDefaults.TIMEOUT_MILLIS`, `RetryPolicy.with…` (one per setting, plus
+  `withBackoffMillis` for both backoff limits, which changed one at a time can fail on the way) and
   `JevRateLimitException.retryAfterMillis`. Add one alongside any new `Duration` setting. The `Duration` getters stay
   Kotlin-only. `JavaInterop.java` calls each twin, catches `BlockingJev`'s `InterruptedException` (javac rejects that
   catch if `@Throws` is dropped), and uses `BlockingJevKt.blocking` and `JevCallOptionsKt.withOptions`.
@@ -391,28 +428,38 @@ without them keep compiling.
   six POM dependencies (in `jev4k-jvm`'s POM: five compile, CIO at runtime), no logging binding, and how to drop
   CIO when supplying another engine.
 - KGP's ABI validation (`abiValidation()`) guards the public API. `api/jev4k.api` is the JVM surface, Java callers
-  included, and `api/jev4k.klib.api` covers the other targets. `checkKotlinAbi` runs under `check`;
-  `make abi-update` (`updateKotlinAbi`) rewrites the dumps after an intended change and must run on a Mac, since a
-  host that can't compile a target keeps that target's old declarations. The JVM dump matched 0.1.0's through the
-  multiplatform move; 0.2.0's API changes since (`ModelList`, `JevCallOptions`, the millisecond members and the rest,
-  listed in the changelog) were recorded with `make abi-update`, as were 0.3.0's image and Box additions, which only
-  add to the dumps.
+  included, and `api/jev4k.klib.api` covers the other targets. `checkKotlinAbi` runs under `check`; `make abi-update`
+  (`updateKotlinAbi`) rewrites the dumps after an intended change and must run on a Mac: a host that can't compile a
+  target keeps that target's old declarations, and while Linux compiles the Apple klibs, only a Mac has been checked to
+  write a complete klib dump. The JVM dump matched 0.1.0's through the multiplatform move; 0.2.0's API changes since
+  (`ModelList`, `JevCallOptions`, the millisecond members and the rest, listed in the changelog) were recorded with
+  `make abi-update`, as were 0.3.0's image and Box additions, and 0.4.0's `JevImage.copyBytes`,
+  `RetryPolicy.withBackoffMillis` and `QuestionSet.toString`, which only add to the dumps.
 - Coverage uses Kover (`org.jetbrains.kotlinx.kover`).
-    - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs
-      `build koverVerify koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js,
-      wasmJs and linuxX64 tests), then `make docker-linux-tests` with QEMU (`docker/setup-qemu-action`), which is
-      the only place CI runs linuxArm64's tests, then uploads `build/reports/kover/report.xml` to Codecov with the
-      `unittests` flag. A JVM test failure leaves no report to upload, since Kover's reports depend on `jvmTest`. The upload needs a `CODECOV_TOKEN` repository secret. `codecov.yml` fails the project status on
-      a drop of more than 1% and reports patch coverage without gating on it.
+    - `.github/workflows/ci.yml` runs on every push to `master`. Its ubuntu `build` job runs `build koverVerify
+      koverXmlReport koverLog` (compile, kotlinter, detekt, the ABI check, and the jvm, js, wasmJs and linuxX64 tests),
+      then `make docker-linux-tests` with QEMU (`docker/setup-qemu-action`), which is the only place CI runs
+      linuxArm64's tests, then uploads `build/reports/kover/report.xml` to Codecov with the `unittests` flag. A JVM test
+      failure leaves no report to upload, since Kover's reports depend on `jvmTest`. The upload needs a `CODECOV_TOKEN`
+      repository secret, and sets `disable_search` so koverLog's `build/kover/coverage.txt` isn't sent too. Codecov only
+      reports: both its statuses are `informational` (the project one flags a drop of more than 1%), branch protection
+      doesn't require them, and the upload can't fail CI, so the Kover floors are the coverage gate. A failed build
+      uploads `build/docker-linux-tests/` with the test reports, since a container run's TeamCity messages are only
+      there. The `binfmt` image QEMU installs runs privileged, so it is pinned by digest, as `LINUX_TEST_IMAGE` is in
+      the Makefile; neither zizmor nor Dependabot tracks image digests, so both are bumped by hand.
     - A `native` matrix job runs the tests Linux can't: the macOS and iOS, tvOS and watchOS simulator tests on
-      macos-latest (a tvOS or watchOS task is skipped when the runner has no device for it) and `mingwX64Test` on
-      windows-latest. A final `ci-ok` job passes only when every other job succeeded; branch protection on `master`
-      requires it, the `docs` check and GitGuardian, so the JDK matrix and the native jobs gate a merge.
-    - Every job that compiles native code caches `~/.konan`, keyed on the Kotlin version alone (read from the
-      catalog) with no `restore-keys`, so an old toolchain is never carried forward. `docs.yml` uses no cache at
-      all, neither that one nor setup-gradle's or setup-uv's: it publishes the site, and zizmor's `cache-poisoning`
-      audit accepts caching only when it is off for every run of a publishing workflow. Dokka downloads the
-      Kotlin/Native toolchain itself, and the job still finishes before CI does.
+      macos-latest and `mingwX64Test` on windows-latest. The Apple row passes `-Pjev4k.requireSimulators=true`, which
+      fails the build when a simulator platform has no device, instead of letting its disabled tests report SKIPPED.
+      iosX64 is compiled and published but its tests run nowhere: they need an Intel Mac. A final `ci-ok` job passes
+      only when every other job succeeded; branch protection on `master` requires it, the `docs` check and GitGuardian,
+      so the JDK matrix and the native jobs gate a merge.
+    - Every job that compiles native code caches `~/.konan`, keyed on the Kotlin version alone (read from the catalog)
+      with no `restore-keys`, so an old toolchain is never carried forward. `docs.yml` uses no cache at all, neither
+      that one nor setup-gradle's or setup-uv's: it publishes the site, and zizmor's `cache-poisoning` audit accepts
+      caching only when it is off for every run of a publishing workflow. Dokka downloads the Kotlin/Native toolchain
+      itself, and the job still finishes before CI does. For the same reason setup-uv installs a pinned uv (`version`),
+      bumped by hand after the 7-day wait Dependabot gives actions, when `make upgrade-site` moves the lockfile; the
+      JDK's patch floats, for its security fixes. Both jobs set `timeout-minutes`.
     - `.github/workflows/zizmor.yml` audits the workflows and `dependabot.yml` with zizmor, as `make zizmor` does
       locally (with the brew-installed binary, and the gh CLI's token for the online audits). On a pull request
       its `zizmor` job fails on any finding and annotates the diff; pushes to `master`, a weekly run and manual runs
@@ -475,9 +522,12 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
 
 - Test classes are named `*Test`. Each is a Kotest `StringSpec()` with an `init {}` block.
     - Specs for common code go in `src/commonTest/kotlin/com/pambrose/jev4k/`, so they run on every platform the host
-      supports. `src/jvmTest` keeps what needs the JVM: MockK specs, `BlockingJevTest`, `LiveSmokeTest`,
-      `ClientJvmTest` (the blocking wrapper and the real-CIO timeout case), `CioExclusionTest`, `SilentServer`, the
-      example, and the website examples. A class name can't be in both, so a JVM-only remainder is named `…JvmTest`.
+      supports. `src/jvmTest` keeps what needs the JVM: MockK specs, `BlockingJevTest`, `LiveSmokeTest`, `ClientJvmTest`
+      (the blocking wrapper, and five cases on a real CIO engine: a timeout, an untrusted certificate, a body cut short,
+      an oversized declared body and an unparseable response), `CioExclusionTest` with its `CioFreeCalls` helper,
+      `ErrorsJvmTest`, `ReadOnlyJvmTest`, `JevImageJvmTest`, `HotDogPhotosTest`, `CropExampleTest`, `SilentServer` and
+      `RawServer`, the two runnable examples (`TriageExample`, `HotDogExample`), and the website examples. A class name
+      can't be in both, so a JVM-only remainder is named `…JvmTest`.
     - Kotest runs the non-JVM targets through the `io.kotest` plugin and KSP, which generate each target's entry
       point. The plugin only does that for test tasks the host can run, so `build.gradle.kts` adds the processor to
       `kspLinuxX64Test` and `kspLinuxArm64Test` itself; without that, a Linux test binary linked on a Mac holds no
@@ -503,13 +553,14 @@ To upgrade Gradle, bump `gradle-wrapper` in `gradle/libs.versions.toml`, then ru
       one as a generic "some other error".
 - HTTP is tested with Ktor's `MockEngine` through `testJev(...)` in `TestSupport.kt`. It injects the engine and records
   retry delays instead of sleeping, and `NoJitter` makes backoff predictable. A client on a real engine gets the same
-  settings from `testDefaults(delays)`; `triageJev()`, `PAYOUT_TICKET` and `liveOptIn()` are shared there too.
-  `parts()` splits a MockEngine request's multipart body, for `ImageRequestTest`; `PNG_BYTES`/`JPEG_BYTES` are
-  signature-only fixtures, and `Gestures` is a `JevQuery` that attaches example pictures.
-  `SilentServer` (JVM) is a local socket that never responds, for testing real-CIO timeouts. `RawServer` (JVM)
-  answers every request with fixed bytes, for responses no real server sends, optionally over TLS with a
-  self-signed certificate made by the JDK's `keytool`. `PlatformEngineTest` drives each platform's real default
-  engine against a dead loopback port.
+  settings from `testDefaults(delays)`; `triageJev()`, `PAYOUT_TICKET` and `liveOptIn()` are shared there too. `parts()`
+  splits a MockEngine request's multipart body, for `ImageRequestTest`; `PNG_BYTES`/`JPEG_BYTES` are signature-only
+  fixtures, and `Gestures` is a `JevQuery` that attaches example pictures. `foreignReference(generated)` rewrites a
+  generated reference with another process's tag, for the `PROCESS_TAG` tests, and `nestedArrays`, `nestedObjects` and
+  `nestedArrayText` build depth-limit fixtures. `SilentServer` (JVM) is a local socket that never responds, for testing
+  real-CIO timeouts. `RawServer` (JVM) answers every request with fixed bytes, for responses no real server sends,
+  optionally over TLS with a self-signed certificate made by the JDK's `keytool`. `PlatformEngineTest` drives each
+  platform's real default engine against a dead loopback port.
 - MockK is used where a dependency is mocked: `ConsumerTest` mocks `JevApi` to show how application code is tested
   without HTTP.
 - `LiveSmokeTest` (JVM) makes real API calls and runs only when `JEV4K_LIVE=1` (`make live-tests` sets it), so

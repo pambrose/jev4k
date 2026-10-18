@@ -66,6 +66,7 @@ suspend fun violatedClauses(
     post: String,
     clauses: Map<String, String>,
 ): List<String> {
+    if (clauses.isEmpty()) return emptyList() // a request needs at least one question
     val result =
         jev.query(state = post) {
             clauses.forEach { (id, clause) -> noul(id, "Does the post violate this rule: $clause?") }

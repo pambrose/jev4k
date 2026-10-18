@@ -5,8 +5,8 @@ icon: lucide/list
 # Choice
 
 A **Choice** picks one option from a set you define. Its answer has the most likely option (`choice`), the
-probability of every option (`probabilities`, summing to 1), and a `confidence` from 0 to 1 that summarizes how
-concentrated those probabilities are.
+probability of every option (`probabilities`, summing to 1), and a `confidence` from 0 to 1 that says how far the
+winner sits above an even split.
 
 ```kotlin
 --8<-- "ChoiceExamples.kt:basic"
@@ -46,9 +46,10 @@ The runner-up often matters as much as the winner:
 --8<-- "ChoiceExamples.kt:distribution"
 ```
 
-`confidence` is *not* the winner's probability. It describes the shape of the whole distribution: 0.45 with a
-runner-up at 0.44 is far less decisive than 0.45 with the rest scattered thinly. See
-[Confidence & Thresholds](../results/confidence.md).
+`confidence` is *not* the winner's probability, but it depends on nothing else: it rescales that probability so
+that an even split across the options is 0 and certainty is 1. A winner at 0.45 with a runner-up at 0.44 gets the
+same confidence as a winner at 0.45 with the rest scattered thinly, so when the runner-up matters, read it from
+`ranked()` or `probabilities`, as above. See [Confidence & Thresholds](../results/confidence.md).
 
 A string-keyed Choice returns the option the server chose as it was sent, even one the question didn't declare, as
 both official SDKs do. An [enum-backed Choice](../queries/enums.md) can't hold an undeclared option, so reading one
@@ -76,6 +77,10 @@ Choice takes up to 255 options, so a list that gets an `other` added can hold up
 
 TypeSafe reports that a Choice works reliably up to about 240 options. For larger sets, go level by level
 through a hierarchy or rank in stages; see [Classification](../patterns/classification.md).
+
+Order matters too: TypeSafe has seen `jev-1.13` lean toward the option that comes first. For a decision that counts,
+check that the answer holds with the options reordered. An enum-backed Choice offers its constants in declaration
+order, so build that check from a reordered list of string options.
 
 ## Enum options
 
