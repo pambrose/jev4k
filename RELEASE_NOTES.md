@@ -3,7 +3,7 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
-## v0.4.0 — 2026-10-16
+## v0.4.0 — 2026-10-17
 
 > [!WARNING]
 > **Some things 0.3.0 accepted are now refused.** The binary API only grows, and Kotlin code that compiled against

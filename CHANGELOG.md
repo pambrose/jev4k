@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-## [0.4.0] - 2026-10-16
+## [0.4.0] - 2026-10-17
 
 The fixes from a review of 0.3.0, plus three small additions. The binary API only grows, but some things 0.3.0 accepted
 are now refused: Java code changing a collection a built object hands out; a reference inside another image's reference,
