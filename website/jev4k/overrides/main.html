@@ -1,0 +1,13 @@
+{#-
+  Every page extends this template (zensical.toml sets theme.custom_dir = "overrides").
+
+  The Context7 widget adds an "ask about the docs" chat button. It reads its library from the
+  data-library attribute, which extra_javascript can't set, so the tag is added here. It must come
+  after <body> opens, since the widget appends itself to document.body as soon as it runs.
+-#}
+{% extends "base.html" %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="https://context7.com/widget.js" data-library="/pambrose/jev4k"></script>
+{% endblock %}

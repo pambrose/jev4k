@@ -224,7 +224,8 @@ without them keep compiling.
   Python environment is `website/pyproject.toml` + `uv.lock`, Python 3.14 per `website/.python-version`. Dark mode (the
   `slate` palette) is the default. `docs/stylesheets/extra.css` widens the page grid from 61rem to 90rem so 120-column
   examples fit without horizontal scrolling. Emoji and icons come from Zensical's own extension, so `mkdocs-material`
-  isn't needed.
+  isn't needed. `overrides/main.html` (the theme's `custom_dir`) appends the Context7 docs chat widget's `<script>` to
+  every page's `scripts` block; `extra_javascript` can't carry the `data-library` attribute it reads.
 - **Publishing.** `.github/workflows/docs.yml` runs the same steps as `make site-build` (Zensical build with
   `--strict`, Dokka, KDocs copied to `/kdocs`) in its `docs` job on every PR and `master` push, as a required check.
   It deploys to GitHub Pages only when a release is published, or on manual dispatch, so jev4k.com never shows a
