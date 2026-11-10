@@ -3,6 +3,21 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
+## v0.4.1 — 2026-11-09
+
+A maintenance release. The library's API and behavior are exactly as in 0.4.0. Two dependencies move: Ktor to 3.6.1,
+a patch release, and kotlinx.serialization to 1.12.0. Both are `api` dependencies, so an application that depends on
+jev4k picks them up too. Upgrading means changing the version number and nothing else:
+
+- Gradle builds: `com.pambrose.jev4k:jev4k:0.4.1`
+- Maven builds: `com.pambrose.jev4k:jev4k-jvm:0.4.1`
+
+[jev4k.com](https://jev4k.com/) now has a chat button on every page: ask a question about jev4k, and Context7 answers
+it from the documentation. The rest is tooling. The build moves to Gradle 9.9.0 and Dokka 2.3.0, the documentation
+site to Zensical 0.1.0, and CI to newer actions. The changelog lists each change.
+
+**Full Changelog**: https://github.com/pambrose/jev4k/compare/0.4.0...0.4.1
+
 ## v0.4.0 — 2026-10-17
 
 > [!WARNING]

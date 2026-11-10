@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
+## [0.4.1] - 2026-11-09
+
+A maintenance release. The library's API and behavior are unchanged from 0.4.0. Two dependencies that reach consumers
+move: Ktor to 3.6.1 and kotlinx.serialization to 1.12.0. Everything else below is build, CI and documentation
+tooling, so upgrading needs only the new version number.
+
+### Added
+
+- Every page of jev4k.com has a Context7 chat button that answers questions about jev4k from its indexed
+  documentation. The README's Documentation table links to the site for it. GitHub doesn't run scripts in a README,
+  so the button lives on the site only.
+
+### Changed
+
+- The default `User-Agent` is `jev4k/0.4.1`.
+- Ktor is 3.6.1 (from 3.6.0), for `ktor-client-core` and every engine (CIO on the JVM, Darwin, Curl and WinHttp), and
+  kotlinx.serialization is 1.12.0 (from 1.11.0). Both are `api` dependencies, so an application's classpath moves
+  with them. kotlinx-io stays at 0.9.1, the version Ktor 3.6.1 brings, and kotlinx.coroutines at 1.11.0.
+- The build runs on Gradle 9.9.0 (from 9.8.1), with Dokka 2.3.0 (from 2.2.0), KSP 2.3.13 (from 2.3.12), MockK 1.14.12
+  (from 1.14.11) for the tests, the author's convention plugins at 1.1.9 (from 1.1.7) and the ben-manes versions
+  plugin at 0.67.0 (from 0.66.0).
+- The documentation site builds with Zensical 0.1.0 (from 0.0.69), which adds `zensical-ui` 0.0.41 and drops
+  `deepmerge`, pymdown-extensions 13.0 (from 12.1), Markdown 3.11.3 (from 3.11) and click 8.5.1 (from 8.5.0). Every
+  page's content is the same; the header's menu and search buttons now label themselves with visually hidden text.
+- CI uses `actions/setup-java` 6.1.0 (from 6.0.1), `actions/upload-artifact` 7.0.2 (from 7.0.1), `astral-sh/setup-uv`
+  10.3.0 (from 10.2.0) and `zizmorcore/zizmor-action` 0.7.1 (from 0.6.4), which runs zizmor 1.31.1 (from 1.30.1).
+
 ## [0.4.0] - 2026-10-17
 
 The fixes from a review of 0.3.0, plus three small additions. The binary API only grows, but some things 0.3.0 accepted
@@ -512,6 +539,7 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
+[0.4.1]: https://github.com/pambrose/jev4k/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/pambrose/jev4k/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/pambrose/jev4k/compare/0.2.2...0.3.0
 [0.2.2]: https://github.com/pambrose/jev4k/compare/0.2.1...0.2.2

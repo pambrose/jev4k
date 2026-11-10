@@ -226,6 +226,12 @@ without them keep compiling.
   examples fit without horizontal scrolling. Emoji and icons come from Zensical's own extension, so `mkdocs-material`
   isn't needed. `overrides/main.html` (the theme's `custom_dir`) appends the Context7 docs chat widget's `<script>` to
   every page's `scripts` block; `extra_javascript` can't carry the `data-library` attribute it reads.
+- **Context7 and Docs7.** Two settings live on Context7, not in the repository, under the owner's Personal teamspace:
+    - The widget answers only while it is enabled in the `/pambrose/jev4k` library's owner settings, for the domains
+      listed there (`jev4k.com`, `*.jev4k.com` and `localhost`). Otherwise every question gets "The chat widget is not
+      enabled for this library." A page opened at `127.0.0.1` isn't covered.
+    - The repository is an agent-only Docs7 site (`website/jev4k/docs`, no hosting) with the PR Review Agent posting
+      comments. Its "Docs7 PR Review" check on pull requests isn't a required one.
 - **Publishing.** `.github/workflows/docs.yml` runs the same steps as `make site-build` (Zensical build with
   `--strict`, Dokka, KDocs copied to `/kdocs`) in its `docs` job on every PR and `master` push, as a required check.
   It deploys to GitHub Pages only when a release is published, or on manual dispatch, so jev4k.com never shows a
@@ -464,8 +470,8 @@ without them keep compiling.
     - `.github/workflows/zizmor.yml` audits the workflows and `dependabot.yml` with zizmor, as `make zizmor` does
       locally (with the brew-installed binary, and the gh CLI's token for the online audits). On a pull request
       its `zizmor` job fails on any finding and annotates the diff; pushes to `master`, a weekly run and manual runs
-      upload SARIF to code scanning instead. The action's pinned SHA fixes the zizmor version (1.30.1 at
-      zizmor-action v0.6.4). The rules it holds every workflow to: `persist-credentials: false` on each checkout
+      upload SARIF to code scanning instead. The action's pinned SHA fixes the zizmor version (1.31.1 at
+      zizmor-action v0.7.1). The rules it holds every workflow to: `persist-credentials: false` on each checkout
       (`artipacked`), a 7-day Dependabot `cooldown`, actions pinned to SHAs, and least-privilege `permissions`.
       Run `make zizmor` after editing anything under `.github`.
     - A `test` job in the same workflow runs `jvmTest` on JDK 17, 21 and 25. Tests otherwise run on the
