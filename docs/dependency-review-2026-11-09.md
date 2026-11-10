@@ -27,7 +27,7 @@ documented rule, two Gradle 10 blockers to watch, and bookkeeping.
 Every issue has a number. When one is fixed, tick its box in the summary and in the plan, and update the count
 below in the same change.
 
-**Status: 3 of 8 fixed.** No high, no medium, 4 low, 4 nit.
+**Status: 4 of 8 fixed.** No high, no medium, 4 low, 4 nit.
 
 ## Summary
 
@@ -35,7 +35,7 @@ below in the same change.
 
 - [x] [#1](#issue-1) kotlinx-io moves to 0.9.2, but ktor-io 3.6.1 brings 0.9.1, and the catalog comment still names
   Ktor 3.6.0
-- [ ] [#2](#issue-2) No CHANGELOG or release-notes entry yet, though three bumped libraries reach consumers' classpaths
+- [x] [#2](#issue-2) No CHANGELOG or release-notes entry yet, though three bumped libraries reach consumers' classpaths
 - [ ] [#3](#issue-3) Gradle 10 will fail the build on an enum attribute in KGP 2.4.21, the newest Kotlin plugin
 - [ ] [#4](#issue-4) Kover's `koverLog` calls `Task.getAnt()`, which Gradle 10 removes; Kover and Dokka 2.3.0 call
   `setVisible`, which Gradle 11 removes
@@ -66,8 +66,8 @@ linuxX64, linuxArm64 (Docker), mingwX64 and JDK 21.
 
 ### Next release
 
-- [ ] **2. Record the upgrade.** When the next version opens.
-  - [ ] [#2](#issue-2) List the bumps in CHANGELOG and RELEASE_NOTES, with Ktor, kotlinx.serialization and kotlinx-io
+- [x] **2. Record the upgrade.** When the next version opens.
+  - [x] [#2](#issue-2) List the bumps in CHANGELOG and RELEASE_NOTES, with Ktor, kotlinx.serialization and kotlinx-io
     called out as consumer-visible
 
 ### Before Gradle 10

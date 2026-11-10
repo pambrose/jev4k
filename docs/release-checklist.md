@@ -24,9 +24,9 @@ Verified 2026-09-20; the release rows on 2026-10-17.
 | Git tags                              | ✅ `0.1.0` through `0.4.0` (`68dd995`), all released        |
 | `com.pambrose:jev4k` on Maven Central | ✅ 0.1.0 published, signed, and resolvable                  |
 | `com.pambrose.jev4k:jev4k` on Central | ✅ 0.4.0 published, signed, and resolvable                  |
-| `gradle.properties` version           | `0.4.0`, the latest release                                 |
+| `gradle.properties` version           | `0.4.1`, the release in progress                            |
 | `gradle.properties` group             | `com.pambrose.jev4k` from 0.2.0 (0.1.0 was `com.pambrose`)  |
-| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.4.0 dated 2026-10-17, released                            |
+| `CHANGELOG.md` / `RELEASE_NOTES.md`   | 0.4.1 dated 2026-11-09                                      |
 
 ## Before the first release, once
 
