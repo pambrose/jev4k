@@ -1,22 +1,22 @@
 [versions]
 coroutines = "1.11.0"
 detekt = "2.0.0-alpha.6"
-dokka = "2.2.0"
-gradle-plugins = "1.1.7"
-gradle-wrapper = "9.8.1"
+dokka = "2.3.0"
+gradle-plugins = "1.1.9"
+gradle-wrapper = "9.9.0"
 jvm-toolchain = "25"  # the JDK this project builds with
 jvm-target = "17"     # bytecode floor: the oldest JDK a consumer can run
 kotest = "6.2.6"
 kover = "0.9.11"
-kotlinx-io = "0.9.1"  # the version ktor-io 3.6.0 brings; kotlinx.io.files.Path is in jev4k's public API
+kotlinx-io = "0.9.1"  # the version ktor-io 3.6.1 brings; kotlinx.io.files.Path is in jev4k's public API
 kotlin = "2.4.21"
 # KSP versions are independent of Kotlin since 2.3.0; the kotest plugin needs KSP for the non-JVM targets.
-ksp = "2.3.12"
+ksp = "2.3.13"
 maven-publish = "0.37.0"
-ktor = "3.6.0"
-mockk = "1.14.11"
-serialization = "1.11.0"
-versions = "0.66.0"
+ktor = "3.6.1"
+mockk = "1.14.12"
+serialization = "1.12.0"
+versions = "0.67.0"
 
 [libraries]
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }

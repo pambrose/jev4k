@@ -92,6 +92,9 @@ nav = [
 
 language = "en"
 
+# overrides/main.html adds the Context7 docs chat widget to every page.
+custom_dir = "overrides"
+
 features = [
     "content.action.edit",
     "content.action.view",

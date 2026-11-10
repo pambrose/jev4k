@@ -224,7 +224,8 @@ without them keep compiling.
   Python environment is `website/pyproject.toml` + `uv.lock`, Python 3.14 per `website/.python-version`. Dark mode (the
   `slate` palette) is the default. `docs/stylesheets/extra.css` widens the page grid from 61rem to 90rem so 120-column
   examples fit without horizontal scrolling. Emoji and icons come from Zensical's own extension, so `mkdocs-material`
-  isn't needed.
+  isn't needed. `overrides/main.html` (the theme's `custom_dir`) appends the Context7 docs chat widget's `<script>` to
+  every page's `scripts` block; `extra_javascript` can't carry the `data-library` attribute it reads.
 - **Publishing.** `.github/workflows/docs.yml` runs the same steps as `make site-build` (Zensical build with
   `--strict`, Dokka, KDocs copied to `/kdocs`) in its `docs` job on every PR and `master` push, as a required check.
   It deploys to GitHub Pages only when a release is published, or on manual dispatch, so jev4k.com never shows a
@@ -285,7 +286,7 @@ without them keep compiling.
 
 ## Build
 
-- Gradle 9.8.1 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
+- Gradle 9.9.0 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
   `gradle.properties`; the version is always a release number, and `-PoverrideVersion=...` replaces it for snapshots.
 - Kotlin Multiplatform (`kotlin-multiplatform` plugin; `java-library` is incompatible with it). Targets: `jvm`,
   `js { nodejs() }`, `wasmJs { nodejs() }`, `macosArm64`, `iosArm64`, `iosX64`, `iosSimulatorArm64`, `tvosArm64`,
@@ -385,7 +386,7 @@ without them keep compiling.
     - Editing `.env` invalidates the configuration cache, but `jvmTest`'s environment isn't a task input, so an
       up-to-date `jvmTest` won't re-run on its own. `make tests` and `make live-tests` pass `--rerun` to each test task,
       so they always see the current values. (`--rerun-tasks` would also recompile all sixteen targets.)
-- Dokka (`org.jetbrains.dokka` 2.2.0) builds the KDoc site. `make kdocs` writes it to `build/dokka/html`.
+- Dokka (`org.jetbrains.dokka` 2.3.0) builds the KDoc site. `make kdocs` writes it to `build/dokka/html`.
     - The site documents the public and protected API of the main source sets (protected for `JevQuery`'s builders),
       with a tab per platform (common, jvm, native, web). Source sets whose names end in `Test` are suppressed, so no
       test class, fixture or example is included, and the `com.pambrose.jev4k.internal` package is excluded.
