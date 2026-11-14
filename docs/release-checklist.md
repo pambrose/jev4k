@@ -107,7 +107,12 @@ Signing and credentials, all outside the repository:
 
 - [ ] `GPG_SIGNING_KEY_ID` is exported and `gpg --list-secret-keys "$GPG_SIGNING_KEY_ID"` finds the key.
 - [ ] The macOS keychain holds the passphrase (service `gradle-signing-password`, account `gpg-signing`).
-- [ ] `~/.gradle/gradle.properties` holds `mavenCentralUsername` and `mavenCentralPassword`.
+- [ ] The macOS keychain holds Maven Central's user token from central.sonatype.com (services
+      `maven-central-username` and `maven-central-password`, account `maven-central`). Both publishing targets check
+      for the two entries first. Add a missing one with
+      `security add-generic-password -a maven-central -s <service> -U -w`, which prompts for the value, so it stays out
+      of the shell's history. Delete any `mavenCentralUsername` and `mavenCentralPassword` left in
+      `~/.gradle/gradle.properties`, which every Gradle build on the machine is given.
 
 Then:
 
@@ -117,9 +122,9 @@ Then:
 - [ ] `make publish-maven-central`. It runs `publishAndReleaseToMavenCentral`, and
   `publishToMavenCentral(automaticRelease = true)` promotes the staging repository on its own, so there is
   nothing to click in the Central portal.
-- [ ] Then stop the processes the publish started. It hands Gradle the signing key and its passphrase as
-  environment variables, every process the build starts inherits them, and a daemon keeps its environment until it
-  stops (a Gradle daemon three hours after its last build):
+- [ ] Then stop the processes the publish started. It hands Gradle the signing key, its passphrase and Maven
+  Central's user token as environment variables, every process the build starts inherits them, and a daemon keeps its
+  environment until it stops (a Gradle daemon three hours after its last build):
 
   ```bash
   ./gradlew --stop                                          # the Gradle daemon, and its workers, Dokka's among them

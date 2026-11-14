@@ -380,7 +380,9 @@ dokka {
 
 // Maven Central publishing: the Dokka HTML is packaged as the javadoc jar,
 // releases are published automatically, and artifacts are signed only when a GPG key is supplied
-// (the Makefile's publish targets pass one via ORG_GRADLE_PROJECT_signingInMemoryKey*).
+// (the Makefile's publish targets pass one via ORG_GRADLE_PROJECT_signingInMemoryKey*, and Maven Central's user
+// token, read from the macOS keychain, via ORG_GRADLE_PROJECT_mavenCentralUsername and
+// ORG_GRADLE_PROJECT_mavenCentralPassword).
 // com.pambrose.jev4k:jev4k is the multiplatform root module, which Gradle resolves to the right platform artifact;
 // Maven consumers depend on com.pambrose.jev4k:jev4k-jvm directly. The Apple artifacts can only be built on macOS, so
 // releases are published from a Mac.
