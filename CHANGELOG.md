@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Narrative notes for each release are in
 [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
+## [0.4.2] — unreleased
+
+A maintenance release. The library's API is unchanged from 0.4.1. Two `api` dependencies move: kotlinx.serialization
+to 1.13.0, which brings back 0.4.0's handling of an exception thrown by a caller's own serializer, and kotlinx-io to
+0.9.3. Everything else below is build, release and documentation tooling.
+
+### Changed
+
+- kotlinx.serialization is 1.13.0 (from 1.12.0) and kotlinx-io is 0.9.3 (from 0.9.1). Both are `api` dependencies,
+  so an application's classpath moves with them. Ktor stays at 3.6.1 and kotlinx.coroutines at 1.11.0.
+- kotlinx-io is now ahead of the 0.9.1 that Ktor 3.6.1 brings, for its fixes: 0.9.2 reimplemented the native
+  `FileSource` and `FileSink` that `JevImage.read` uses off the JVM, and 0.9.3 fixes integer overflows, argument
+  checks, and how a closed `Source` or `Sink` behaves. The build keeps it at or above Ktor's version, never below.
+- kotlinx.serialization 1.13.0 reverts 1.12.0's wrapping of almost every exception a serializer throws in a
+  `JsonException`. When `jsonEntry`, or `query`/`ask` with a `@Serializable` state, runs a serializer of the caller's
+  own that throws something other than a `SerializationException`, the caller again gets that exception as thrown, as
+  in 0.4.0. 0.4.1 reported it as a `JevValidationException`. A `SerializationException` still becomes one.
+- The build runs on Gradle 9.9.1 (from 9.9.0), with KSP 2.3.14 (from 2.3.13) and Kotest 6.2.7 (from 6.2.6) for the
+  tests.
+- The documentation site builds with Zensical 0.1.1 (from 0.1.0), `zensical-ui` 0.0.42 (from 0.0.41) and
+  pymdown-extensions 13.1 (from 13.0).
+- Publishing reads Maven Central's credentials, a user token from central.sonatype.com, from the macOS keychain, as it
+  already read the signing key's passphrase, instead of from `~/.gradle/gradle.properties`, which every Gradle build
+  on the machine is given. `make publish-snapshot` and `make publish-maven-central` first check that both keychain
+  entries exist, naming a missing one without printing any value, and the release checklist says how to add them.
+
 ## [0.4.1] - 2026-11-09
 
 A maintenance release. The library's API and behavior are unchanged from 0.4.0. Two dependencies that reach consumers
@@ -539,6 +565,7 @@ First release: a Kotlin DSL and client for [TypeSafe](https://docs.typesafe.ai)'
 - Dokka KDocs for the public API at <https://jev4k.com/kdocs/>.
 - `llms.txt` at <https://jev4k.com/llms.txt>, indexing the site for coding agents.
 
+[0.4.2]: https://github.com/pambrose/jev4k/compare/0.4.1...0.4.2
 [0.4.1]: https://github.com/pambrose/jev4k/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/pambrose/jev4k/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/pambrose/jev4k/compare/0.2.2...0.3.0

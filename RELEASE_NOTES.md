@@ -3,6 +3,26 @@
 Narrative notes for each jev4k release, newest first. The itemized list of changes is in
 [CHANGELOG.md](CHANGELOG.md).
 
+## v0.4.2 — unreleased
+
+A maintenance release. The library's API is the same as in 0.4.1. Two `api` dependencies move, kotlinx.serialization
+to 1.13.0 and kotlinx-io to 0.9.3, so an application that depends on jev4k picks them up too. Upgrading means
+changing the version number:
+
+- Gradle builds: `com.pambrose.jev4k:jev4k:0.4.2`
+- Maven builds: `com.pambrose.jev4k:jev4k-jvm:0.4.2`
+
+kotlinx.serialization 1.13.0 undoes a change made in 1.12.0, and with it the one thing 0.4.1 did differently from
+0.4.0. Suppose a serializer of your own throws something other than a `SerializationException` while jev4k encodes
+your state or an entry. You get that exception back as thrown, as in 0.4.0; 0.4.1 wrapped it in a
+`JevValidationException`. kotlinx-io 0.9.3 is ahead of the 0.9.1 that Ktor brings, for fixes to native file reading,
+which `JevImage.read` uses off the JVM, and to integer overflows.
+
+The rest is tooling: Gradle 9.9.1, KSP 2.3.14 and Kotest 6.2.7 in the build, Zensical 0.1.1 for the site, and Maven
+Central credentials read from the macOS keychain when publishing. The changelog lists each change.
+
+**Full Changelog**: https://github.com/pambrose/jev4k/compare/0.4.1...0.4.2
+
 ## v0.4.1 — 2026-11-09
 
 A maintenance release. The library's API and behavior are exactly as in 0.4.0. Two dependencies move: Ktor to 3.6.1,
