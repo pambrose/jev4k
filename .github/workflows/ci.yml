@@ -29,11 +29,11 @@ jobs:
                 with:
                     persist-credentials: false
             # JDK 25 is the toolchain in the catalog.
-            -   uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+            -   uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
                 with:
                     distribution: temurin
                     java-version: 25
-            -   uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+            -   uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
             # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
             # downloads. The toolchain depends only on the Kotlin version, so that is the whole key: an exact hit, or
             # a fresh download saved under the new version. No restore-keys, which would carry every older toolchain
@@ -115,13 +115,13 @@ jobs:
             # Two JDKs: the matrix one runs the tests, and 25 is the toolchain that compiles them. The last
             # entry becomes JAVA_HOME, so Gradle itself always runs on 25. On the 25 row both entries are 25,
             # which installs once.
-            -   uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+            -   uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
                 with:
                     distribution: temurin
                     java-version: |
                         ${{ matrix.java }}
                         25
-            -   uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+            -   uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
             # Gradle doesn't scan the runner's tool cache, so point it at what setup-java installed. The names
             # are setup-java's JAVA_HOME_<major>_<arch> variables, hence X64 for ubuntu-latest. If a lookup ever
@@ -170,11 +170,11 @@ jobs:
             -   uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
                 with:
                     persist-credentials: false
-            -   uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+            -   uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
                 with:
                     distribution: temurin
                     java-version: 25
-            -   uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+            -   uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
             # setup-gradle caches ~/.gradle but not the Kotlin/Native toolchain that compiling the native targets
             # downloads. The toolchain depends only on the Kotlin version, so that is the whole key: an exact hit, or
             # a fresh download saved under the new version. No restore-keys, which would carry every older toolchain
