@@ -23,10 +23,13 @@ to 1.13.0, which brings back 0.4.0's handling of an exception thrown by a caller
   `JsonException`. When `jsonEntry`, or `query`/`ask` with a `@Serializable` state, runs a serializer of the caller's
   own that throws something other than a `SerializationException`, the caller again gets that exception as thrown, as
   in 0.4.0. 0.4.1 reported it as a `JevValidationException`. A `SerializationException` still becomes one.
-- The build runs on Gradle 9.9.1 (from 9.9.0), with KSP 2.3.14 (from 2.3.13) and Kotest 6.2.7 (from 6.2.6) for the
+- The build runs on Gradle 9.9.2 (from 9.9.0), with KSP 2.3.14 (from 2.3.13) and Kotest 6.2.7 (from 6.2.6) for the
   tests.
-- The documentation site builds with Zensical 0.1.1 (from 0.1.0), `zensical-ui` 0.0.42 (from 0.0.41) and
-  pymdown-extensions 13.1 (from 13.0).
+- The documentation site builds with Zensical 0.1.3 (from 0.1.0), `zensical-ui` 0.0.43 (from 0.0.41),
+  pymdown-extensions 13.1.2 (from 13.0) and PyYAML 6.0.4 (from 6.0.3).
+- CI uses `actions/setup-java` 6.2.0 (from 6.1.0), `gradle/actions/setup-gradle` 6.4.1 (from 6.4.0),
+  `astral-sh/setup-uv` 10.3.3 (from 10.3.0) and `zizmorcore/zizmor-action` 0.8.1 (from 0.7.1), which runs zizmor
+  1.32.0 (from 1.31.1).
 - Publishing reads Maven Central's credentials, a user token from central.sonatype.com, from the macOS keychain, as it
   already read the signing key's passphrase, instead of from `~/.gradle/gradle.properties`, which every Gradle build
   on the machine is given. `make publish-snapshot` and `make publish-maven-central` first check that both keychain

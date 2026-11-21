@@ -18,8 +18,9 @@ your state or an entry. You get that exception back as thrown, as in 0.4.0; 0.4.
 `JevValidationException`. kotlinx-io 0.9.3 is ahead of the 0.9.1 that Ktor brings, for fixes to native file reading,
 which `JevImage.read` uses off the JVM, and to integer overflows.
 
-The rest is tooling: Gradle 9.9.1, KSP 2.3.14 and Kotest 6.2.7 in the build, Zensical 0.1.1 for the site, and Maven
-Central credentials read from the macOS keychain when publishing. The changelog lists each change.
+The rest is tooling: Gradle 9.9.2, KSP 2.3.14 and Kotest 6.2.7 in the build, Zensical 0.1.3 for the site, newer
+actions in CI, and Maven Central credentials read from the macOS keychain when publishing. The changelog lists each
+change.
 
 **Full Changelog**: https://github.com/pambrose/jev4k/compare/0.4.1...0.4.2
 

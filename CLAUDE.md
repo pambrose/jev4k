@@ -292,7 +292,7 @@ without them keep compiling.
 
 ## Build
 
-- Gradle 9.9.0 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
+- Gradle 9.9.2 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
   `gradle.properties`; the version is always a release number, and `-PoverrideVersion=...` replaces it for snapshots.
 - Kotlin Multiplatform (`kotlin-multiplatform` plugin; `java-library` is incompatible with it). Targets: `jvm`,
   `js { nodejs() }`, `wasmJs { nodejs() }`, `macosArm64`, `iosArm64`, `iosX64`, `iosSimulatorArm64`, `tvosArm64`,
@@ -473,10 +473,11 @@ without them keep compiling.
     - `.github/workflows/zizmor.yml` audits the workflows and `dependabot.yml` with zizmor, as `make zizmor` does
       locally (with the brew-installed binary, and the gh CLI's token for the online audits). On a pull request
       its `zizmor` job fails on any finding and annotates the diff; pushes to `master`, a weekly run and manual runs
-      upload SARIF to code scanning instead. The action's pinned SHA fixes the zizmor version (1.31.1 at
-      zizmor-action v0.7.1). The rules it holds every workflow to: `persist-credentials: false` on each checkout
-      (`artipacked`), a 7-day Dependabot `cooldown`, actions pinned to SHAs, and least-privilege `permissions`.
-      Run `make zizmor` after editing anything under `.github`.
+      upload SARIF to code scanning instead. The action's pinned SHA fixes the zizmor version (1.32.0 at
+      zizmor-action v0.8.1), since the action installs it from a hash-pinned lock in its own tree. The rules it
+      holds every workflow to: `persist-credentials: false` on each checkout (`artipacked`), a 7-day Dependabot
+      `cooldown`, actions pinned to SHAs, and least-privilege `permissions`. Run `make zizmor` after editing
+      anything under `.github`.
     - A `test` job in the same workflow runs `jvmTest` on JDK 17, 21 and 25. Tests otherwise run on the
       toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints `jvmTest`'s `javaLauncher`.
       `-XX:+EnableDynamicAgentLoading` is passed on every JDK: 21 introduced the warning it silences, not the
