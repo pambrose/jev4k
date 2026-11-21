@@ -5,3 +5,27 @@
 .md-grid {
     max-width: 90rem;
 }
+
+/*
+ * The theme's indigo accent, #526cfe, colors the current page in the navigation
+ * and every hovered or focused link, and is too light for text on white and too
+ * dark for text on slate. On slate the current page's nav entry measured 4.2:1,
+ * a hovered code link 3.8:1, and on white every accent text measured 3.5-4.3:1,
+ * all below WCAG AA's 4.5:1. Each scheme keeps the accent's hue (231deg, 99%)
+ * at a lightness that clears 5:1 against every background the accent's text
+ * sits on: the page, code blocks, admonitions, and the accent's own 10% tint.
+ *
+ * Slate gets a lighter accent, so the text the theme draws on it (back-to-top
+ * and table-of-contents buttons on hover) turns dark, as the theme already does
+ * for its own light accents; white text on #768afe would measure 3.1:1.
+ */
+[data-md-color-scheme="slate"][data-md-color-accent="indigo"] {
+    --md-accent-fg-color: #768afe;
+    --md-accent-fg-color--transparent: #768afe1a;
+    --md-accent-bg-color: var(--md-default-bg-color);
+}
+
+[data-md-color-scheme="default"][data-md-color-accent="indigo"] {
+    --md-accent-fg-color: #2041fe;
+    --md-accent-fg-color--transparent: #2041fe1a;
+}
