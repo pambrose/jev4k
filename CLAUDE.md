@@ -292,7 +292,7 @@ without them keep compiling.
 
 ## Build
 
-- Gradle 9.9.0 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
+- Gradle 9.9.2 via the wrapper, single module (`rootProject.name = "jev4k"`). `group` and `version` live in
   `gradle.properties`; the version is always a release number, and `-PoverrideVersion=...` replaces it for snapshots.
 - Kotlin Multiplatform (`kotlin-multiplatform` plugin; `java-library` is incompatible with it). Targets: `jvm`,
   `js { nodejs() }`, `wasmJs { nodejs() }`, `macosArm64`, `iosArm64`, `iosX64`, `iosSimulatorArm64`, `tvosArm64`,
@@ -326,9 +326,11 @@ without them keep compiling.
     - `publishToMavenCentral(automaticRelease = true)`.
     - Signing happens only when `signingInMemoryKey` is supplied. The Makefile's `GPG_ENV` supplies it from
       `GPG_SIGNING_KEY_ID`, and the passphrase from the macOS keychain (`gradle-signing-password` / `gpg-signing`).
-      Every process the build starts inherits `GPG_ENV`, so step 5 of the release checklist stops the Gradle and Kotlin
-      daemons after a publish.
-    - Maven Central credentials come from `~/.gradle/gradle.properties`.
+      Every process the build starts inherits `GPG_ENV` and `MAVEN_CENTRAL_ENV`, so step 5 of the release checklist
+      stops the Gradle and Kotlin daemons after a publish.
+    - Maven Central credentials come from the macOS keychain (`maven-central-username` and `maven-central-password`,
+      account `maven-central`), through the Makefile's `MAVEN_CENTRAL_ENV`, never `~/.gradle/gradle.properties`.
+      Both publishing targets run `_check-maven-central-env` first, which names a missing entry, never its value.
     - `make publish-snapshot` and `make publish-maven-central` upload to Maven Central, so never run them unasked.
       `make publish-local` and `make publish-local-snapshot` publish to `~/.m2`.
 - Versions, libraries, and plugins are declared in the version catalog `gradle/libs.versions.toml` and referenced from
@@ -336,8 +338,9 @@ without them keep compiling.
   new dependencies to the catalog, not as inline coordinates. Kotlin-family plugins share `version.ref = "kotlin"`.
 - `ktor-client-core`, `kotlinx-serialization-json`, `kotlinx-coroutines-core` and `kotlinx-io-core` are `api`
   dependencies because their types appear in the public API (`HttpClientEngine`, `JsonElement`, suspend functions and
-  inline `runBlocking` wrappers, and the kotlinx-io `Path` that `JevImage.read` takes). kotlinx-io is pinned to the
-  version `ktor-io` brings.
+  inline `runBlocking` wrappers, and the kotlinx-io `Path` that `JevImage.read` takes). kotlinx-io is kept at or above
+  the version `ktor-io` brings: 0.9.3 is declared for its fixes, ahead of Ktor 3.6.1's 0.9.1, so the POM raises a
+  consumer's kotlinx-io too. Never declare one below Ktor's.
 - The catalog carries two JVM versions, because the build JDK and the shipped bytecode deliberately differ:
     - `jvm-toolchain = "25"` is what compiles the project (`jvmToolchain(...)`). The foojay resolver plugin in
       `settings.gradle.kts` downloads a matching JDK automatically if one isn't installed. That plugin keeps an inline
@@ -470,10 +473,11 @@ without them keep compiling.
     - `.github/workflows/zizmor.yml` audits the workflows and `dependabot.yml` with zizmor, as `make zizmor` does
       locally (with the brew-installed binary, and the gh CLI's token for the online audits). On a pull request
       its `zizmor` job fails on any finding and annotates the diff; pushes to `master`, a weekly run and manual runs
-      upload SARIF to code scanning instead. The action's pinned SHA fixes the zizmor version (1.31.1 at
-      zizmor-action v0.7.1). The rules it holds every workflow to: `persist-credentials: false` on each checkout
-      (`artipacked`), a 7-day Dependabot `cooldown`, actions pinned to SHAs, and least-privilege `permissions`.
-      Run `make zizmor` after editing anything under `.github`.
+      upload SARIF to code scanning instead. The action's pinned SHA fixes the zizmor version (1.32.0 at
+      zizmor-action v0.8.1), since the action installs it from a hash-pinned lock in its own tree. The rules it
+      holds every workflow to: `persist-credentials: false` on each checkout (`artipacked`), a 7-day Dependabot
+      `cooldown`, actions pinned to SHAs, and least-privilege `permissions`. Run `make zizmor` after editing
+      anything under `.github`.
     - A `test` job in the same workflow runs `jvmTest` on JDK 17, 21 and 25. Tests otherwise run on the
       toolchain JVM whatever the runner uses, so `-PtestJavaVersion=<n>` repoints `jvmTest`'s `javaLauncher`.
       `-XX:+EnableDynamicAgentLoading` is passed on every JDK: 21 introduced the warning it silences, not the
@@ -506,7 +510,7 @@ make coverage-verify                                  # check coverage against t
 make site                                             # serve the Zensical docs site (website/jev4k)
 make site-build                                       # build the docs site, with KDocs under /kdocs
 make publish-local-snapshot                           # publish <version>-SNAPSHOT to ~/.m2
-make publish-maven-central                            # sign and release <version> to Maven Central (needs GPG_SIGNING_KEY_ID)
+make publish-maven-central                            # sign and release <version> to Maven Central (GPG key + keychain token)
 make format                                           # auto-format sources with ktlint (formatKotlin)
 make detekt                                           # detekt static analysis only
 make detekt-baseline                                  # regenerate config/detekt/baseline.xml
