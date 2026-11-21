@@ -3,7 +3,7 @@
         abi-update coverage coverage-html coverage-xml coverage-log \
         coverage-verify coverage-open coverage-clean versions versions-all api-docs example hotdog-example live-tests \
         publish-local publish-local-snapshot publish-snapshot publish-maven-central \
-        upgrade-wrapper test-jdk all-tests docker-linux-tests platform-tests _check-gpg-env _require-version \
+        upgrade-wrapper test-jdk all-tests docker-linux-tests platform-tests _check-gpg-env _check-maven-central-env _require-version \
         _require-gradle-version _require-jdk _require-macos _require-docker _require-zizmor
 
 VERSION := $(shell sed -n 's/^version=\(.*\)/\1/p' gradle.properties)
@@ -42,14 +42,26 @@ WEBSITE_DIR := website
 SITE_DIR := $(WEBSITE_DIR)/jev4k
 
 # Signing credentials for Maven Central: the GPG key comes from the local keyring
-# (GPG_SIGNING_KEY_ID) and its passphrase from the macOS keychain. Maven Central credentials are read by Gradle
-# from ~/.gradle/gradle.properties (mavenCentralUsername / mavenCentralPassword). Every process the build starts
+# (GPG_SIGNING_KEY_ID) and its passphrase from the macOS keychain. Maven Central's credentials come from the keychain
+# too (MAVEN_CENTRAL_ENV, below). Every process the build starts
 # inherits these variables, and a daemon keeps them until it stops, so the release checklist stops the Gradle and
 # Kotlin daemons after a publish.
 GPG_ENV = \
 	ORG_GRADLE_PROJECT_signingInMemoryKey="$$(gpg --armor --export-secret-keys "$$GPG_SIGNING_KEY_ID")" \
 	ORG_GRADLE_PROJECT_signingInMemoryKeyId="$$GPG_SIGNING_KEY_ID" \
 	ORG_GRADLE_PROJECT_signingInMemoryKeyPassword="$$(security find-generic-password -a "gpg-signing" -s "gradle-signing-password" -w)"
+
+# Maven Central's credentials, a user token's name and password from central.sonatype.com, from the macOS keychain, as
+# the signing key's passphrase is: the maven-central-username and maven-central-password entries (account
+# maven-central), shared by every repository that publishes this way. They reach only the publishing commands, as the
+# vanniktech plugin's mavenCentralUsername and mavenCentralPassword, never ~/.gradle/gradle.properties, which every
+# Gradle build on the machine is given. Add them once with
+#   security add-generic-password -a maven-central -s maven-central-username -U -w
+#   security add-generic-password -a maven-central -s maven-central-password -U -w
+# each of which asks for the value, so it stays out of the shell's history.
+MAVEN_CENTRAL_ENV = \
+	ORG_GRADLE_PROJECT_mavenCentralUsername="$$(security find-generic-password -a "maven-central" -s "maven-central-username" -w)" \
+	ORG_GRADLE_PROJECT_mavenCentralPassword="$$(security find-generic-password -a "maven-central" -s "maven-central-password" -w)"
 
 default: help
 
@@ -272,11 +284,11 @@ publish-local-snapshot: _require-version  ## Publish a -SNAPSHOT artifact to the
 	$(GRADLE) -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenLocal
 
 # A release carries every target, and only a Mac links and tests the Apple ones, so releases are published from one.
-publish-snapshot: _require-version _require-macos _check-gpg-env  ## Publish a -SNAPSHOT artifact to Maven Central
-	$(GPG_ENV) $(GRADLE) -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenCentral
+publish-snapshot: _require-version _require-macos _check-gpg-env _check-maven-central-env  ## Publish a -SNAPSHOT artifact to Maven Central
+	$(GPG_ENV) $(MAVEN_CENTRAL_ENV) $(GRADLE) -PoverrideVersion=$(VERSION)-SNAPSHOT publishToMavenCentral
 
-publish-maven-central: _require-version _require-macos _check-gpg-env  ## Publish a release artifact to Maven Central
-	$(GPG_ENV) $(GRADLE) -Pjev4k.sourceRef=$(VERSION) publishAndReleaseToMavenCentral
+publish-maven-central: _require-version _require-macos _check-gpg-env _check-maven-central-env  ## Publish a release artifact to Maven Central
+	$(GPG_ENV) $(MAVEN_CENTRAL_ENV) $(GRADLE) -Pjev4k.sourceRef=$(VERSION) publishAndReleaseToMavenCentral
 
 # Gradle's documented upgrade procedure: the first run rewrites gradle-wrapper.properties using the *old*
 # wrapper jar; the second run regenerates the wrapper itself with the new version. Both runs carry the
@@ -299,6 +311,15 @@ _check-gpg-env:
 	@if [ -z "$$(security find-generic-password -a 'gpg-signing' -s 'gradle-signing-password' -w 2>/dev/null)" ]; then \
 		echo "ERROR: keychain entry 'gradle-signing-password' (account 'gpg-signing') is missing or empty" >&2; exit 1; \
 	fi
+
+# Fails, naming the keychain entry and never its value, when either of Maven Central's credentials is missing or empty
+_check-maven-central-env:
+	@for entry in maven-central-username maven-central-password; do \
+		if [ -z "$$(security find-generic-password -a 'maven-central' -s "$$entry" -w 2>/dev/null)" ]; then \
+			echo "ERROR: keychain entry '$$entry' (account 'maven-central') is missing or empty; add it with: security add-generic-password -a maven-central -s $$entry -U -w" >&2; \
+			exit 1; \
+		fi; \
+	done
 
 _require-macos:
 	@[ "$(HOST_OS)" = Darwin ] || { echo "ERROR: this target needs macOS, the only host that links and tests every target" >&2; exit 1; }
